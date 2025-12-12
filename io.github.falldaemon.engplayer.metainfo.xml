@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.github.falldaemon.engplayer</id>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>LicenseRef-proprietary</project_license>
+  <name>EngPlayer</name>
+  <summary>Modern IPTV and Media Center</summary>
+  
+  <developer id="io.github.falldaemon">
+    <name>Engin Eren</name>
+  </developer>
+  
+  <description>
+    <p>
+      EngPlayer is a modern, fast, and lightweight media player developed with Python and GTK4 for Linux desktops.
+      It serves as a user-friendly entertainment hub that brings your local media library, VOD content, and live streams under one roof.
+    </p>
+    <p>Key Features:</p>
+    <ul>
+      <li><em>IPTV Support:</em> Seamless integration with Xtream Codes API and M3U playlists.</li>
+      <li><em>Smart EPG &amp; Catch-up:</em> Real-time program guides and archive playback support.</li>
+      <li><em>Recorder (PVR):</em> Record live streams or schedule recordings for later.</li>
+      <li><em>Cinematic VOD:</em> Automatic metadata fetching (Posters, Cast, Plot) via TMDb integration.</li>
+      <li><em>Trakt.tv Sync:</em> Automatically tracks what you're watching (Scrobbling).</li>
+      <li><em>Local Library:</em> Manage your Video, Music, and Picture collections with album art support.</li>
+      <li><em>Advanced Player:</em> 10-Band Equalizer, Subtitle download support, and PiP mode.</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">io.github.falldaemon.engplayer.desktop</launchable>
+
+  <screenshots>
+    <screenshot type="default">
+      <caption>Live TV Streaming</caption>
+      <image>https://raw.githubusercontent.com/Falldaemon/EngPlayer/main/screenshots/EngPlayer-stream.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Movie Details with TMDb</caption>
+      <image>https://raw.githubusercontent.com/Falldaemon/EngPlayer/main/screenshots/EngPlayer-vod-info.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Series &amp; Seasons Info</caption>
+      <image>https://raw.githubusercontent.com/Falldaemon/EngPlayer/main/screenshots/EngPlayer-series-info.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Settings Menu</caption>
+      <image>https://raw.githubusercontent.com/Falldaemon/EngPlayer/main/screenshots/EngPlayer-menu.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>VOD Grid View</caption>
+      <image>https://raw.githubusercontent.com/Falldaemon/EngPlayer/main/screenshots/EngPlayer-series.png</image>
+    </screenshot>
+    <screenshot>
+      <caption>Local Media Library</caption>
+      <image>https://raw.githubusercontent.com/Falldaemon/EngPlayer/main/screenshots/EngPlayer-media.png</image>
+    </screenshot>
+  </screenshots>
+
+  <url type="homepage">https://github.com/Falldaemon/EngPlayer</url>
+  <url type="bugtracker">https://github.com/Falldaemon/EngPlayer/issues</url>
+  
+  <content_rating type="oars-1.1">
+    <content_attribute id="violence-cartoon">none</content_attribute>
+    <content_attribute id="violence-fantasy">none</content_attribute>
+    <content_attribute id="violence-realistic">none</content_attribute>
+    <content_attribute id="violence-bloodshed">none</content_attribute>
+    <content_attribute id="violence-sexual">none</content_attribute>
+    <content_attribute id="drugs-alcohol">none</content_attribute>
+    <content_attribute id="drugs-narcotics">none</content_attribute>
+    <content_attribute id="drugs-tobacco">none</content_attribute>
+    <content_attribute id="sex-nudity">none</content_attribute>
+    <content_attribute id="sex-themes">none</content_attribute>
+    <content_attribute id="language-profanity">none</content_attribute>
+    <content_attribute id="language-humor">none</content_attribute>
+    <content_attribute id="language-discrimination">none</content_attribute>
+    <content_attribute id="social-chat">none</content_attribute>
+    <content_attribute id="social-info">none</content_attribute>
+    <content_attribute id="social-audio">none</content_attribute>
+    <content_attribute id="social-location">none</content_attribute>
+    <content_attribute id="social-contacts">none</content_attribute>
+    <content_attribute id="money-purchasing">none</content_attribute>
+    <content_attribute id="money-gambling">none</content_attribute>
+  </content_rating>
+  
+  <releases>
+    <release version="0.1.0" date="2025-12-12">
+      <description>
+        <p>First public release of EngPlayer.</p>
+        <ul>
+          <li>Initial support for Xtream Codes and M3U.</li>
+          <li>Added Background Recording and Scheduler.</li>
+          <li>Implemented TMDb and Trakt.tv integration.</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+  
+  <branding>
+    <color type="primary" scheme_preference="light">#3584e4</color>
+    <color type="primary" scheme_preference="dark">#1c71d8</color>
+  </branding>
+</component>

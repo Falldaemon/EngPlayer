@@ -1,0 +1,1162 @@
+# EngPlayer Spanish Translation
+# Copyright (C) 2025 EngPlayer
+# This file is distributed under the same license as the EngPlayer package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: EngPlayer 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-23 12:00+0300\n"
+"PO-Revision-Date: 2025-11-23 12:30+0300\n"
+"Last-Translator: EngPlayer Team\n"
+"Language-Team: Spanish <es@li.org>\n"
+"Language: es\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+
+# --- Main Window & General ---
+msgid "Eng Player"
+msgstr "Eng Player"
+
+msgid "Processing channels and VOD content..."
+msgstr "Procesando canales y contenido VOD..."
+
+msgid "Channels loaded successfully!"
+msgstr "¡Canales cargados correctamente!"
+
+msgid "Connection timed out."
+msgstr "Tiempo de conexión agotado."
+
+msgid "Could not open stream"
+msgstr "No se pudo abrir la transmisión"
+
+msgid "Restart Required"
+msgstr "Reinicio necesario"
+
+msgid "Theme settings have been saved.\n\nThe application will now restart for the changes to take effect."
+msgstr "Se ha guardado la configuración del tema.\n\nLa aplicación se reiniciará ahora para aplicar los cambios."
+
+msgid "Restart Now"
+msgstr "Reiniciar ahora"
+
+# --- Navigation & Sidebar ---
+msgid "Bouquets"
+msgstr "Grupos"
+
+msgid "Favorites"
+msgstr "Favoritos"
+
+msgid "VOD"
+msgstr "VOD"
+
+msgid "Series"
+msgstr "Series"
+
+msgid "Media"
+msgstr "Medios"
+
+msgid "Video Library"
+msgstr "Videoteca"
+
+msgid "Picture Library"
+msgstr "Biblioteca de imágenes"
+
+msgid "Music Library"
+msgstr "Biblioteca de música"
+
+msgid "Refresh Library"
+msgstr "Actualizar biblioteca"
+
+msgid "Add Source..."
+msgstr "Añadir fuente..."
+
+# --- Settings Menu ---
+msgid "Set/Change Password"
+msgstr "Establecer/Cambiar contraseña"
+
+msgid "Set TMDb API Key"
+msgstr "Configurar clave API de TMDb"
+
+msgid "Set OpenSubtitles API Key"
+msgstr "Configurar clave API de OpenSubtitles"
+
+msgid "Connect to Trakt.tv"
+msgstr "Conectar a Trakt.tv"
+
+msgid "Disconnect from Trakt.tv"
+msgstr "Desconectar de Trakt.tv"
+
+msgid "Use TMDb Metadata"
+msgstr "Usar metadatos de TMDb"
+
+msgid "Use Poster Cache"
+msgstr "Usar caché de pósters"
+
+msgid "Saves posters to disk (loads faster)"
+msgstr "Guarda los pósters en el disco (carga más rápida)"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "System Theme"
+msgstr "Tema del sistema"
+
+msgid "Light"
+msgstr "Claro"
+
+msgid "Dark"
+msgstr "Oscuro"
+
+msgid "Accent Color"
+msgstr "Color de acento"
+
+msgid "Notifications"
+msgstr "Notificaciones"
+
+msgid "Enable Notifications"
+msgstr "Activar notificaciones"
+
+msgid "Duration (Seconds)"
+msgstr "Duración (Segundos)"
+
+msgid "Change Recordings Folder"
+msgstr "Cambiar carpeta de grabaciones"
+
+msgid "Change Cache Folder"
+msgstr "Cambiar carpeta de caché"
+
+msgid "Keyboard Shortcuts"
+msgstr "Atajos de teclado"
+
+msgid "Clear Cache"
+msgstr "Borrar caché"
+
+msgid "About EngPlayer"
+msgstr "Acerca de EngPlayer"
+
+msgid "Settings"
+msgstr "Ajustes"
+
+msgid "Recording Scheduler"
+msgstr "Programador de grabaciones"
+
+msgid "Recorded Videos"
+msgstr "Vídeos grabados"
+
+# --- Profile Window ---
+msgid "Profile Selection"
+msgstr "Selección de perfil"
+
+msgid "Please select a profile or create a new one."
+msgstr "Por favor, seleccione un perfil o cree uno nuevo."
+
+msgid "Loading..."
+msgstr "Cargando..."
+
+msgid "Add New"
+msgstr "Añadir nuevo"
+
+msgid "Edit"
+msgstr "Editar"
+
+msgid "Delete"
+msgstr "Eliminar"
+
+msgid "Open Selected Profile"
+msgstr "Abrir perfil seleccionado"
+
+msgid "Start"
+msgstr "Inicio"
+
+msgid "End"
+msgstr "Fin"
+
+msgid "Please select a profile to edit."
+msgstr "Por favor, seleccione un perfil para editar."
+
+msgid "Edit Profile"
+msgstr "Editar perfil"
+
+msgid "Add New Profile"
+msgstr "Añadir nuevo perfil"
+
+msgid "Please select a profile to delete."
+msgstr "Por favor, seleccione un perfil para eliminar."
+
+msgid "Delete profile '{}'?"
+msgstr "¿Eliminar el perfil '{}'?"
+
+msgid "This action cannot be undone."
+msgstr "Esta acción no se puede deshacer."
+
+msgid "Profile '{}' and all its data were successfully deleted."
+msgstr "El perfil '{}' y todos sus datos se eliminaron correctamente."
+
+msgid "Error: Profile not found or already deleted."
+msgstr "Error: Perfil no encontrado o ya eliminado."
+
+msgid "Profile name cannot be empty!"
+msgstr "¡El nombre del perfil no puede estar vacío!"
+
+msgid "Profile '{}' added."
+msgstr "Perfil '{}' añadido."
+
+msgid "Profile '{}' updated."
+msgstr "Perfil '{}' actualizado."
+
+msgid "Profile Name (e.g., Family IPTV)"
+msgstr "Nombre del perfil (ej. IPTV Familia)"
+
+msgid "M3U URL"
+msgstr "URL M3U"
+
+msgid "M3U File"
+msgstr "Archivo M3U"
+
+msgid "Xtream Codes"
+msgstr "Xtream Codes"
+
+msgid "No file selected..."
+msgstr "Ningún archivo seleccionado..."
+
+msgid "Choose File..."
+msgstr "Elegir archivo..."
+
+msgid "Select M3U File"
+msgstr "Seleccionar archivo M3U"
+
+msgid "Host:"
+msgstr "Servidor (Host):"
+
+msgid "Username:"
+msgstr "Usuario:"
+
+msgid "Password:"
+msgstr "Contraseña:"
+
+msgid "External EPG URL (XMLTV, optional)"
+msgstr "URL EPG externa (XMLTV, opcional)"
+
+msgid "No icon folder selected..."
+msgstr "Ninguna carpeta de iconos seleccionada..."
+
+msgid "Choose Folder..."
+msgstr "Elegir carpeta..."
+
+msgid "Select Channel Icon Folder"
+msgstr "Seleccionar carpeta de iconos de canales"
+
+msgid "Profile Loading Error"
+msgstr "Error al cargar el perfil"
+
+# --- Player Controls ---
+msgid "Video"
+msgstr "Vídeo"
+
+msgid "Audio"
+msgstr "Audio"
+
+msgid "Mono"
+msgstr "Mono"
+
+msgid "Stereo"
+msgstr "Estéreo"
+
+msgid "{count} ch"
+msgstr "{count} canales"
+
+msgid "Stop Trailer and Go Back"
+msgstr "Detener tráiler y volver"
+
+msgid "Seek Backward (or Previous Track)"
+msgstr "Retroceder (o Pista Anterior)"
+
+msgid "Play/Pause"
+msgstr "Reproducir/Pausa"
+
+msgid "Seek Forward (or Next Track)"
+msgstr "Avanzar (o Pista Siguiente)"
+
+msgid "Record"
+msgstr "Grabar"
+
+msgid "Stop Recording"
+msgstr "Detener grabación"
+
+msgid "Start Recording"
+msgstr "Iniciar grabación"
+
+msgid "Past Broadcasts (Archive)"
+msgstr "Emisiones pasadas (Archivo)"
+
+msgid "Audio Equalizer"
+msgstr "Ecualizador de audio"
+
+msgid "Select Audio Track"
+msgstr "Seleccionar pista de audio"
+
+msgid "Subtitle Options"
+msgstr "Opciones de subtítulos"
+
+msgid "Volume Control"
+msgstr "Control de volumen"
+
+msgid "Toggle Fullscreen"
+msgstr "Alternar pantalla completa"
+
+msgid "Track {number}"
+msgstr "Pista {number}"
+
+msgid "Subtitle {number}"
+msgstr "Subtítulo {number}"
+
+# --- Detail Views (Movies/Series) ---
+msgid "Back"
+msgstr "Atrás"
+
+msgid "Back to Series List"
+msgstr "Volver a la lista de series"
+
+msgid "Back to Collections"
+msgstr "Volver a colecciones"
+
+msgid "Rating"
+msgstr "Puntuación"
+
+msgid "TMDb Rating"
+msgstr "Puntuación TMDb"
+
+msgid "Cast"
+msgstr "Reparto"
+
+msgid "Director"
+msgstr "Director"
+
+msgid "Creator/Director"
+msgstr "Creador/Director"
+
+msgid "Production Country"
+msgstr "País de producción"
+
+msgid "Release Date:"
+msgstr "Fecha de estreno:"
+
+msgid "First Aired:"
+msgstr "Primera emisión:"
+
+msgid "Year"
+msgstr "Año"
+
+msgid "PLAY"
+msgstr "REPRODUCIR"
+
+msgid "Watch Trailer"
+msgstr "Ver tráiler"
+
+msgid "Loading information..."
+msgstr "Cargando información..."
+
+msgid "Loading cast..."
+msgstr "Cargando reparto..."
+
+msgid "Plot information not found."
+msgstr "Sinopsis no encontrada."
+
+msgid "Detailed information not found."
+msgstr "Información detallada no encontrada."
+
+msgid "Detailed cast information not available."
+msgstr "Información detallada del reparto no disponible."
+
+msgid "Cast information not found."
+msgstr "Información del reparto no encontrada."
+
+msgid "Unknown Series"
+msgstr "Serie desconocida"
+
+msgid "Unknown Episode"
+msgstr "Episodio desconocido"
+
+msgid "Season"
+msgstr "Temporada"
+
+msgid "Season:"
+msgstr "Temporada:"
+
+msgid "No episodes found for this season."
+msgstr "No se encontraron episodios para esta temporada."
+
+msgid "Mark as Watched"
+msgstr "Marcar como visto"
+
+msgid "Mark as Unwatched"
+msgstr "Marcar como no visto"
+
+msgid "Next:"
+msgstr "Siguiente:"
+
+msgid "Skip Now"
+msgstr "Saltar"
+
+# --- Playback & Errors ---
+msgid "Resume from Saved Position"
+msgstr "Reanudar desde posición guardada"
+
+msgid "You last left this content at {}. Would you like to resume?"
+msgstr "Dejaste este contenido en {}. ¿Quieres reanudar?"
+
+msgid "Resume"
+msgstr "Reanudar"
+
+msgid "Start Over"
+msgstr "Empezar de nuevo"
+
+msgid "Trailer URL is being retrieved..."
+msgstr "Recuperando URL del tráiler..."
+
+msgid "Playing trailer..."
+msgstr "Reproduciendo tráiler..."
+
+msgid "Error: A valid trailer URL could not be retrieved."
+msgstr "Error: No se pudo recuperar una URL de tráiler válida."
+
+msgid "Playable URL not found for trailer."
+msgstr "URL reproducible no encontrada para el tráiler."
+
+msgid "Could not retrieve trailer (yt-dlp error)."
+msgstr "No se pudo recuperar el tráiler (error yt-dlp)."
+
+msgid "An unknown error occurred while retrieving the trailer."
+msgstr "Ocurrió un error desconocido al recuperar el tráiler."
+
+msgid "You last left this episode at {}. Would you like to resume?"
+msgstr "Dejaste este episodio en {}. ¿Quieres reanudar?"
+
+# --- Recording & Scheduling ---
+msgid "Recording started: {}"
+msgstr "Grabación iniciada: {}"
+
+msgid "Stopping recording... Saving file."
+msgstr "Deteniendo grabación... Guardando archivo."
+
+msgid "Add New Scheduled Recording"
+msgstr "Añadir nueva grabación programada"
+
+msgid "Bouquet"
+msgstr "Grupo"
+
+msgid "Select the bouquet for the channel to be recorded"
+msgstr "Seleccione el grupo del canal a grabar"
+
+msgid "Select Bouquet"
+msgstr "Seleccionar grupo"
+
+msgid "No bouquet selected..."
+msgstr "Ningún grupo seleccionado..."
+
+msgid "Select a bouquet first..."
+msgstr "Seleccione un grupo primero..."
+
+msgid "Channel"
+msgstr "Canal"
+
+msgid "Select the channel to be recorded"
+msgstr "Seleccione el canal a grabar"
+
+msgid "Select Channel"
+msgstr "Seleccionar canal"
+
+msgid "Please select a valid channel!"
+msgstr "¡Por favor, seleccione un canal válido!"
+
+msgid "Start Time"
+msgstr "Hora de inicio"
+
+msgid "End Time"
+msgstr "Hora de fin"
+
+msgid "Schedule Recording"
+msgstr "Programar grabación"
+
+msgid "Scheduled Tasks"
+msgstr "Tareas programadas"
+
+msgid "No scheduled recordings found."
+msgstr "No se encontraron grabaciones programadas."
+
+msgid "Status: {status}"
+msgstr "Estado: {status}"
+
+msgid "Recording scheduled successfully!"
+msgstr "¡Grabación programada con éxito!"
+
+msgid "Scheduled recording deleted."
+msgstr "Grabación programada eliminada."
+
+msgid "Confirm Removal from Recordings List"
+msgstr "Confirmar eliminación de la lista"
+
+msgid "The video record '{}' will be removed from the list.\n\nNote: Your original video file will NOT be deleted from disk.\n\nAre you sure?"
+msgstr "El registro de vídeo '{}' se eliminará de la lista.\n\nNota: Su archivo de vídeo original NO se borrará del disco.\n\n¿Está seguro?"
+
+msgid "Recording removed from list."
+msgstr "Grabación eliminada de la lista."
+
+# --- Subtitles ---
+msgid "Show Subtitles"
+msgstr "Mostrar subtítulos"
+
+msgid "Embedded Track"
+msgstr "Pista incrustada"
+
+msgid "Load from File"
+msgstr "Cargar desde archivo"
+
+msgid "Search Online"
+msgstr "Buscar en línea"
+
+msgid "Synchronization Adjust"
+msgstr "Ajuste de sincronización"
+
+msgid "Delay Subtitles (-100ms)"
+msgstr "Retrasar subtítulos (-100ms)"
+
+msgid "Advance Subtitles (+100ms)"
+msgstr "Adelantar subtítulos (+100ms)"
+
+msgid "Subtitle Settings"
+msgstr "Configuración de subtítulos"
+
+msgid "Font"
+msgstr "Fuente"
+
+msgid "Subtitle Font and Size"
+msgstr "Fuente y tamaño de subtítulos"
+
+msgid "Change..."
+msgstr "Cambiar..."
+
+msgid "Colors"
+msgstr "Colores"
+
+msgid "Font Color"
+msgstr "Color de fuente"
+
+msgid "Background"
+msgstr "Fondo"
+
+msgid "Background Color"
+msgstr "Color de fondo"
+
+msgid "Background Opacity"
+msgstr "Opacidad del fondo"
+
+msgid "Select Font"
+msgstr "Seleccionar fuente"
+
+msgid "Subtitle font set!"
+msgstr "¡Fuente de subtítulos establecida!"
+
+msgid "Subtitle color saved!"
+msgstr "¡Color de subtítulos guardado!"
+
+msgid "Background color saved!"
+msgstr "¡Color de fondo guardado!"
+
+msgid "Subtitle Search Results"
+msgstr "Resultados de búsqueda de subtítulos"
+
+msgid "No subtitles found."
+msgstr "No se encontraron subtítulos."
+
+msgid "Searching for subtitles for {}..."
+msgstr "Buscando subtítulos para {}..."
+
+msgid "Downloading '{0}'..."
+msgstr "Descargando '{0}'..."
+
+msgid "Subtitle loaded and enabled successfully."
+msgstr "Subtítulo cargado y activado correctamente."
+
+msgid "Please enter your OpenSubtitles API key from Settings first."
+msgstr "Por favor, introduzca primero su clave API de OpenSubtitles en Ajustes."
+
+msgid "Error: Content title/ID for subtitle search not found."
+msgstr "Error: Título/ID del contenido para búsqueda de subtítulos no encontrado."
+
+# --- Dialogs (Password, Move, Confirmations) ---
+msgid "Password Required"
+msgstr "Contraseña requerida"
+
+msgid "This item is locked. Please enter the password to continue."
+msgstr "Este elemento está bloqueado. Por favor, introduzca la contraseña para continuar."
+
+msgid "Cancel"
+msgstr "Cancelar"
+
+msgid "OK"
+msgstr "Aceptar"
+
+msgid "Save"
+msgstr "Guardar"
+
+msgid "Close"
+msgstr "Cerrar"
+
+msgid "Done"
+msgstr "Hecho"
+
+msgid "Remove"
+msgstr "Eliminar"
+
+msgid "Create"
+msgstr "Crear"
+
+msgid "Wrong Password!"
+msgstr "¡Contraseña incorrecta!"
+
+msgid "Change Application Password"
+msgstr "Cambiar contraseña de la aplicación"
+
+msgid "Please enter your old password and a new one."
+msgstr "Por favor, introduzca su antigua contraseña y una nueva."
+
+msgid "Set Application Password"
+msgstr "Establecer contraseña de la aplicación"
+
+msgid "Please enter a new password. This will be used to lock and unlock items."
+msgstr "Por favor, introduzca una nueva contraseña. Se usará para bloquear y desbloquear elementos."
+
+msgid "Old Password"
+msgstr "Contraseña antigua"
+
+msgid "New Password"
+msgstr "Contraseña nueva"
+
+msgid "Confirm New Password"
+msgstr "Confirmar contraseña nueva"
+
+msgid "Old password is not correct!"
+msgstr "¡La contraseña antigua no es correcta!"
+
+msgid "New password cannot be empty!"
+msgstr "¡La contraseña nueva no puede estar vacía!"
+
+msgid "Password saved successfully!"
+msgstr "¡Contraseña guardada con éxito!"
+
+msgid "New passwords do not match!"
+msgstr "¡Las contraseñas nuevas no coinciden!"
+
+msgid "Password Not Set"
+msgstr "Contraseña no establecida"
+
+msgid "To lock items, you must first set a master password for the application."
+msgstr "Para bloquear elementos, primero debe establecer una contraseña maestra para la aplicación."
+
+msgid "Set Password"
+msgstr "Establecer contraseña"
+
+msgid "Move Channel"
+msgstr "Mover canal"
+
+msgid "Up"
+msgstr "Arriba"
+
+msgid "Down"
+msgstr "Abajo"
+
+msgid "Confirm Deletion"
+msgstr "Confirmar eliminación"
+
+msgid "Are you sure you want to delete this favorite list? This action cannot be undone."
+msgstr "¿Está seguro de que desea eliminar esta lista de favoritos? Esta acción no se puede deshacer."
+
+msgid "Confirm Library Removal"
+msgstr "Confirmar eliminación de biblioteca"
+
+msgid "The library '{}' and all its media records will be removed from EngPlayer.\n\nNote: Your original files will NOT be deleted from disk.\n\nAre you sure?"
+msgstr "La biblioteca '{}' y todos sus registros multimedia se eliminarán de EngPlayer.\n\nNota: Sus archivos originales NO se borrarán del disco.\n\n¿Está seguro?"
+
+msgid "Library successfully removed."
+msgstr "Biblioteca eliminada con éxito."
+
+msgid "Confirm Media Record Removal"
+msgstr "Confirmar eliminación de registro multimedia"
+
+msgid "The record for '{}' will be removed from EngPlayer.\n\nNote: Your original file will NOT be deleted from disk.\n\nAre you sure?"
+msgstr "El registro de '{}' se eliminará de EngPlayer.\n\nNota: Su archivo original NO se borrará del disco.\n\n¿Está seguro?"
+
+msgid "Confirm Track Record Removal"
+msgstr "Confirmar eliminación de registro de pista"
+
+msgid "Confirm Deletion of Recording"
+msgstr "Confirmar eliminación de grabación"
+
+msgid "The video '{}' will be permanently deleted. This action cannot be undone.\n\nAre you sure?"
+msgstr "El vídeo '{}' se eliminará permanentemente. Esta acción no se puede deshacer.\n\n¿Está seguro?"
+
+msgid "Video deleted successfully."
+msgstr "Vídeo eliminado con éxito."
+
+# --- Catch-up ---
+msgid "Past Programs"
+msgstr "Programas pasados"
+
+msgid "No EPG data found for this channel."
+msgstr "No se encontraron datos EPG para este canal."
+
+msgid "No past programs found for the last {days} days."
+msgstr "No se encontraron programas pasados en los últimos {days} días."
+
+msgid "Today"
+msgstr "Hoy"
+
+msgid "Yesterday"
+msgstr "Ayer"
+
+# --- Context Menus ---
+msgid "Lock"
+msgstr "Bloquear"
+
+msgid "Delete List"
+msgstr "Eliminar lista"
+
+msgid "Unlock"
+msgstr "Desbloquear"
+
+msgid "Add to Favorites"
+msgstr "Añadir a Favoritos"
+
+msgid "Remove from"
+msgstr "Eliminar de"
+
+msgid "Add to"
+msgstr "Añadir a"
+
+msgid "New List..."
+msgstr "Nueva lista..."
+
+msgid "New Favorite List"
+msgstr "Nueva lista de favoritos"
+
+msgid "Please enter the name for the new list:"
+msgstr "Por favor, introduzca el nombre para la nueva lista:"
+
+msgid "Move..."
+msgstr "Mover..."
+
+msgid "Move List"
+msgstr "Mover lista"
+
+msgid "Unknown List"
+msgstr "Lista desconocida"
+
+msgid "Play as Picture-in-Picture"
+msgstr "Reproducir como Imagen en Imagen (PiP)"
+
+msgid "Remove Library"
+msgstr "Eliminar biblioteca"
+
+msgid "Remove from Records"
+msgstr "Eliminar de grabaciones"
+
+msgid "Remove Track from Library"
+msgstr "Eliminar pista de la biblioteca"
+
+msgid "Remove from List (Record Only)"
+msgstr "Eliminar de la lista (Solo registro)"
+
+msgid "Permanently Delete from Disk"
+msgstr "Eliminar permanentemente del disco"
+
+# --- Equalizer ---
+msgid "Presets"
+msgstr "Preajustes"
+
+msgid "Custom"
+msgstr "Personalizado"
+
+msgid "Reset (Flat)"
+msgstr "Restablecer (Plano)"
+
+msgid "Hip-Hop"
+msgstr "Hip-Hop"
+
+msgid "Pop"
+msgstr "Pop"
+
+msgid "Rock"
+msgstr "Rock"
+
+msgid "Jazz"
+msgstr "Jazz"
+
+msgid "Classical"
+msgstr "Clásica"
+
+msgid "Vocal"
+msgstr "Vocal"
+
+msgid "Reset"
+msgstr "Restablecer"
+
+# --- Image Viewer ---
+msgid "Select Background Music"
+msgstr "Seleccionar música de fondo"
+
+msgid "3 Seconds"
+msgstr "3 Segundos"
+
+msgid "5 Seconds"
+msgstr "5 Segundos"
+
+msgid "10 Seconds"
+msgstr "10 Segundos"
+
+msgid "Select music for slideshow"
+msgstr "Seleccionar música para la presentación"
+
+# --- Trakt & TMDb & OpenSubtitles Setup ---
+msgid "Please enter your TMDb API Key (v3 Auth)."
+msgstr "Por favor, introduzca su clave API de TMDb (v3 Auth)."
+
+msgid "Current: {} (Enter new key to change)"
+msgstr "Actual: {} (Introducir nueva clave para cambiar)"
+
+msgid "TMDb API Key saved successfully!"
+msgstr "¡Clave API de TMDb guardada con éxito!"
+
+msgid "Please enter your OpenSubtitles API Key.\nYou can get one from their website after registering."
+msgstr "Por favor, introduzca su clave API de OpenSubtitles.\nPuede obtener una en su sitio web tras registrarse."
+
+msgid "API Key"
+msgstr "Clave API"
+
+msgid "OpenSubtitles API Key saved successfully!"
+msgstr "¡Clave API de OpenSubtitles guardada con éxito!"
+
+msgid "Logged out from Trakt.tv account."
+msgstr "Desconectado de la cuenta de Trakt.tv."
+
+msgid "Opening browser to connect to Trakt.tv..."
+msgstr "Abriendo navegador para conectar a Trakt.tv..."
+
+msgid "Login Successful"
+msgstr "Inicio de sesión exitoso"
+
+msgid "You can return to EngPlayer. You may close this window."
+msgstr "Puede volver a EngPlayer. Puede cerrar esta ventana."
+
+msgid "Login Failed"
+msgstr "Inicio de sesión fallido"
+
+msgid "Could not retrieve code."
+msgstr "No se pudo recuperar el código."
+
+msgid "Login Failed: {}"
+msgstr "Inicio de sesión fallido: {}"
+
+msgid "Successfully connected to Trakt.tv account!"
+msgstr "¡Conectado con éxito a la cuenta de Trakt.tv!"
+
+msgid "Application Client ID is not set."
+msgstr "El ID de cliente de la aplicación no está configurado."
+
+msgid "Authentication could not be initiated."
+msgstr "No se pudo iniciar la autenticación."
+
+msgid "User not logged in."
+msgstr "Usuario no identificado."
+
+msgid "Invalid media type."
+msgstr "Tipo de medio no válido."
+
+# --- System / Files ---
+msgid "Select Media Folder"
+msgstr "Seleccionar carpeta de medios"
+
+msgid "Recordings folder set successfully!"
+msgstr "¡Carpeta de grabaciones establecida con éxito!"
+
+msgid "Select Cache Folder"
+msgstr "Seleccionar carpeta de caché"
+
+msgid "This is already the current cache location."
+msgstr "Esta ya es la ubicación actual de la caché."
+
+msgid "Error: A '{}' folder already exists at the destination!"
+msgstr "Error: ¡Ya existe una carpeta '{}' en el destino!"
+
+msgid "Moving cache... This might take a moment."
+msgstr "Moviendo caché... Esto puede tardar un momento."
+
+msgid "Error: Could not set cache folder!"
+msgstr "Error: ¡No se pudo establecer la carpeta de caché!"
+
+msgid "Cache cleared successfully!"
+msgstr "¡Caché borrada con éxito!"
+
+msgid "Error while clearing cache!"
+msgstr "¡Error al borrar la caché!"
+
+msgid "Cache is already empty."
+msgstr "La caché ya está vacía."
+
+msgid "Confirm Cache Deletion"
+msgstr "Confirmar borrado de caché"
+
+msgid "This will permanently delete all cached data (posters, thumbnails, etc.).\n\nThis action cannot be undone. Are you sure?"
+msgstr "Esto eliminará permanentemente todos los datos en caché (pósters, miniaturas, etc.).\n\nEsta acción no se puede deshacer. ¿Está seguro?"
+
+msgid "Please enter the password to clear the cache."
+msgstr "Por favor, introduzca la contraseña para borrar la caché."
+
+msgid "Notifications enabled."
+msgstr "Notificaciones activadas."
+
+msgid "Notifications disabled."
+msgstr "Notificaciones desactivadas."
+
+msgid "TMDb metadata usage enabled."
+msgstr "Uso de metadatos TMDb activado."
+
+msgid "Warning: You have not entered a TMDb API key yet."
+msgstr "Advertencia: Aún no ha introducido una clave API de TMDb."
+
+msgid "TMDb metadata usage disabled."
+msgstr "Uso de metadatos TMDb desactivado."
+
+msgid "Poster disk cache enabled."
+msgstr "Caché de disco para pósters activada."
+
+msgid "Poster disk cache disabled."
+msgstr "Caché de disco para pósters desactivada."
+
+# --- Keyboard Shortcuts ---
+msgid "Playback Controls"
+msgstr "Controles de reproducción"
+
+msgid "Play / Pause"
+msgstr "Reproducir / Pausa"
+
+msgid "Volume Down"
+msgstr "Bajar volumen"
+
+msgid "Volume Up"
+msgstr "Subir volumen"
+
+msgid "Mute / Unmute"
+msgstr "Silenciar / Activar sonido"
+
+msgid "Next Channel"
+msgstr "Canal siguiente"
+
+msgid "Previous Channel"
+msgstr "Canal anterior"
+
+msgid "General Controls"
+msgstr "Controles generales"
+
+msgid "Exit Fullscreen"
+msgstr "Salir de pantalla completa"
+
+# --- Search & Placeholders ---
+msgid "Search media library..."
+msgstr "Buscar en biblioteca multimedia..."
+
+msgid "Search bouquet..."
+msgstr "Buscar grupo..."
+
+msgid "Search channel..."
+msgstr "Buscar canal..."
+
+msgid "Search favorite list..."
+msgstr "Buscar lista de favoritos..."
+
+msgid "Show Locked Items"
+msgstr "Mostrar elementos bloqueados"
+
+msgid "This feature is only available for Xtream Codes profiles."
+msgstr "Esta función solo está disponible para perfiles Xtream Codes."
+
+msgid "Fetching series categories..."
+msgstr "Obteniendo categorías de series..."
+
+msgid "No VOD categories found."
+msgstr "No se encontraron categorías VOD."
+
+msgid "Series feature is under development..."
+msgstr "La función de series está en desarrollo..."
+
+msgid "Please select a category from the left."
+msgstr "Por favor, seleccione una categoría de la izquierda."
+
+msgid "No series categories found for this profile."
+msgstr "No se encontraron categorías de series para este perfil."
+
+msgid "Select Library Type"
+msgstr "Seleccionar tipo de biblioteca"
+
+msgid "Which type of media is in this folder?"
+msgstr "¿Qué tipo de medios hay en esta carpeta?"
+
+msgid "{} series categories found!"
+msgstr "¡{} categorías de series encontradas!"
+
+msgid "Could not fetch series categories or none found."
+msgstr "No se pudieron obtener categorías de series o no se encontraron."
+
+msgid "Successfully fetched {} series!"
+msgstr "¡{} series obtenidas con éxito!"
+
+msgid "Could not fetch series for this category."
+msgstr "No se pudieron obtener series para esta categoría."
+
+msgid "Could not fetch series info."
+msgstr "No se pudo obtener información de la serie."
+
+msgid "{} VOD categories found!"
+msgstr "¡{} categorías VOD encontradas!"
+
+msgid "Could not fetch VOD categories or none found."
+msgstr "No se pudieron obtener categorías VOD o no se encontraron."
+
+msgid "Successfully fetched {} VOD items for category {}!"
+msgstr "¡Obtenidos con éxito {} elementos VOD para la categoría {}!"
+
+msgid "{} VOD items listed."
+msgstr "{} contenidos VOD listados."
+
+msgid "Could not fetch VOD streams for this category."
+msgstr "No se pudieron obtener transmisiones VOD para esta categoría."
+
+msgid "Error: Data for this category not found in cache."
+msgstr "Error: Datos para esta categoría no encontrados en caché."
+
+msgid "Error: Could not get address for the next episode."
+msgstr "Error: No se pudo obtener la dirección para el siguiente episodio."
+
+msgid "Last episode of the season finished."
+msgstr "Último episodio de la temporada finalizado."
+
+msgid "Catch-up playback for M3U profiles is not yet fully supported."
+msgstr "La reproducción Catch-up para perfiles M3U aún no es totalmente compatible."
+
+msgid "Error: Could not create catch-up URL."
+msgstr "Error: No se pudo crear la URL de catch-up."
+
+msgid "Error: Program time information is missing."
+msgstr "Error: Falta información de la hora del programa."
+
+msgid "Error: Channel EPG ID not found."
+msgstr "Error: ID EPG del canal no encontrado."
+
+msgid "Error: Could not retrieve archive info for this channel or duration is invalid."
+msgstr "Error: No se pudo recuperar info de archivo para este canal o duración inválida."
+
+msgid "{} recordings found."
+msgstr "{} grabaciones encontradas."
+
+msgid "No channel found to record!"
+msgstr "¡No se encontró ningún canal para grabar!"
+
+msgid "Error: Could not start recording!"
+msgstr "Error: ¡No se pudo iniciar la grabación!"
+
+# --- EPG & Other ---
+msgid "No Title"
+msgstr "Sin título"
+
+msgid "Description not found."
+msgstr "Descripción no encontrada."
+
+msgid "Unknown Artist"
+msgstr "Artista desconocido"
+
+msgid "Could not extract album art: {}"
+msgstr "No se pudo extraer la carátula del álbum: {}"
+
+msgid "Starting library scan..."
+msgstr "Iniciando escaneo de biblioteca..."
+
+msgid "No libraries in the database to scan."
+msgstr "No hay bibliotecas en la base de datos para escanear."
+
+msgid "Scanning {} library at: {}"
+msgstr "Escaneando biblioteca {} en: {}"
+
+msgid "Could not read metadata from: {}"
+msgstr "No se pudieron leer metadatos de: {}"
+
+msgid "Could not process music file {}: {}"
+msgstr "No se pudo procesar archivo de música {}: {}"
+
+msgid "An error occurred during library scan: {}"
+msgstr "Ocurrió un error durante el escaneo de biblioteca: {}"
+
+msgid "Library scan finished."
+msgstr "Escaneo de biblioteca finalizado."
+
+msgid "Others"
+msgstr "Otros"
+
+# --- Recording Statuses ---
+msgid "Pending"
+msgstr "Pendiente"
+
+msgid "Recording"
+msgstr "Grabando"
+
+msgid "Completed"
+msgstr "Completado"
+
+msgid "Failed"
+msgstr "Fallido"
+
+# --- Recording Scheduler (New Features) ---
+msgid "Program Name"
+msgstr "Nombre del programa"
+
+msgid "Enter a custom name for the recording file"
+msgstr "Ingrese un nombre personalizado para el archivo de grabación"
+
+msgid "E.g. TV Show Name (Optional)"
+msgstr "P. ej., Nombre del programa (Opcional)"
+
+msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
+msgstr "Este producto utiliza la API de TMDb, pero no está respaldado ni certificado por TMDb."
+
+msgid ""
+"EngPlayer Software License Agreement\n"
+"Copyright © 2025 Engin Eren. All Rights Reserved.\n\n"
+"By downloading, installing, or using this software (\"EngPlayer\"), you agree to the following terms:\n\n"
+"1. LICENSE GRANT\n"
+"This software is distributed as \"FREEWARE\". It may be downloaded, installed, and executed for personal use free of charge.\n\n"
+"2. RESTRICTIONS ON PORTING\n"
+"Without prior written permission from the copyright holder, it is STRICTLY PROHIBITED to port, adapt, or modify this software for use on other operating systems (Windows, macOS, Android, etc.).\n\n"
+"3. COMMERCIAL PROHIBITION\n"
+"This software may NOT be sold, rented, or included in any paid software bundle by any person or entity other than the copyright holder.\n\n"
+"4. NO CONTENT PROVIDED (DISCLAIMER)\n"
+"This software is a media player only. EngPlayer does NOT provide, include, or distribute any playlists, IPTV channels, video streams, or digital content.\n"
+"- Users are solely responsible for providing their own content (M3U files, Xtream codes, local files).\n"
+"- The developer assumes no liability for the content viewed by the user or for any copyright violations resulting from user-added content.\n\n"
+"5. DISCLAIMER OF WARRANTY\n"
+"This software is provided \"AS IS\". The copyright holder cannot be held responsible for any damages arising from the use of this software."
+msgstr ""
+"Acuerdo de Licencia de Software EngPlayer\n"
+"Copyright © 2025 Engin Eren. Todos los derechos reservados.\n\n"
+"Al descargar, instalar o utilizar este software (\"EngPlayer\"), usted acepta los siguientes términos:\n\n"
+"1. CONCESIÓN DE LICENCIA\n"
+"Este software se distribuye como \"FREEWARE\". Puede descargarse, instalarse y ejecutarse gratuitamente para uso personal.\n\n"
+"2. RESTRICCIONES DE PORTABILIDAD\n"
+"Sin el permiso previo por escrito del titular de los derechos de autor, está ESTRICTAMENTE PROHIBIDO portar, adaptar o modificar este software para su uso en otros sistemas operativos (Windows, macOS, Android, etc.).\n\n"
+"3. PROHIBICIÓN COMERCIAL\n"
+"Este software NO puede ser vendido, alquilado ni incluido en ningún paquete de software de pago por ninguna persona o entidad que no sea el titular de los derechos de autor.\n\n"
+"4. NO SE PROPORCIONA CONTENIDO (DESCARGO DE RESPONSABILIDAD)\n"
+"Este software es solo un reproductor multimedia. EngPlayer NO proporciona, incluye ni distribuye listas de reproducción, canales IPTV, transmisiones de vídeo o contenido digital.\n"
+"- Los usuarios son los únicos responsables de proporcionar su propio contenido (archivos M3U, códigos Xtream, archivos locales).\n"
+"- El desarrollador no asume ninguna responsabilidad por el contenido visto por el usuario o por cualquier violación de derechos de autor resultante del contenido añadido por el usuario.\n\n"
+"5. RENUNCIA DE GARANTÍA\n"
+"Este software se proporciona \"TAL CUAL\". El titular de los derechos de autor no se hace responsable de los daños derivados del uso de este software."

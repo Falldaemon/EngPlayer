@@ -1,0 +1,1163 @@
+# EngPlayer Turkish Translation
+# Copyright (C) 2025 EngPlayer
+# This file is distributed under the same license as the EngPlayer package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: EngPlayer 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-23 12:00+0300\n"
+"PO-Revision-Date: 2025-11-23 12:05+0300\n"
+"Last-Translator: Engin Eren <enginneren@hotmail.com>\n"
+"Language-Team: Turkish <tr@li.org>\n"
+"Language: tr\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Poedit 3.0\n"
+
+# --- Main Window & General ---
+msgid "Eng Player"
+msgstr "Eng Player"
+
+msgid "Processing channels and VOD content..."
+msgstr "Kanallar ve VOD içerikleri işleniyor..."
+
+msgid "Channels loaded successfully!"
+msgstr "Kanallar başarıyla yüklendi!"
+
+msgid "Connection timed out."
+msgstr "Bağlantı zaman aşımına uğradı."
+
+msgid "Could not open stream"
+msgstr "Yayın açılamadı"
+
+msgid "Restart Required"
+msgstr "Yeniden Başlatma Gerekli"
+
+msgid "Theme settings have been saved.\n\nThe application will now restart for the changes to take effect."
+msgstr "Tema ayarları kaydedildi.\n\nDeğişikliklerin geçerli olması için uygulama şimdi yeniden başlatılacak."
+
+msgid "Restart Now"
+msgstr "Şimdi Yeniden Başlat"
+
+# --- Navigation & Sidebar ---
+msgid "Bouquets"
+msgstr "Buketler"
+
+msgid "Favorites"
+msgstr "Favoriler"
+
+msgid "VOD"
+msgstr "VOD"
+
+msgid "Series"
+msgstr "Diziler"
+
+msgid "Media"
+msgstr "Medya"
+
+msgid "Video Library"
+msgstr "Video Kütüphanesi"
+
+msgid "Picture Library"
+msgstr "Resim Kütüphanesi"
+
+msgid "Music Library"
+msgstr "Müzik Kütüphanesi"
+
+msgid "Refresh Library"
+msgstr "Kütüphaneyi Yenile"
+
+msgid "Add Source..."
+msgstr "Kaynak Ekle..."
+
+# --- Settings Menu ---
+msgid "Set/Change Password"
+msgstr "Parola Ayarla/Değiştir"
+
+msgid "Set TMDb API Key"
+msgstr "TMDb API Anahtarı Ayarla"
+
+msgid "Set OpenSubtitles API Key"
+msgstr "OpenSubtitles API Anahtarı Ayarla"
+
+msgid "Connect to Trakt.tv"
+msgstr "Trakt.tv'ye Bağlan"
+
+msgid "Disconnect from Trakt.tv"
+msgstr "Trakt.tv Bağlantısını Kes"
+
+msgid "Use TMDb Metadata"
+msgstr "TMDb Verilerini Kullan"
+
+msgid "Use Poster Cache"
+msgstr "Poster Önbelleğini Kullan"
+
+msgid "Saves posters to disk (loads faster)"
+msgstr "Posterleri diske kaydeder (daha hızlı yüklenir)"
+
+msgid "Theme"
+msgstr "Tema"
+
+msgid "System Theme"
+msgstr "Sistem Teması"
+
+msgid "Light"
+msgstr "Açık"
+
+msgid "Dark"
+msgstr "Koyu"
+
+msgid "Accent Color"
+msgstr "Vurgu Rengi"
+
+msgid "Notifications"
+msgstr "Bildirimler"
+
+msgid "Enable Notifications"
+msgstr "Bildirimleri Aç"
+
+msgid "Duration (Seconds)"
+msgstr "Süre (Saniye)"
+
+msgid "Change Recordings Folder"
+msgstr "Kayıt Klasörünü Değiştir"
+
+msgid "Change Cache Folder"
+msgstr "Önbellek Klasörünü Değiştir"
+
+msgid "Keyboard Shortcuts"
+msgstr "Klavye Kısayolları"
+
+msgid "Clear Cache"
+msgstr "Önbelleği Temizle"
+
+msgid "About EngPlayer"
+msgstr "EngPlayer Hakkında"
+
+msgid "Settings"
+msgstr "Ayarlar"
+
+msgid "Recording Scheduler"
+msgstr "Kayıt Zamanlayıcı"
+
+msgid "Recorded Videos"
+msgstr "Kaydedilen Videolar"
+
+# --- Profile Window ---
+msgid "Profile Selection"
+msgstr "Profil Seçimi"
+
+msgid "Please select a profile or create a new one."
+msgstr "Lütfen bir profil seçin veya yeni bir tane oluşturun."
+
+msgid "Loading..."
+msgstr "Yükleniyor..."
+
+msgid "Add New"
+msgstr "Yeni Ekle"
+
+msgid "Edit"
+msgstr "Düzenle"
+
+msgid "Delete"
+msgstr "Sil"
+
+msgid "Open Selected Profile"
+msgstr "Seçili Profili Aç"
+
+msgid "Start"
+msgstr "Başlangıç"
+
+msgid "End"
+msgstr "Bitiş"
+
+msgid "Please select a profile to edit."
+msgstr "Lütfen düzenlemek için bir profil seçin."
+
+msgid "Edit Profile"
+msgstr "Profili Düzenle"
+
+msgid "Add New Profile"
+msgstr "Yeni Profil Ekle"
+
+msgid "Please select a profile to delete."
+msgstr "Lütfen silmek için bir profil seçin."
+
+msgid "Delete profile '{}'?"
+msgstr "'{}' profili silinsin mi?"
+
+msgid "This action cannot be undone."
+msgstr "Bu işlem geri alınamaz."
+
+msgid "Profile '{}' and all its data were successfully deleted."
+msgstr "'{}' profili ve tüm verileri başarıyla silindi."
+
+msgid "Error: Profile not found or already deleted."
+msgstr "Hata: Profil bulunamadı veya zaten silinmiş."
+
+msgid "Profile name cannot be empty!"
+msgstr "Profil adı boş olamaz!"
+
+msgid "Profile '{}' added."
+msgstr "'{}' profili eklendi."
+
+msgid "Profile '{}' updated."
+msgstr "'{}' profili güncellendi."
+
+msgid "Profile Name (e.g., Family IPTV)"
+msgstr "Profil Adı (Örn: Ev IPTV)"
+
+msgid "M3U URL"
+msgstr "M3U Bağlantısı (URL)"
+
+msgid "M3U File"
+msgstr "M3U Dosyası"
+
+msgid "Xtream Codes"
+msgstr "Xtream Codes"
+
+msgid "No file selected..."
+msgstr "Dosya seçilmedi..."
+
+msgid "Choose File..."
+msgstr "Dosya Seç..."
+
+msgid "Select M3U File"
+msgstr "M3U Dosyası Seçin"
+
+msgid "Host:"
+msgstr "Sunucu (Host):"
+
+msgid "Username:"
+msgstr "Kullanıcı Adı:"
+
+msgid "Password:"
+msgstr "Parola:"
+
+msgid "External EPG URL (XMLTV, optional)"
+msgstr "Harici EPG URL (XMLTV, isteğe bağlı)"
+
+msgid "No icon folder selected..."
+msgstr "Simge klasörü seçilmedi..."
+
+msgid "Choose Folder..."
+msgstr "Klasör Seç..."
+
+msgid "Select Channel Icon Folder"
+msgstr "Kanal Logoları Klasörünü Seçin"
+
+msgid "Profile Loading Error"
+msgstr "Profil Yükleme Hatası"
+
+# --- Player Controls ---
+msgid "Video"
+msgstr "Video"
+
+msgid "Audio"
+msgstr "Ses"
+
+msgid "Mono"
+msgstr "Mono"
+
+msgid "Stereo"
+msgstr "Stereo"
+
+msgid "{count} ch"
+msgstr "{count} kn"
+
+msgid "Stop Trailer and Go Back"
+msgstr "Fragmanı Durdur ve Geri Dön"
+
+msgid "Seek Backward (or Previous Track)"
+msgstr "Geri Sar (veya Önceki Parça)"
+
+msgid "Play/Pause"
+msgstr "Oynat/Duraklat"
+
+msgid "Seek Forward (or Next Track)"
+msgstr "İleri Sar (veya Sonraki Parça)"
+
+msgid "Record"
+msgstr "Kaydet"
+
+msgid "Stop Recording"
+msgstr "Kaydı Durdur"
+
+msgid "Start Recording"
+msgstr "Kaydı Başlat"
+
+msgid "Past Broadcasts (Archive)"
+msgstr "Geçmiş Yayınlar (Arşiv)"
+
+msgid "Audio Equalizer"
+msgstr "Ses Ekolayzeri"
+
+msgid "Select Audio Track"
+msgstr "Ses İzi Seç"
+
+msgid "Subtitle Options"
+msgstr "Altyazı Seçenekleri"
+
+msgid "Volume Control"
+msgstr "Ses Kontrolü"
+
+msgid "Toggle Fullscreen"
+msgstr "Tam Ekran Yap/Çık"
+
+msgid "Track {number}"
+msgstr "Parça {number}"
+
+msgid "Subtitle {number}"
+msgstr "Altyazı {number}"
+
+# --- Detail Views (Movies/Series) ---
+msgid "Back"
+msgstr "Geri"
+
+msgid "Back to Series List"
+msgstr "Dizi Listesine Dön"
+
+msgid "Back to Collections"
+msgstr "Koleksiyonlara Dön"
+
+msgid "Rating"
+msgstr "Puan"
+
+msgid "TMDb Rating"
+msgstr "TMDb Puanı"
+
+msgid "Cast"
+msgstr "Oyuncular"
+
+msgid "Director"
+msgstr "Yönetmen"
+
+msgid "Creator/Director"
+msgstr "Yaratıcı/Yönetmen"
+
+msgid "Production Country"
+msgstr "Yapım Yeri"
+
+msgid "Release Date:"
+msgstr "Yayın Tarihi:"
+
+msgid "First Aired:"
+msgstr "İlk Yayın:"
+
+msgid "Year"
+msgstr "Yıl"
+
+msgid "PLAY"
+msgstr "OYNAT"
+
+msgid "Watch Trailer"
+msgstr "Fragmanı İzle"
+
+msgid "Loading information..."
+msgstr "Bilgiler yükleniyor..."
+
+msgid "Loading cast..."
+msgstr "Oyuncular yükleniyor..."
+
+msgid "Plot information not found."
+msgstr "Konu bilgisi bulunamadı."
+
+msgid "Detailed information not found."
+msgstr "Detaylı bilgi bulunamadı."
+
+msgid "Detailed cast information not available."
+msgstr "Detaylı oyuncu bilgisi mevcut değil."
+
+msgid "Cast information not found."
+msgstr "Oyuncu bilgisi bulunamadı."
+
+msgid "Unknown Series"
+msgstr "Bilinmeyen Dizi"
+
+msgid "Unknown Episode"
+msgstr "Bilinmeyen Bölüm"
+
+msgid "Season"
+msgstr "Sezon"
+
+msgid "Season:"
+msgstr "Sezon:"
+
+msgid "No episodes found for this season."
+msgstr "Bu sezon için bölüm bulunamadı."
+
+msgid "Mark as Watched"
+msgstr "İzlendi Olarak İşaretle"
+
+msgid "Mark as Unwatched"
+msgstr "İzlenmedi Olarak İşaretle"
+
+msgid "Next:"
+msgstr "Sıradaki:"
+
+msgid "Skip Now"
+msgstr "Atla"
+
+# --- Playback & Errors ---
+msgid "Resume from Saved Position"
+msgstr "Kaldığınız Yerden Devam Edin"
+
+msgid "You last left this content at {}. Would you like to resume?"
+msgstr "Bu içeriği en son {} konumunda bıraktınız. Devam etmek ister misiniz?"
+
+msgid "Resume"
+msgstr "Devam Et"
+
+msgid "Start Over"
+msgstr "Baştan Başla"
+
+msgid "Trailer URL is being retrieved..."
+msgstr "Fragman bağlantısı alınıyor..."
+
+msgid "Playing trailer..."
+msgstr "Fragman oynatılıyor..."
+
+msgid "Error: A valid trailer URL could not be retrieved."
+msgstr "Hata: Geçerli bir fragman bağlantısı alınamadı."
+
+msgid "Playable URL not found for trailer."
+msgstr "Fragman için oynatılabilir bağlantı bulunamadı."
+
+msgid "Could not retrieve trailer (yt-dlp error)."
+msgstr "Fragman alınamadı (yt-dlp hatası)."
+
+msgid "An unknown error occurred while retrieving the trailer."
+msgstr "Fragman alınırken bilinmeyen bir hata oluştu."
+
+msgid "You last left this episode at {}. Would you like to resume?"
+msgstr "Bu bölümü en son {} konumunda bıraktınız. Devam etmek ister misiniz?"
+
+# --- Recording & Scheduling ---
+msgid "Recording started: {}"
+msgstr "Kayıt başladı: {}"
+
+msgid "Stopping recording... Saving file."
+msgstr "Kayıt durduruluyor... Dosya kaydediliyor."
+
+msgid "Add New Scheduled Recording"
+msgstr "Yeni Kayıt Zamanla"
+
+msgid "Bouquet"
+msgstr "Buket"
+
+msgid "Select the bouquet for the channel to be recorded"
+msgstr "Kaydedilecek kanalın bulunduğu buketi seçin"
+
+msgid "Select Bouquet"
+msgstr "Buket Seç"
+
+msgid "No bouquet selected..."
+msgstr "Buket seçilmedi..."
+
+msgid "Select a bouquet first..."
+msgstr "Önce bir buket seçin..."
+
+msgid "Channel"
+msgstr "Kanal"
+
+msgid "Select the channel to be recorded"
+msgstr "Kaydedilecek kanalı seçin"
+
+msgid "Select Channel"
+msgstr "Kanal Seç"
+
+msgid "Please select a valid channel!"
+msgstr "Lütfen geçerli bir kanal seçin!"
+
+msgid "Start Time"
+msgstr "Başlangıç Saati"
+
+msgid "End Time"
+msgstr "Bitiş Saati"
+
+msgid "Schedule Recording"
+msgstr "Kaydı Zamanla"
+
+msgid "Scheduled Tasks"
+msgstr "Zamanlanmış Görevler"
+
+msgid "No scheduled recordings found."
+msgstr "Zamanlanmış kayıt bulunamadı."
+
+msgid "Status: {status}"
+msgstr "Durum: {status}"
+
+msgid "Recording scheduled successfully!"
+msgstr "Kayıt başarıyla zamanlandı!"
+
+msgid "Scheduled recording deleted."
+msgstr "Zamanlanmış kayıt silindi."
+
+msgid "Confirm Removal from Recordings List"
+msgstr "Kayıtlar Listesinden Kaldırmayı Onayla"
+
+msgid "The video record '{}' will be removed from the list.\n\nNote: Your original video file will NOT be deleted from disk.\n\nAre you sure?"
+msgstr "'{}' video kaydı listeden kaldırılacak.\n\nNot: Orijinal video dosyanız diskten SİLİNMEYECEKTİR.\n\nEmin misiniz?"
+
+msgid "Recording removed from list."
+msgstr "Kayıt listeden kaldırıldı."
+
+# --- Subtitles ---
+msgid "Show Subtitles"
+msgstr "Altyazıları Göster"
+
+msgid "Embedded Track"
+msgstr "Gömülü İz"
+
+msgid "Load from File"
+msgstr "Dosyadan Yükle"
+
+msgid "Search Online"
+msgstr "Çevrimiçi Ara"
+
+msgid "Synchronization Adjust"
+msgstr "Senkronizasyon Ayarı"
+
+msgid "Delay Subtitles (-100ms)"
+msgstr "Altyazıyı Geciktir (-100ms)"
+
+msgid "Advance Subtitles (+100ms)"
+msgstr "Altyazıyı İletlet (+100ms)"
+
+msgid "Subtitle Settings"
+msgstr "Altyazı Ayarları"
+
+msgid "Font"
+msgstr "Yazı Tipi"
+
+msgid "Subtitle Font and Size"
+msgstr "Altyazı Yazı Tipi ve Boyutu"
+
+msgid "Change..."
+msgstr "Değiştir..."
+
+msgid "Colors"
+msgstr "Renkler"
+
+msgid "Font Color"
+msgstr "Yazı Rengi"
+
+msgid "Background"
+msgstr "Arka Plan"
+
+msgid "Background Color"
+msgstr "Arka Plan Rengi"
+
+msgid "Background Opacity"
+msgstr "Arka Plan Şeffaflığı"
+
+msgid "Select Font"
+msgstr "Yazı Tipi Seç"
+
+msgid "Subtitle font set!"
+msgstr "Altyazı yazı tipi ayarlandı!"
+
+msgid "Subtitle color saved!"
+msgstr "Altyazı rengi kaydedildi!"
+
+msgid "Background color saved!"
+msgstr "Arka plan rengi kaydedildi!"
+
+msgid "Subtitle Search Results"
+msgstr "Altyazı Arama Sonuçları"
+
+msgid "No subtitles found."
+msgstr "Altyazı bulunamadı."
+
+msgid "Searching for subtitles for {}..."
+msgstr "{} için altyazı aranıyor..."
+
+msgid "Downloading '{0}'..."
+msgstr "'{0}' indiriliyor..."
+
+msgid "Subtitle loaded and enabled successfully."
+msgstr "Altyazı başarıyla yüklendi ve etkinleştirildi."
+
+msgid "Please enter your OpenSubtitles API key from Settings first."
+msgstr "Lütfen önce Ayarlar'dan OpenSubtitles API anahtarınızı girin."
+
+msgid "Error: Content title/ID for subtitle search not found."
+msgstr "Hata: Altyazı araması için içerik başlığı/ID'si bulunamadı."
+
+# --- Dialogs (Password, Move, Confirmations) ---
+msgid "Password Required"
+msgstr "Parola Gerekli"
+
+msgid "This item is locked. Please enter the password to continue."
+msgstr "Bu öğe kilitli. Devam etmek için lütfen parolayı girin."
+
+msgid "Cancel"
+msgstr "İptal"
+
+msgid "OK"
+msgstr "Tamam"
+
+msgid "Save"
+msgstr "Kaydet"
+
+msgid "Close"
+msgstr "Kapat"
+
+msgid "Done"
+msgstr "Bitti"
+
+msgid "Remove"
+msgstr "Kaldır"
+
+msgid "Create"
+msgstr "Oluştur"
+
+msgid "Wrong Password!"
+msgstr "Hatalı Parola!"
+
+msgid "Change Application Password"
+msgstr "Uygulama Parolasını Değiştir"
+
+msgid "Please enter your old password and a new one."
+msgstr "Lütfen eski parolanızı ve yeni parolanızı girin."
+
+msgid "Set Application Password"
+msgstr "Uygulama Parolası Belirle"
+
+msgid "Please enter a new password. This will be used to lock and unlock items."
+msgstr "Lütfen yeni bir parola girin. Bu, öğeleri kilitlemek ve açmak için kullanılacaktır."
+
+msgid "Old Password"
+msgstr "Eski Parola"
+
+msgid "New Password"
+msgstr "Yeni Parola"
+
+msgid "Confirm New Password"
+msgstr "Yeni Parolayı Onayla"
+
+msgid "Old password is not correct!"
+msgstr "Eski parola doğru değil!"
+
+msgid "New password cannot be empty!"
+msgstr "Yeni parola boş olamaz!"
+
+msgid "Password saved successfully!"
+msgstr "Parola başarıyla kaydedildi!"
+
+msgid "New passwords do not match!"
+msgstr "Yeni parolalar eşleşmiyor!"
+
+msgid "Password Not Set"
+msgstr "Parola Ayarlanmamış"
+
+msgid "To lock items, you must first set a master password for the application."
+msgstr "Öğeleri kilitlemek için önce uygulama için bir ana parola belirlemelisiniz."
+
+msgid "Set Password"
+msgstr "Parola Belirle"
+
+msgid "Move Channel"
+msgstr "Kanalı Taşı"
+
+msgid "Up"
+msgstr "Yukarı"
+
+msgid "Down"
+msgstr "Aşağı"
+
+msgid "Confirm Deletion"
+msgstr "Silmeyi Onayla"
+
+msgid "Are you sure you want to delete this favorite list? This action cannot be undone."
+msgstr "Bu favori listesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz."
+
+msgid "Confirm Library Removal"
+msgstr "Kütüphane Kaldırmayı Onayla"
+
+msgid "The library '{}' and all its media records will be removed from EngPlayer.\n\nNote: Your original files will NOT be deleted from disk.\n\nAre you sure?"
+msgstr "'{}' kütüphanesi ve tüm medya kayıtları EngPlayer'dan kaldırılacak.\n\nNot: Orijinal dosyalarınız diskten SİLİNMEYECEKTİR.\n\nEmin misiniz?"
+
+msgid "Library successfully removed."
+msgstr "Kütüphane başarıyla kaldırıldı."
+
+msgid "Confirm Media Record Removal"
+msgstr "Medya Kaydı Silmeyi Onayla"
+
+msgid "The record for '{}' will be removed from EngPlayer.\n\nNote: Your original file will NOT be deleted from disk.\n\nAre you sure?"
+msgstr "'{}' kaydı EngPlayer'dan kaldırılacak.\n\nNot: Orijinal dosyanız diskten SİLİNMEYECEKTİR.\n\nEmin misiniz?"
+
+msgid "Confirm Track Record Removal"
+msgstr "Parça Kaydı Silmeyi Onayla"
+
+msgid "Confirm Deletion of Recording"
+msgstr "Kayıt Silmeyi Onayla"
+
+msgid "The video '{}' will be permanently deleted. This action cannot be undone.\n\nAre you sure?"
+msgstr "'{}' videosu kalıcı olarak silinecek. Bu işlem geri alınamaz.\n\nEmin misiniz?"
+
+msgid "Video deleted successfully."
+msgstr "Video başarıyla silindi."
+
+# --- Catch-up ---
+msgid "Past Programs"
+msgstr "Geçmiş Programlar"
+
+msgid "No EPG data found for this channel."
+msgstr "Bu kanal için EPG verisi bulunamadı."
+
+msgid "No past programs found for the last {days} days."
+msgstr "Son {days} gün için geçmiş program bulunamadı."
+
+msgid "Today"
+msgstr "Bugün"
+
+msgid "Yesterday"
+msgstr "Dün"
+
+# --- Context Menus ---
+msgid "Lock"
+msgstr "Kilitle"
+
+msgid "Delete List"
+msgstr "Listeyi Sil"
+
+msgid "Unlock"
+msgstr "Kilidi Aç"
+
+msgid "Add to Favorites"
+msgstr "Favorilere Ekle"
+
+msgid "Remove from"
+msgstr "Şuradan kaldır:"
+
+msgid "Add to"
+msgstr "Şuna ekle:"
+
+msgid "New List..."
+msgstr "Yeni Liste..."
+
+msgid "New Favorite List"
+msgstr "Yeni Favori Listesi"
+
+msgid "Please enter the name for the new list:"
+msgstr "Lütfen yeni listenin adını girin:"
+
+msgid "Move..."
+msgstr "Taşı..."
+
+msgid "Move List"
+msgstr "Listeyi Taşı"
+
+msgid "Unknown List"
+msgstr "Bilinmeyen Liste"
+
+msgid "Play as Picture-in-Picture"
+msgstr "Resim içinde Resim Olarak Oynat (PiP)"
+
+msgid "Remove Library"
+msgstr "Kütüphaneyi Kaldır"
+
+msgid "Remove from Records"
+msgstr "Kayıtlardan Kaldır"
+
+msgid "Remove Track from Library"
+msgstr "Parçayı Kütüphaneden Kaldır"
+
+msgid "Remove from List (Record Only)"
+msgstr "Listeden Kaldır (Sadece Kayıt)"
+
+msgid "Permanently Delete from Disk"
+msgstr "Diskten Kalıcı Olarak Sil"
+
+# --- Equalizer ---
+msgid "Presets"
+msgstr "Hazır Ayarlar"
+
+msgid "Custom"
+msgstr "Özel"
+
+msgid "Reset (Flat)"
+msgstr "Sıfırla (Düz)"
+
+msgid "Hip-Hop"
+msgstr "Hip-Hop"
+
+msgid "Pop"
+msgstr "Pop"
+
+msgid "Rock"
+msgstr "Rock"
+
+msgid "Jazz"
+msgstr "Caz"
+
+msgid "Classical"
+msgstr "Klasik"
+
+msgid "Vocal"
+msgstr "Vokal"
+
+msgid "Reset"
+msgstr "Sıfırla"
+
+# --- Image Viewer ---
+msgid "Select Background Music"
+msgstr "Arka Plan Müziği Seç"
+
+msgid "3 Seconds"
+msgstr "3 Saniye"
+
+msgid "5 Seconds"
+msgstr "5 Saniye"
+
+msgid "10 Seconds"
+msgstr "10 Saniye"
+
+msgid "Select music for slideshow"
+msgstr "Slayt gösterisi için müzik seç"
+
+# --- Trakt & TMDb & OpenSubtitles Setup ---
+msgid "Please enter your TMDb API Key (v3 Auth)."
+msgstr "Lütfen TMDb API Anahtarınızı (v3 Auth) girin."
+
+msgid "Current: {} (Enter new key to change)"
+msgstr "Mevcut: {} (Değiştirmek için yeni anahtar girin)"
+
+msgid "TMDb API Key saved successfully!"
+msgstr "TMDb API Anahtarı başarıyla kaydedildi!"
+
+msgid "Please enter your OpenSubtitles API Key.\nYou can get one from their website after registering."
+msgstr "Lütfen OpenSubtitles API Anahtarınızı girin.\nKayıt olduktan sonra web sitelerinden alabilirsiniz."
+
+msgid "API Key"
+msgstr "API Anahtarı"
+
+msgid "OpenSubtitles API Key saved successfully!"
+msgstr "OpenSubtitles API Anahtarı başarıyla kaydedildi!"
+
+msgid "Logged out from Trakt.tv account."
+msgstr "Trakt.tv hesabından çıkış yapıldı."
+
+msgid "Opening browser to connect to Trakt.tv..."
+msgstr "Trakt.tv'ye bağlanmak için tarayıcı açılıyor..."
+
+msgid "Login Successful"
+msgstr "Giriş Başarılı"
+
+msgid "You can return to EngPlayer. You may close this window."
+msgstr "EngPlayer'a dönebilirsiniz. Bu pencereyi kapatabilirsiniz."
+
+msgid "Login Failed"
+msgstr "Giriş Başarısız"
+
+msgid "Could not retrieve code."
+msgstr "Kod alınamadı."
+
+msgid "Login Failed: {}"
+msgstr "Giriş Başarısız: {}"
+
+msgid "Successfully connected to Trakt.tv account!"
+msgstr "Trakt.tv hesabına başarıyla bağlanıldı!"
+
+msgid "Application Client ID is not set."
+msgstr "Uygulama İstemci Kimliği (Client ID) ayarlanmamış."
+
+msgid "Authentication could not be initiated."
+msgstr "Kimlik doğrulama başlatılamadı."
+
+msgid "User not logged in."
+msgstr "Kullanıcı giriş yapmamış."
+
+msgid "Invalid media type."
+msgstr "Geçersiz medya türü."
+
+# --- System / Files ---
+msgid "Select Media Folder"
+msgstr "Medya Klasörü Seç"
+
+msgid "Recordings folder set successfully!"
+msgstr "Kayıt klasörü başarıyla ayarlandı!"
+
+msgid "Select Cache Folder"
+msgstr "Önbellek Klasörü Seç"
+
+msgid "This is already the current cache location."
+msgstr "Bu zaten mevcut önbellek konumu."
+
+msgid "Error: A '{}' folder already exists at the destination!"
+msgstr "Hata: Hedefte zaten bir '{}' klasörü var!"
+
+msgid "Moving cache... This might take a moment."
+msgstr "Önbellek taşınıyor... Bu biraz zaman alabilir."
+
+msgid "Error: Could not set cache folder!"
+msgstr "Hata: Önbellek klasörü ayarlanamadı!"
+
+msgid "Cache cleared successfully!"
+msgstr "Önbellek başarıyla temizlendi!"
+
+msgid "Error while clearing cache!"
+msgstr "Önbellek temizlenirken hata oluştu!"
+
+msgid "Cache is already empty."
+msgstr "Önbellek zaten boş."
+
+msgid "Confirm Cache Deletion"
+msgstr "Önbellek Silmeyi Onayla"
+
+msgid "This will permanently delete all cached data (posters, thumbnails, etc.).\n\nThis action cannot be undone. Are you sure?"
+msgstr "Bu işlem tüm önbelleğe alınmış verileri (posterler, küçük resimler vb.) kalıcı olarak silecektir.\n\nBu işlem geri alınamaz. Emin misiniz?"
+
+msgid "Please enter the password to clear the cache."
+msgstr "Önbelleği temizlemek için lütfen parolayı girin."
+
+msgid "Notifications enabled."
+msgstr "Bildirimler etkinleştirildi."
+
+msgid "Notifications disabled."
+msgstr "Bildirimler devre dışı bırakıldı."
+
+msgid "TMDb metadata usage enabled."
+msgstr "TMDb veri kullanımı etkinleştirildi."
+
+msgid "Warning: You have not entered a TMDb API key yet."
+msgstr "Uyarı: Henüz bir TMDb API anahtarı girmediniz."
+
+msgid "TMDb metadata usage disabled."
+msgstr "TMDb veri kullanımı devre dışı bırakıldı."
+
+msgid "Poster disk cache enabled."
+msgstr "Poster disk önbelleği etkinleştirildi."
+
+msgid "Poster disk cache disabled."
+msgstr "Poster disk önbelleği devre dışı bırakıldı."
+
+# --- Keyboard Shortcuts ---
+msgid "Playback Controls"
+msgstr "Oynatma Kontrolleri"
+
+msgid "Play / Pause"
+msgstr "Oynat / Duraklat"
+
+msgid "Volume Down"
+msgstr "Sesi Kıs"
+
+msgid "Volume Up"
+msgstr "Sesi Aç"
+
+msgid "Mute / Unmute"
+msgstr "Sesi Kapat / Aç"
+
+msgid "Next Channel"
+msgstr "Sonraki Kanal"
+
+msgid "Previous Channel"
+msgstr "Önceki Kanal"
+
+msgid "General Controls"
+msgstr "Genel Kontroller"
+
+msgid "Exit Fullscreen"
+msgstr "Tam Ekrandan Çık"
+
+# --- Search & Placeholders ---
+msgid "Search media library..."
+msgstr "Medya kütüphanesinde ara..."
+
+msgid "Search bouquet..."
+msgstr "Buket ara..."
+
+msgid "Search channel..."
+msgstr "Kanal ara..."
+
+msgid "Search favorite list..."
+msgstr "Favori listesi ara..."
+
+msgid "Show Locked Items"
+msgstr "Kilitli Öğeleri Göster"
+
+msgid "This feature is only available for Xtream Codes profiles."
+msgstr "Bu özellik sadece Xtream Codes profilleri için kullanılabilir."
+
+msgid "Fetching series categories..."
+msgstr "Dizi kategorileri alınıyor..."
+
+msgid "No VOD categories found."
+msgstr "VOD kategorisi bulunamadı."
+
+msgid "Series feature is under development..."
+msgstr "Diziler özelliği geliştirme aşamasındadır..."
+
+msgid "Please select a category from the left."
+msgstr "Lütfen soldan bir kategori seçin."
+
+msgid "No series categories found for this profile."
+msgstr "Bu profil için dizi kategorisi bulunamadı."
+
+msgid "Select Library Type"
+msgstr "Kütüphane Türünü Seç"
+
+msgid "Which type of media is in this folder?"
+msgstr "Bu klasörde ne tür medya var?"
+
+msgid "{} series categories found!"
+msgstr "{} dizi kategorisi bulundu!"
+
+msgid "Could not fetch series categories or none found."
+msgstr "Dizi kategorileri alınamadı veya hiç bulunamadı."
+
+msgid "Successfully fetched {} series!"
+msgstr "{} dizi başarıyla alındı!"
+
+msgid "Could not fetch series for this category."
+msgstr "Bu kategori için diziler alınamadı."
+
+msgid "Could not fetch series info."
+msgstr "Dizi bilgileri alınamadı."
+
+msgid "{} VOD categories found!"
+msgstr "{} VOD kategorisi bulundu!"
+
+msgid "Could not fetch VOD categories or none found."
+msgstr "VOD kategorileri alınamadı veya hiç bulunamadı."
+
+msgid "Successfully fetched {} VOD items for category {}!"
+msgstr "{} kategorisi için {} VOD ögesi başarıyla alındı!"
+
+msgid "{} VOD items listed."
+msgstr "{} VOD içerik listelendi."
+
+msgid "Could not fetch VOD streams for this category."
+msgstr "Bu kategori için VOD akışları alınamadı."
+
+msgid "Error: Data for this category not found in cache."
+msgstr "Hata: Bu kategoriye ait veri önbellekte bulunamadı."
+
+msgid "Error: Could not get address for the next episode."
+msgstr "Hata: Sonraki bölüm için adres alınamadı."
+
+msgid "Last episode of the season finished."
+msgstr "Sezonun son bölümü bitti."
+
+msgid "Catch-up playback for M3U profiles is not yet fully supported."
+msgstr "M3U profilleri için Catch-up (Geriye Dönük İzleme) henüz tam desteklenmiyor."
+
+msgid "Error: Could not create catch-up URL."
+msgstr "Hata: Catch-up URL'si oluşturulamadı."
+
+msgid "Error: Program time information is missing."
+msgstr "Hata: Program zaman bilgisi eksik."
+
+msgid "Error: Channel EPG ID not found."
+msgstr "Hata: Kanal EPG ID'si bulunamadı."
+
+msgid "Error: Could not retrieve archive info for this channel or duration is invalid."
+msgstr "Hata: Bu kanal için arşiv bilgisi alınamadı veya süre geçersiz."
+
+msgid "{} recordings found."
+msgstr "{} kayıt bulundu."
+
+msgid "No channel found to record!"
+msgstr "Kaydedilecek kanal bulunamadı!"
+
+msgid "Error: Could not start recording!"
+msgstr "Hata: Kayıt başlatılamadı!"
+
+# --- EPG & Other ---
+msgid "No Title"
+msgstr "Başlık Yok"
+
+msgid "Description not found."
+msgstr "Açıklama bulunamadı."
+
+msgid "Unknown Artist"
+msgstr "Bilinmeyen Sanatçı"
+
+msgid "Could not extract album art: {}"
+msgstr "Albüm kapağı çıkarılamadı: {}"
+
+msgid "Starting library scan..."
+msgstr "Kütüphane taraması başlatılıyor..."
+
+msgid "No libraries in the database to scan."
+msgstr "Veritabanında taranacak kütüphane yok."
+
+msgid "Scanning {} library at: {}"
+msgstr "{}: konumundaki {} kütüphanesi taranıyor"
+
+msgid "Could not read metadata from: {}"
+msgstr "Meta verisi okunamadı: {}"
+
+msgid "Could not process music file {}: {}"
+msgstr "Müzik dosyası işlenemedi {}: {}"
+
+msgid "An error occurred during library scan: {}"
+msgstr "Kütüphane taraması sırasında hata oluştu: {}"
+
+msgid "Library scan finished."
+msgstr "Kütüphane taraması tamamlandı."
+
+msgid "Others"
+msgstr "Diğerleri"
+
+# --- Recording Statuses ---
+msgid "Pending"
+msgstr "Bekliyor"
+
+msgid "Recording"
+msgstr "Kaydediliyor"
+
+msgid "Completed"
+msgstr "Tamamlandı"
+
+msgid "Failed"
+msgstr "Başarısız"
+
+# --- Recording Scheduler (New Features) ---
+msgid "Program Name"
+msgstr "Program Adı"
+
+msgid "Enter a custom name for the recording file"
+msgstr "Kayıt dosyası için özel bir isim girin"
+
+msgid "E.g. TV Show Name (Optional)"
+msgstr "Örn: Kurtlar Vadisi (İsteğe Bağlı)"
+
+msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
+msgstr "Bu ürün TMDb API'sini kullanır ancak TMDb tarafından onaylanmamış veya sertifikalandırılmamıştır."
+
+msgid ""
+"EngPlayer Software License Agreement\n"
+"Copyright © 2025 Engin Eren. All Rights Reserved.\n\n"
+"By downloading, installing, or using this software (\"EngPlayer\"), you agree to the following terms:\n\n"
+"1. LICENSE GRANT\n"
+"This software is distributed as \"FREEWARE\". It may be downloaded, installed, and executed for personal use free of charge.\n\n"
+"2. RESTRICTIONS ON PORTING\n"
+"Without prior written permission from the copyright holder, it is STRICTLY PROHIBITED to port, adapt, or modify this software for use on other operating systems (Windows, macOS, Android, etc.).\n\n"
+"3. COMMERCIAL PROHIBITION\n"
+"This software may NOT be sold, rented, or included in any paid software bundle by any person or entity other than the copyright holder.\n\n"
+"4. NO CONTENT PROVIDED (DISCLAIMER)\n"
+"This software is a media player only. EngPlayer does NOT provide, include, or distribute any playlists, IPTV channels, video streams, or digital content.\n"
+"- Users are solely responsible for providing their own content (M3U files, Xtream codes, local files).\n"
+"- The developer assumes no liability for the content viewed by the user or for any copyright violations resulting from user-added content.\n\n"
+"5. DISCLAIMER OF WARRANTY\n"
+"This software is provided \"AS IS\". The copyright holder cannot be held responsible for any damages arising from the use of this software."
+msgstr ""
+"EngPlayer Yazılım Lisans Sözleşmesi\n"
+"Telif Hakkı © 2025 Engin Eren. Tüm Hakları Saklıdır.\n\n"
+"Bu yazılımı (\"EngPlayer\") indirerek, kurarak veya kullanarak aşağıdaki şartları kabul etmiş olursunuz:\n\n"
+"1. KULLANIM HAKKI (LİSANS)\n"
+"Bu yazılım \"ÜCRETSİZ\" (Freeware) olarak dağıtılmaktadır. Kişisel kullanım için ücretsiz olarak indirilebilir, kurulabilir ve çalıştırılabilir.\n\n"
+"2. PLATFORM VE PORT ETME KISITLAMASI\n"
+"Telif hakkı sahibinin yazılı izni olmaksızın bu yazılımı başka işletim sistemlerine (Windows, macOS, Android vb.) uyarlamak, port etmek veya değiştirmek KESİNLİKLE YASAKTIR.\n\n"
+"3. TİCARİ KULLANIM YASAĞI\n"
+"Bu yazılım telif hakkı sahibi haricinde hiçbir kişi veya kurum tarafından ücret karşılığında satılamaz, kiralanamaz veya ticari bir paket içine dahil edilemez.\n\n"
+"4. İÇERİK SORUMLULUĞU REDDİ (ÖNEMLİ)\n"
+"Bu yazılım yalnızca bir medya oynatıcı aracıdır. EngPlayer, kullanıcılara herhangi bir oynatma listesi, IPTV kanalı, video akışı veya dijital içerik SAĞLAMAZ.\n"
+"- Kullanıcılar kendi içeriklerini (M3U dosyaları, Xtream kodları, yerel dosyalar) kendileri temin etmek zorundadır.\n"
+"- Geliştirici, kullanıcı tarafından eklenen içeriklerin telif hakları veya yasallığı konusunda hiçbir sorumluluk kabul etmez.\n\n"
+"5. SORUMLULUK REDDİ\n"
+"Bu yazılım \"OLDUĞU GİBİ\" sunulmaktadır. Yazılımın kullanımı sırasında oluşabilecek herhangi bir zarardan telif hakkı sahibi sorumlu tutulamaz."

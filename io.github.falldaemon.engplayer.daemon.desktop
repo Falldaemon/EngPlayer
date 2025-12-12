@@ -1,0 +1,8 @@
+[Desktop Entry]
+Type=Application
+Name=EngPlayer Recorder Daemon
+Comment=Background recording service for EngPlayer
+Exec=/app/bin/engplayer-daemon
+Terminal=false
+NoDisplay=true
+X-GNOME-Autostart-enabled=true

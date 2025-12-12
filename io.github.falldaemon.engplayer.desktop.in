@@ -1,0 +1,12 @@
+[Desktop Entry]
+Name=EngPlayer
+Comment=IPTV and Media Center
+GenericName=Media Player
+Exec=@EXEC_PATH@
+Icon=io.github.falldaemon.engplayer
+Type=Application
+Categories=AudioVideo;Video;Player;TV;
+Terminal=false
+StartupNotify=true
+StartupWMClass=io.github.falldaemon.engplayer
+Keywords=IPTV;M3U;Xtream;Player;

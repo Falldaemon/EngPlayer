@@ -1,0 +1,7 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Kilit gövdesi -->
+  <rect x="6" y="10" width="12" height="10" rx="2" ry="2" fill="#FFFFFF"/>
+
+  <!-- Kilit halkası / sap kısmı (içi boş, siyah stroke) -->
+  <path d="M8 10V7a4 4 0 0 1 8 0v3" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+</svg>

@@ -1,0 +1,10 @@
+PyGObject
+requests
+yt-dlp
+mutagen
+guessit
+thefuzz
+fuzzywuzzy
+python-Levenshtein
+wheel
+

@@ -1,0 +1,16 @@
+venv/
+env/
+.env
+.venv
+__pycache__/
+*.py[cod]
+*$py.class
+*.db
+*.db-journal
+profiles.json
+.flatpak-builder/
+build-dir/
+repo/
+.vscode/
+.idea/
+.DS_Store

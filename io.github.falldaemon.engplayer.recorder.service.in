@@ -1,0 +1,14 @@
+[Unit]
+Description=EngPlayer Background Recording Daemon
+After=network.target sound.target
+
+[Service]
+Type=simple
+Environment=PYTHONUNBUFFERED=1
+WorkingDirectory=@INSTALL_DIR@
+ExecStart=@INSTALL_DIR@/venv/bin/python3 @INSTALL_DIR@/recorder_daemon.py
+Restart=always
+RestartSec=10
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,1149 @@
+# EngPlayer Translation Template
+# Copyright (C) 2025 EngPlayer
+# This file is distributed under the same license as the EngPlayer package.
+#
+msgid ""
+msgstr ""
+"Project-Id-Version: EngPlayer 1.0\n"
+"Report-Msgid-Bugs-To: \n"
+"POT-Creation-Date: 2025-11-23 12:00+0300\n"
+"PO-Revision-Date: YEAR-MO-DA HO:MI+ZONE\n"
+"Last-Translator: FULL NAME <EMAIL@ADDRESS>\n"
+"Language-Team: LANGUAGE <LL@li.org>\n"
+"MIME-Version: 1.0\n"
+"Content-Type: text/plain; charset=UTF-8\n"
+"Content-Transfer-Encoding: 8bit\n"
+"X-Generator: Manual Extraction\n"
+
+# --- Main Window & General ---
+msgid "Eng Player"
+msgstr ""
+
+msgid "Processing channels and VOD content..."
+msgstr ""
+
+msgid "Channels loaded successfully!"
+msgstr ""
+
+msgid "Connection timed out."
+msgstr ""
+
+msgid "Could not open stream"
+msgstr ""
+
+msgid "Restart Required"
+msgstr ""
+
+msgid "Theme settings have been saved.\n\nThe application will now restart for the changes to take effect."
+msgstr ""
+
+msgid "Restart Now"
+msgstr ""
+
+# --- Navigation & Sidebar ---
+msgid "Bouquets"
+msgstr ""
+
+msgid "Favorites"
+msgstr ""
+
+msgid "VOD"
+msgstr ""
+
+msgid "Series"
+msgstr ""
+
+msgid "Media"
+msgstr ""
+
+msgid "Video Library"
+msgstr ""
+
+msgid "Picture Library"
+msgstr ""
+
+msgid "Music Library"
+msgstr ""
+
+msgid "Refresh Library"
+msgstr ""
+
+msgid "Add Source..."
+msgstr ""
+
+# --- Settings Menu ---
+msgid "Set/Change Password"
+msgstr ""
+
+msgid "Set TMDb API Key"
+msgstr ""
+
+msgid "Set OpenSubtitles API Key"
+msgstr ""
+
+msgid "Connect to Trakt.tv"
+msgstr ""
+
+msgid "Disconnect from Trakt.tv"
+msgstr ""
+
+msgid "Use TMDb Metadata"
+msgstr ""
+
+msgid "Use Poster Cache"
+msgstr ""
+
+msgid "Saves posters to disk (loads faster)"
+msgstr ""
+
+msgid "Theme"
+msgstr ""
+
+msgid "System Theme"
+msgstr ""
+
+msgid "Light"
+msgstr ""
+
+msgid "Dark"
+msgstr ""
+
+msgid "Accent Color"
+msgstr ""
+
+msgid "Notifications"
+msgstr ""
+
+msgid "Enable Notifications"
+msgstr ""
+
+msgid "Duration (Seconds)"
+msgstr ""
+
+msgid "Change Recordings Folder"
+msgstr ""
+
+msgid "Change Cache Folder"
+msgstr ""
+
+msgid "Keyboard Shortcuts"
+msgstr ""
+
+msgid "Clear Cache"
+msgstr ""
+
+msgid "About EngPlayer"
+msgstr ""
+
+msgid "Settings"
+msgstr ""
+
+msgid "Recording Scheduler"
+msgstr ""
+
+msgid "Recorded Videos"
+msgstr ""
+
+# --- Profile Window ---
+msgid "Profile Selection"
+msgstr ""
+
+msgid "Please select a profile or create a new one."
+msgstr ""
+
+msgid "Loading..."
+msgstr ""
+
+msgid "Add New"
+msgstr ""
+
+msgid "Edit"
+msgstr ""
+
+msgid "Delete"
+msgstr ""
+
+msgid "Open Selected Profile"
+msgstr ""
+
+msgid "Start"
+msgstr ""
+
+msgid "End"
+msgstr ""
+
+msgid "Please select a profile to edit."
+msgstr ""
+
+msgid "Edit Profile"
+msgstr ""
+
+msgid "Add New Profile"
+msgstr ""
+
+msgid "Please select a profile to delete."
+msgstr ""
+
+msgid "Delete profile '{}'?"
+msgstr ""
+
+msgid "This action cannot be undone."
+msgstr ""
+
+msgid "Profile '{}' and all its data were successfully deleted."
+msgstr ""
+
+msgid "Error: Profile not found or already deleted."
+msgstr ""
+
+msgid "Profile name cannot be empty!"
+msgstr ""
+
+msgid "Profile '{}' added."
+msgstr ""
+
+msgid "Profile '{}' updated."
+msgstr ""
+
+msgid "Profile Name (e.g., Family IPTV)"
+msgstr ""
+
+msgid "M3U URL"
+msgstr ""
+
+msgid "M3U File"
+msgstr ""
+
+msgid "Xtream Codes"
+msgstr ""
+
+msgid "No file selected..."
+msgstr ""
+
+msgid "Choose File..."
+msgstr ""
+
+msgid "Select M3U File"
+msgstr ""
+
+msgid "Host:"
+msgstr ""
+
+msgid "Username:"
+msgstr ""
+
+msgid "Password:"
+msgstr ""
+
+msgid "External EPG URL (XMLTV, optional)"
+msgstr ""
+
+msgid "No icon folder selected..."
+msgstr ""
+
+msgid "Choose Folder..."
+msgstr ""
+
+msgid "Select Channel Icon Folder"
+msgstr ""
+
+msgid "Profile Loading Error"
+msgstr ""
+
+# --- Player Controls ---
+msgid "Video"
+msgstr ""
+
+msgid "Audio"
+msgstr ""
+
+msgid "Mono"
+msgstr ""
+
+msgid "Stereo"
+msgstr ""
+
+msgid "{count} ch"
+msgstr ""
+
+msgid "Stop Trailer and Go Back"
+msgstr ""
+
+msgid "Seek Backward (or Previous Track)"
+msgstr ""
+
+msgid "Play/Pause"
+msgstr ""
+
+msgid "Seek Forward (or Next Track)"
+msgstr ""
+
+msgid "Record"
+msgstr ""
+
+msgid "Stop Recording"
+msgstr ""
+
+msgid "Start Recording"
+msgstr ""
+
+msgid "Past Broadcasts (Archive)"
+msgstr ""
+
+msgid "Audio Equalizer"
+msgstr ""
+
+msgid "Select Audio Track"
+msgstr ""
+
+msgid "Subtitle Options"
+msgstr ""
+
+msgid "Volume Control"
+msgstr ""
+
+msgid "Toggle Fullscreen"
+msgstr ""
+
+msgid "Track {number}"
+msgstr ""
+
+msgid "Subtitle {number}"
+msgstr ""
+
+# --- Detail Views (Movies/Series) ---
+msgid "Back"
+msgstr ""
+
+msgid "Back to Series List"
+msgstr ""
+
+msgid "Back to Collections"
+msgstr ""
+
+msgid "Rating"
+msgstr ""
+
+msgid "TMDb Rating"
+msgstr ""
+
+msgid "Cast"
+msgstr ""
+
+msgid "Director"
+msgstr ""
+
+msgid "Creator/Director"
+msgstr ""
+
+msgid "Production Country"
+msgstr ""
+
+msgid "Release Date:"
+msgstr ""
+
+msgid "First Aired:"
+msgstr ""
+
+msgid "Year"
+msgstr ""
+
+msgid "PLAY"
+msgstr ""
+
+msgid "Watch Trailer"
+msgstr ""
+
+msgid "Loading information..."
+msgstr ""
+
+msgid "Loading cast..."
+msgstr ""
+
+msgid "Plot information not found."
+msgstr ""
+
+msgid "Detailed information not found."
+msgstr ""
+
+msgid "Detailed cast information not available."
+msgstr ""
+
+msgid "Cast information not found."
+msgstr ""
+
+msgid "Unknown Series"
+msgstr ""
+
+msgid "Unknown Episode"
+msgstr ""
+
+msgid "Season"
+msgstr ""
+
+msgid "Season:"
+msgstr ""
+
+msgid "No episodes found for this season."
+msgstr ""
+
+msgid "Mark as Watched"
+msgstr ""
+
+msgid "Mark as Unwatched"
+msgstr ""
+
+msgid "Next:"
+msgstr ""
+
+msgid "Skip Now"
+msgstr ""
+
+# --- Playback & Errors ---
+msgid "Resume from Saved Position"
+msgstr ""
+
+msgid "You last left this content at {}. Would you like to resume?"
+msgstr ""
+
+msgid "Resume"
+msgstr ""
+
+msgid "Start Over"
+msgstr ""
+
+msgid "Trailer URL is being retrieved..."
+msgstr ""
+
+msgid "Playing trailer..."
+msgstr ""
+
+msgid "Error: A valid trailer URL could not be retrieved."
+msgstr ""
+
+msgid "Playable URL not found for trailer."
+msgstr ""
+
+msgid "Could not retrieve trailer (yt-dlp error)."
+msgstr ""
+
+msgid "An unknown error occurred while retrieving the trailer."
+msgstr ""
+
+msgid "You last left this episode at {}. Would you like to resume?"
+msgstr ""
+
+# --- Recording & Scheduling ---
+msgid "Recording started: {}"
+msgstr ""
+
+msgid "Stopping recording... Saving file."
+msgstr ""
+
+msgid "Add New Scheduled Recording"
+msgstr ""
+
+msgid "Bouquet"
+msgstr ""
+
+msgid "Select the bouquet for the channel to be recorded"
+msgstr ""
+
+msgid "Select Bouquet"
+msgstr ""
+
+msgid "No bouquet selected..."
+msgstr ""
+
+msgid "Select a bouquet first..."
+msgstr ""
+
+msgid "Channel"
+msgstr ""
+
+msgid "Select the channel to be recorded"
+msgstr ""
+
+msgid "Select Channel"
+msgstr ""
+
+msgid "Please select a valid channel!"
+msgstr ""
+
+msgid "Start Time"
+msgstr ""
+
+msgid "End Time"
+msgstr ""
+
+msgid "Schedule Recording"
+msgstr ""
+
+msgid "Scheduled Tasks"
+msgstr ""
+
+msgid "No scheduled recordings found."
+msgstr ""
+
+msgid "Status: {status}"
+msgstr ""
+
+msgid "Recording scheduled successfully!"
+msgstr ""
+
+msgid "Scheduled recording deleted."
+msgstr ""
+
+msgid "Confirm Removal from Recordings List"
+msgstr ""
+
+msgid "The video record '{}' will be removed from the list.\n\nNote: Your original video file will NOT be deleted from disk.\n\nAre you sure?"
+msgstr ""
+
+msgid "Recording removed from list."
+msgstr ""
+
+# --- Subtitles ---
+msgid "Show Subtitles"
+msgstr ""
+
+msgid "Embedded Track"
+msgstr ""
+
+msgid "Load from File"
+msgstr ""
+
+msgid "Search Online"
+msgstr ""
+
+msgid "Synchronization Adjust"
+msgstr ""
+
+msgid "Delay Subtitles (-100ms)"
+msgstr ""
+
+msgid "Advance Subtitles (+100ms)"
+msgstr ""
+
+msgid "Subtitle Settings"
+msgstr ""
+
+msgid "Font"
+msgstr ""
+
+msgid "Subtitle Font and Size"
+msgstr ""
+
+msgid "Change..."
+msgstr ""
+
+msgid "Colors"
+msgstr ""
+
+msgid "Font Color"
+msgstr ""
+
+msgid "Background"
+msgstr ""
+
+msgid "Background Color"
+msgstr ""
+
+msgid "Background Opacity"
+msgstr ""
+
+msgid "Select Font"
+msgstr ""
+
+msgid "Subtitle font set!"
+msgstr ""
+
+msgid "Subtitle color saved!"
+msgstr ""
+
+msgid "Background color saved!"
+msgstr ""
+
+msgid "Subtitle Search Results"
+msgstr ""
+
+msgid "No subtitles found."
+msgstr ""
+
+msgid "Searching for subtitles for {}..."
+msgstr ""
+
+msgid "Downloading '{0}'..."
+msgstr ""
+
+msgid "Subtitle loaded and enabled successfully."
+msgstr ""
+
+msgid "Please enter your OpenSubtitles API key from Settings first."
+msgstr ""
+
+msgid "Error: Content title/ID for subtitle search not found."
+msgstr ""
+
+# --- Dialogs (Password, Move, Confirmations) ---
+msgid "Password Required"
+msgstr ""
+
+msgid "This item is locked. Please enter the password to continue."
+msgstr ""
+
+msgid "Cancel"
+msgstr ""
+
+msgid "OK"
+msgstr ""
+
+msgid "Save"
+msgstr ""
+
+msgid "Close"
+msgstr ""
+
+msgid "Done"
+msgstr ""
+
+msgid "Remove"
+msgstr ""
+
+msgid "Create"
+msgstr ""
+
+msgid "Wrong Password!"
+msgstr ""
+
+msgid "Change Application Password"
+msgstr ""
+
+msgid "Please enter your old password and a new one."
+msgstr ""
+
+msgid "Set Application Password"
+msgstr ""
+
+msgid "Please enter a new password. This will be used to lock and unlock items."
+msgstr ""
+
+msgid "Old Password"
+msgstr ""
+
+msgid "New Password"
+msgstr ""
+
+msgid "Confirm New Password"
+msgstr ""
+
+msgid "Old password is not correct!"
+msgstr ""
+
+msgid "New password cannot be empty!"
+msgstr ""
+
+msgid "Password saved successfully!"
+msgstr ""
+
+msgid "New passwords do not match!"
+msgstr ""
+
+msgid "Password Not Set"
+msgstr ""
+
+msgid "To lock items, you must first set a master password for the application."
+msgstr ""
+
+msgid "Set Password"
+msgstr ""
+
+msgid "Move Channel"
+msgstr ""
+
+msgid "Up"
+msgstr ""
+
+msgid "Down"
+msgstr ""
+
+msgid "Confirm Deletion"
+msgstr ""
+
+msgid "Are you sure you want to delete this favorite list? This action cannot be undone."
+msgstr ""
+
+msgid "Confirm Library Removal"
+msgstr ""
+
+msgid "The library '{}' and all its media records will be removed from EngPlayer.\n\nNote: Your original files will NOT be deleted from disk.\n\nAre you sure?"
+msgstr ""
+
+msgid "Library successfully removed."
+msgstr ""
+
+msgid "Confirm Media Record Removal"
+msgstr ""
+
+msgid "The record for '{}' will be removed from EngPlayer.\n\nNote: Your original file will NOT be deleted from disk.\n\nAre you sure?"
+msgstr ""
+
+msgid "Confirm Track Record Removal"
+msgstr ""
+
+msgid "Confirm Deletion of Recording"
+msgstr ""
+
+msgid "The video '{}' will be permanently deleted. This action cannot be undone.\n\nAre you sure?"
+msgstr ""
+
+msgid "Video deleted successfully."
+msgstr ""
+
+# --- Catch-up ---
+msgid "Past Programs"
+msgstr ""
+
+msgid "No EPG data found for this channel."
+msgstr ""
+
+msgid "No past programs found for the last {days} days."
+msgstr ""
+
+msgid "Today"
+msgstr ""
+
+msgid "Yesterday"
+msgstr ""
+
+# --- Context Menus ---
+msgid "Lock"
+msgstr ""
+
+msgid "Delete List"
+msgstr ""
+
+msgid "Unlock"
+msgstr ""
+
+msgid "Add to Favorites"
+msgstr ""
+
+msgid "Remove from"
+msgstr ""
+
+msgid "Add to"
+msgstr ""
+
+msgid "New List..."
+msgstr ""
+
+msgid "New Favorite List"
+msgstr ""
+
+msgid "Please enter the name for the new list:"
+msgstr ""
+
+msgid "Move..."
+msgstr ""
+
+msgid "Move List"
+msgstr ""
+
+msgid "Unknown List"
+msgstr ""
+
+msgid "Play as Picture-in-Picture"
+msgstr ""
+
+msgid "Remove Library"
+msgstr ""
+
+msgid "Remove from Records"
+msgstr ""
+
+msgid "Remove Track from Library"
+msgstr ""
+
+msgid "Remove from List (Record Only)"
+msgstr ""
+
+msgid "Permanently Delete from Disk"
+msgstr ""
+
+# --- Equalizer ---
+msgid "Presets"
+msgstr ""
+
+msgid "Custom"
+msgstr ""
+
+msgid "Reset (Flat)"
+msgstr ""
+
+msgid "Hip-Hop"
+msgstr ""
+
+msgid "Pop"
+msgstr ""
+
+msgid "Rock"
+msgstr ""
+
+msgid "Jazz"
+msgstr ""
+
+msgid "Classical"
+msgstr ""
+
+msgid "Vocal"
+msgstr ""
+
+msgid "Reset"
+msgstr ""
+
+# --- Image Viewer ---
+msgid "Select Background Music"
+msgstr ""
+
+msgid "3 Seconds"
+msgstr ""
+
+msgid "5 Seconds"
+msgstr ""
+
+msgid "10 Seconds"
+msgstr ""
+
+msgid "Select music for slideshow"
+msgstr ""
+
+# --- Trakt & TMDb & OpenSubtitles Setup ---
+msgid "Please enter your TMDb API Key (v3 Auth)."
+msgstr ""
+
+msgid "Current: {} (Enter new key to change)"
+msgstr ""
+
+msgid "TMDb API Key saved successfully!"
+msgstr ""
+
+msgid "Please enter your OpenSubtitles API Key.\nYou can get one from their website after registering."
+msgstr ""
+
+msgid "API Key"
+msgstr ""
+
+msgid "OpenSubtitles API Key saved successfully!"
+msgstr ""
+
+msgid "Logged out from Trakt.tv account."
+msgstr ""
+
+msgid "Opening browser to connect to Trakt.tv..."
+msgstr ""
+
+msgid "Login Successful"
+msgstr ""
+
+msgid "You can return to EngPlayer. You may close this window."
+msgstr ""
+
+msgid "Login Failed"
+msgstr ""
+
+msgid "Could not retrieve code."
+msgstr ""
+
+msgid "Login Failed: {}"
+msgstr ""
+
+msgid "Successfully connected to Trakt.tv account!"
+msgstr ""
+
+msgid "Application Client ID is not set."
+msgstr ""
+
+msgid "Authentication could not be initiated."
+msgstr ""
+
+msgid "User not logged in."
+msgstr ""
+
+msgid "Invalid media type."
+msgstr ""
+
+# --- System / Files ---
+msgid "Select Media Folder"
+msgstr ""
+
+msgid "Recordings folder set successfully!"
+msgstr ""
+
+msgid "Select Cache Folder"
+msgstr ""
+
+msgid "This is already the current cache location."
+msgstr ""
+
+msgid "Error: A '{}' folder already exists at the destination!"
+msgstr ""
+
+msgid "Moving cache... This might take a moment."
+msgstr ""
+
+msgid "Error: Could not set cache folder!"
+msgstr ""
+
+msgid "Cache cleared successfully!"
+msgstr ""
+
+msgid "Error while clearing cache!"
+msgstr ""
+
+msgid "Cache is already empty."
+msgstr ""
+
+msgid "Confirm Cache Deletion"
+msgstr ""
+
+msgid "This will permanently delete all cached data (posters, thumbnails, etc.).\n\nThis action cannot be undone. Are you sure?"
+msgstr ""
+
+msgid "Please enter the password to clear the cache."
+msgstr ""
+
+msgid "Notifications enabled."
+msgstr ""
+
+msgid "Notifications disabled."
+msgstr ""
+
+msgid "TMDb metadata usage enabled."
+msgstr ""
+
+msgid "Warning: You have not entered a TMDb API key yet."
+msgstr ""
+
+msgid "TMDb metadata usage disabled."
+msgstr ""
+
+msgid "Poster disk cache enabled."
+msgstr ""
+
+msgid "Poster disk cache disabled."
+msgstr ""
+
+# --- Keyboard Shortcuts ---
+msgid "Playback Controls"
+msgstr ""
+
+msgid "Play / Pause"
+msgstr ""
+
+msgid "Volume Down"
+msgstr ""
+
+msgid "Volume Up"
+msgstr ""
+
+msgid "Mute / Unmute"
+msgstr ""
+
+msgid "Next Channel"
+msgstr ""
+
+msgid "Previous Channel"
+msgstr ""
+
+msgid "General Controls"
+msgstr ""
+
+msgid "Exit Fullscreen"
+msgstr ""
+
+# --- Search & Placeholders ---
+msgid "Search media library..."
+msgstr ""
+
+msgid "Search bouquet..."
+msgstr ""
+
+msgid "Search channel..."
+msgstr ""
+
+msgid "Search favorite list..."
+msgstr ""
+
+msgid "Show Locked Items"
+msgstr ""
+
+msgid "This feature is only available for Xtream Codes profiles."
+msgstr ""
+
+msgid "Fetching series categories..."
+msgstr ""
+
+msgid "No VOD categories found."
+msgstr ""
+
+msgid "Series feature is under development..."
+msgstr ""
+
+msgid "Please select a category from the left."
+msgstr ""
+
+msgid "No series categories found for this profile."
+msgstr ""
+
+msgid "Select Library Type"
+msgstr ""
+
+msgid "Which type of media is in this folder?"
+msgstr ""
+
+msgid "{} series categories found!"
+msgstr ""
+
+msgid "Could not fetch series categories or none found."
+msgstr ""
+
+msgid "Successfully fetched {} series!"
+msgstr ""
+
+msgid "Could not fetch series for this category."
+msgstr ""
+
+msgid "Could not fetch series info."
+msgstr ""
+
+msgid "{} VOD categories found!"
+msgstr ""
+
+msgid "Could not fetch VOD categories or none found."
+msgstr ""
+
+msgid "Successfully fetched {} VOD items for category {}!"
+msgstr ""
+
+msgid "{} VOD items listed."
+msgstr ""
+
+msgid "Could not fetch VOD streams for this category."
+msgstr ""
+
+msgid "Error: Data for this category not found in cache."
+msgstr ""
+
+msgid "Error: Could not get address for the next episode."
+msgstr ""
+
+msgid "Last episode of the season finished."
+msgstr ""
+
+msgid "Catch-up playback for M3U profiles is not yet fully supported."
+msgstr ""
+
+msgid "Error: Could not create catch-up URL."
+msgstr ""
+
+msgid "Error: Program time information is missing."
+msgstr ""
+
+msgid "Error: Channel EPG ID not found."
+msgstr ""
+
+msgid "Error: Could not retrieve archive info for this channel or duration is invalid."
+msgstr ""
+
+msgid "{} recordings found."
+msgstr ""
+
+msgid "No channel found to record!"
+msgstr ""
+
+msgid "Error: Could not start recording!"
+msgstr ""
+
+# --- EPG & Other ---
+msgid "No Title"
+msgstr ""
+
+msgid "Description not found."
+msgstr ""
+
+msgid "Unknown Artist"
+msgstr ""
+
+msgid "Could not extract album art: {}"
+msgstr ""
+
+msgid "Starting library scan..."
+msgstr ""
+
+msgid "No libraries in the database to scan."
+msgstr ""
+
+msgid "Scanning {} library at: {}"
+msgstr ""
+
+msgid "Could not read metadata from: {}"
+msgstr ""
+
+msgid "Could not process music file {}: {}"
+msgstr ""
+
+msgid "An error occurred during library scan: {}"
+msgstr ""
+
+msgid "Library scan finished."
+msgstr ""
+
+msgid "Others"
+msgstr ""
+
+# --- Recording Statuses ---
+msgid "Pending"
+msgstr ""
+
+msgid "Recording"
+msgstr ""
+
+msgid "Completed"
+msgstr ""
+
+msgid "Failed"
+msgstr ""
+
+# --- Recording Scheduler (New Features) ---
+
+msgid "Program Name"
+msgstr ""
+
+msgid "Enter a custom name for the recording file"
+msgstr ""
+
+msgid "E.g. TV Show Name (Optional)"
+msgstr ""
+
+# --- License / Legal ---
+msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
+msgstr ""
+
+msgid ""
+"EngPlayer Software License Agreement\n"
+"Copyright © 2025 Engin Eren. All Rights Reserved.\n\n"
+"By downloading, installing, or using this software (\"EngPlayer\"), you agree to the following terms:\n\n"
+"1. LICENSE GRANT\n"
+"This software is distributed as \"FREEWARE\". It may be downloaded, installed, and executed for personal use free of charge.\n\n"
+"2. RESTRICTIONS ON PORTING\n"
+"Without prior written permission from the copyright holder, it is STRICTLY PROHIBITED to port, adapt, or modify this software for use on other operating systems (Windows, macOS, Android, etc.).\n\n"
+"3. COMMERCIAL PROHIBITION\n"
+"This software may NOT be sold, rented, or included in any paid software bundle by any person or entity other than the copyright holder.\n\n"
+"4. NO CONTENT PROVIDED (DISCLAIMER)\n"
+"This software is a media player only. EngPlayer does NOT provide, include, or distribute any playlists, IPTV channels, video streams, or digital content.\n"
+"- Users are solely responsible for providing their own content (M3U files, Xtream codes, local files).\n"
+"- The developer assumes no liability for the content viewed by the user or for any copyright violations resulting from user-added content.\n\n"
+"5. DISCLAIMER OF WARRANTY\n"
+"This software is provided \"AS IS\". The copyright holder cannot be held responsible for any damages arising from the use of this software."
+msgstr ""

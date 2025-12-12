@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24">
+  <!-- Hoparlör -->
+  <polygon points="3,9 7,9 12,4 12,20 7,15 3,15" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linejoin="round"/>
+  
+  <!-- Ses dalgaları -->
+  <path d="M14 10 C15 12, 15 12, 14 14" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+  <path d="M16 8 C18 12, 18 12, 16 16" fill="none" stroke="#FFFFFF" stroke-width="2" stroke-linecap="round"/>
+</svg>
