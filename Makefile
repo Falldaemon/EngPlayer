@@ -1,104 +1,113 @@
-# ==============================================================================
-# EngPlayer Installation Script (User-Space)
-# ==============================================================================
+PYTHON ?= python3
+MSGFMT ?= msgfmt
 
-PYTHON = python3
-PIP = pip3
-MSGFMT = msgfmt
+prefix ?= /usr/local
+bindir ?= $(prefix)/bin
+sharedir ?= $(prefix)/share
+sysconfdir ?= $(prefix)/etc
+applicationsdir ?= $(sharedir)/applications
+iconsdir ?= $(sharedir)/icons/hicolor/512x512/apps
+metainfodir ?= $(sharedir)/metainfo
 
 USER_HOME = $(HOME)
-INSTALL_DIR = $(USER_HOME)/.local/share/engplayer
-BIN_DIR = $(USER_HOME)/.local/bin
-DESKTOP_DIR = $(USER_HOME)/.local/share/applications
-SYSTEMD_DIR = $(USER_HOME)/.config/systemd/user
-ICON_DIR = $(USER_HOME)/.local/share/icons/hicolor/scalable/apps
-LOCALE_DIR = resources/locale
+LOCAL_INSTALL_DIR = $(USER_HOME)/.local/share/engplayer
+LOCAL_BIN_DIR = $(USER_HOME)/.local/bin
+LOCAL_DESKTOP_DIR = $(USER_HOME)/.local/share/applications
+LOCAL_ICON_DIR = $(USER_HOME)/.local/share/icons/hicolor/512x512/apps
+LOCAL_SYSTEMD_DIR = $(USER_HOME)/.config/systemd/user
 USER_CONFIG_DIR = $(USER_HOME)/.config/EngPlayer
 USER_CACHE_DIR = $(USER_HOME)/.cache/EngPlayer
 
-.PHONY: all install uninstall clean compile-locales
+.PHONY: all install install-manual uninstall compile-locales clean
 
 all: compile-locales
 
 compile-locales:
 	@echo "Compiling translation files..."
-	@for lang in tr de fr es it; do \
-		mkdir -p $(LOCALE_DIR)/$$lang/LC_MESSAGES; \
-		if [ -f $(LOCALE_DIR)/$$lang/LC_MESSAGES/engplayer.po ]; then \
-			$(MSGFMT) $(LOCALE_DIR)/$$lang/LC_MESSAGES/engplayer.po -o $(LOCALE_DIR)/$$lang/LC_MESSAGES/engplayer.mo; \
+	@for dir in resources/locale/*/; do \
+		lang=$$(basename "$$dir"); \
+		if [ -f "resources/locale/$$lang/LC_MESSAGES/engplayer.po" ]; then \
+			$(MSGFMT) "resources/locale/$$lang/LC_MESSAGES/engplayer.po" -o "resources/locale/$$lang/LC_MESSAGES/engplayer.mo"; \
 		fi \
 	done
 
 install: all
-	@echo "Starting installation..."
-	mkdir -p $(INSTALL_DIR)
-	mkdir -p $(BIN_DIR)
-	mkdir -p $(DESKTOP_DIR)
-	mkdir -p $(SYSTEMD_DIR)
-	mkdir -p $(ICON_DIR)
-	
-	@echo "Copying source files..."
-	cp -r core data_providers playback ui utils resources *.py $(INSTALL_DIR)/
-	find $(INSTALL_DIR) -name "__pycache__" -type d -exec rm -rf {} +
-	
-	@echo "Setting up isolated Python environment..."
-	$(PYTHON) -m venv $(INSTALL_DIR)/venv
-	
-	@echo "Installing dependencies..."
-	$(INSTALL_DIR)/venv/bin/pip install --upgrade pip wheel
-	if [ -f requirements.txt ]; then \
-		$(INSTALL_DIR)/venv/bin/pip install -r requirements.txt; \
-	else \
-		$(INSTALL_DIR)/venv/bin/pip install requests pygobject mutagen yt-dlp fuzzywuzzy python-Levenshtein wheel; \
-	fi
-	
-	@echo "Creating launcher script..."
-	install -m 755 engplayer.sh $(BIN_DIR)/engplayer
-	sed -i "1i\# VENV activation added for manual installation.\nINSTALL_DIR_M=\"$(INSTALL_DIR)\"\nVENV_PATH=\"\$$INSTALL_DIR_M/venv\"\n. \"\$$VENV_PATH/bin/activate\"" $(BIN_DIR)/engplayer
-	sed -i "s|/app/share/engplayer|$(INSTALL_DIR)|g" $(BIN_DIR)/engplayer
-	
-	@echo "Installing Desktop & Service files..."
-	sed -e "s|@EXEC_PATH@|/usr/bin/env sh -c '$(BIN_DIR)/engplayer'|g" io.github.falldaemon.engplayer.desktop.in > $(DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
-	chmod +x $(DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
-	
+	@echo "Starting standard system/Flatpak installation..."
 
-	sed -e "s|@INSTALL_DIR@|$(INSTALL_DIR)|g" io.github.falldaemon.engplayer.recorder.service.in > $(SYSTEMD_DIR)/io.github.falldaemon.engplayer.recorder.service
-	
+	mkdir -p $(DESTDIR)$(sharedir)/engplayer
+	mkdir -p $(DESTDIR)$(bindir)
+	mkdir -p $(DESTDIR)$(applicationsdir)
+	mkdir -p $(DESTDIR)$(iconsdir)
+	mkdir -p $(DESTDIR)$(metainfodir)
+	mkdir -p $(DESTDIR)$(sysconfdir)/xdg/autostart
 
-	if [ -f resources/icons/io.github.falldaemon.engplayer.png ]; then \
-		cp resources/icons/io.github.falldaemon.engplayer.png $(ICON_DIR)/io.github.falldaemon.engplayer.png; \
-	fi
+	cp -r . $(DESTDIR)$(sharedir)/engplayer
+	rm -rf $(DESTDIR)$(sharedir)/engplayer/.git
+	rm -rf $(DESTDIR)$(sharedir)/engplayer/venv
+	rm -rf $(DESTDIR)$(sharedir)/engplayer/__pycache__
 
-	@echo "Registering services and icons..."
+	install -m 755 engplayer.sh $(DESTDIR)$(bindir)/engplayer
+	install -m 755 engplayer-daemon.sh $(DESTDIR)$(bindir)/engplayer-daemon
+	install -m 644 io.github.falldaemon.engplayer.desktop.in $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
+	install -m 644 resources/icons/io.github.falldaemon.engplayer.png $(DESTDIR)$(iconsdir)/
+	install -m 644 io.github.falldaemon.engplayer.metainfo.xml $(DESTDIR)$(metainfodir)/
+	install -m 644 io.github.falldaemon.engplayer.daemon.desktop $(DESTDIR)$(sysconfdir)/xdg/autostart/io.github.falldaemon.engplayer.desktop
+
+	sed -i "s|Exec=.*|Exec=$(bindir)/engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
+	sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
+
+install-manual: all
+	@echo "Starting manual user installation..."
+	mkdir -p $(LOCAL_INSTALL_DIR)
+	mkdir -p $(LOCAL_BIN_DIR)
+	mkdir -p $(LOCAL_DESKTOP_DIR)
+	mkdir -p $(LOCAL_ICON_DIR)
+	mkdir -p $(LOCAL_SYSTEMD_DIR)
+
+	install -m 644 io.github.falldaemon.engplayer.desktop.in $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
+	sed -i "s|Exec=.*|Exec=$(LOCAL_INSTALL_DIR)/venv/bin/python3 $(LOCAL_INSTALL_DIR)/main.py|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
+	sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
+
+	cp -r . $(LOCAL_INSTALL_DIR)/
+	$(PYTHON) -m venv $(LOCAL_INSTALL_DIR)/venv
+	$(LOCAL_INSTALL_DIR)/venv/bin/pip install --upgrade pip wheel
+	$(LOCAL_INSTALL_DIR)/venv/bin/pip install -r requirements.txt || $(LOCAL_INSTALL_DIR)/venv/bin/pip install requests pygobject mutagen yt-dlp fuzzywuzzy python-Levenshtein wheel
+	install -m 755 engplayer.sh $(LOCAL_BIN_DIR)/engplayer
+
+	sed -i "s|/app/share/engplayer|$(LOCAL_INSTALL_DIR)|g" $(LOCAL_BIN_DIR)/engplayer
+
+	install -m 644 resources/icons/io.github.falldaemon.engplayer.png $(LOCAL_ICON_DIR)/io.github.falldaemon.engplayer.png
+
+	sed -e "s|@INSTALL_DIR@|$(LOCAL_INSTALL_DIR)|g" io.github.falldaemon.engplayer.recorder.service.in > $(LOCAL_SYSTEMD_DIR)/io.github.falldaemon.engplayer.recorder.service
+
 	systemctl --user daemon-reload
 	systemctl --user enable --now io.github.falldaemon.engplayer.recorder.service
-	update-desktop-database $(DESKTOP_DIR) || true
-	gtk-update-icon-cache -f -t $(ICON_DIR)/../.. || true
-	
-	@echo "------------------------------------------------"
-	@echo "Installation Complete!"
-	@echo "------------------------------------------------"
+
+	update-desktop-database $(LOCAL_DESKTOP_DIR) || true
+	gtk-update-icon-cache -f -t $(LOCAL_ICON_DIR)/../.. || true
+
+	@echo "Installation complete! (Please copy desktop files manually if needed for local menu)"
 
 uninstall:
-	@echo "Uninstalling EngPlayer..."
-	systemctl --user stop io.github.falldaemon.engplayer.recorder.service || true
-	systemctl --user disable io.github.falldaemon.engplayer.recorder.service || true
-	
-	rm -rf $(INSTALL_DIR)
-	rm -f $(BIN_DIR)/engplayer
-	rm -f $(DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
-	rm -f $(SYSTEMD_DIR)/io.github.falldaemon.engplayer.recorder.service
-	rm -f $(ICON_DIR)/io.github.falldaemon.engplayer.png
-	
+	@echo "Uninstalling EngPlayer (Manual Install)..."
+	systemctl --user stop io.github.falldaemon.engplayer.recorder.service 2>/dev/null || true
+	systemctl --user disable io.github.falldaemon.engplayer.recorder.service 2>/dev/null || true
+
+	rm -rf $(LOCAL_INSTALL_DIR)
+	rm -f $(LOCAL_BIN_DIR)/engplayer
+	rm -f $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
+	rm -f $(LOCAL_SYSTEMD_DIR)/io.github.falldaemon.engplayer.recorder.service
+	rm -f $(LOCAL_ICON_DIR)/io.github.falldaemon.engplayer.png
+
 	@echo "Cleaning up user data..."
 	rm -rf $(USER_CONFIG_DIR)
 	rm -rf $(USER_CACHE_DIR)
-	
+
 	systemctl --user daemon-reload
-	update-desktop-database $(DESKTOP_DIR) || true
-	gtk-update-icon-cache -f -t $(ICON_DIR)/../.. || true
+	update-desktop-database $(LOCAL_DESKTOP_DIR) || true
+	gtk-update-icon-cache -f -t $(LOCAL_ICON_DIR)/../.. || true
 	@echo "Uninstalled successfully."
 
 clean:
-	find . -name "__pycache__" -type d -exec rm -rf {} +
 	find . -name "*.mo" -type f -delete
+	find . -name "__pycache__" -type d -exec rm -rf {} +
