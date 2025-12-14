@@ -165,7 +165,7 @@ sudo dnf swap -y mesa-vdpau-drivers mesa-vdpau-drivers-freeworld
 
 You can install it in user mode by opening a terminal in the project directory (requires make and dependencies installed):
 ```bash
-make install
+make install-manual
 ```
 This command installs the application to ~/.local/share/engplayer, sets up an isolated Python virtual environment, and adds the menu shortcut.
 
