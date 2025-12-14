@@ -46,5 +46,7 @@ modules:
       - install -D -m644 io.github.falldaemon.engplayer.daemon.desktop /app/etc/xdg/autostart/io.github.falldaemon.engplayer.desktop
 
     sources:
-      - type: dir
-        path: .
+      - type: git
+        url: https://github.com/Falldaemon/EngPlayer.git
+        tag: v0.1.1
+        commit: 6c831c3e1984f325fe4579440fd3c472584c8d33
