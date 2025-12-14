@@ -3757,7 +3757,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="EngPlayer",
             application_icon="io.github.falldaemon.engplayer",
             developer_name="Engin Eren",
-            version="0.1.0",
+            version="0.1.1",
             copyright="© 2025 Engin Eren",
             website="https://github.com/Falldaemon/EngPlayer",
             issue_url="https://github.com/Falldaemon/EngPlayer/issues",
