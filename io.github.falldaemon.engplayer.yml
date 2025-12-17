@@ -26,5 +26,6 @@ modules:
       - make install prefix=/app
 
     sources:
-      - type: dir
-        path: .
+      - type: git
+        url: https://github.com/Falldaemon/EngPlayer.git
+        commit: 0aeb5fd6020392c5ebc05faa4ed313a663bb48da
