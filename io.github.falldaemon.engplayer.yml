@@ -16,8 +16,6 @@ finish-args:
   - --filesystem=xdg-videos
   - --filesystem=/run/media
   - --filesystem=/media
-  - --talk-name=org.freedesktop.ScreenSaver
-  - --own-name=org.mpris.MediaPlayer2.EngPlayer
 
 modules:
   - python3-requirements.json
@@ -28,6 +26,5 @@ modules:
       - make install prefix=/app
 
     sources:
-      - type: git
-        url: https://github.com/Falldaemon/EngPlayer.git
-        commit: 624210544535b0351bc370d50007025fe3201af5
+      - type: dir
+        path: .

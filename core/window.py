@@ -85,7 +85,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_content(root_box)
         self.toast_overlay = Adw.ToastOverlay()
         self.player = Player()
-        self.inhibitor = SleepInhibitor()
+        self.inhibitor = SleepInhibitor(self.get_application())
         self.subtitle_delay_ms = 0
         self.all_channels_map = {}
         self.active_recorder = None

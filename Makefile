@@ -40,6 +40,7 @@ install: all
 	mkdir -p $(DESTDIR)$(iconsdir)
 	mkdir -p $(DESTDIR)$(metainfodir)
 	mkdir -p $(DESTDIR)$(sysconfdir)/xdg/autostart
+	mkdir -p $(DESTDIR)$(sharedir)/licenses/io.github.falldaemon.engplayer
 
 	cp -r . $(DESTDIR)$(sharedir)/engplayer
 	rm -rf $(DESTDIR)$(sharedir)/engplayer/.git
@@ -52,6 +53,7 @@ install: all
 	install -m 644 resources/icons/io.github.falldaemon.engplayer.png $(DESTDIR)$(iconsdir)/
 	install -m 644 io.github.falldaemon.engplayer.metainfo.xml $(DESTDIR)$(metainfodir)/
 	install -m 644 io.github.falldaemon.engplayer.daemon.desktop $(DESTDIR)$(sysconfdir)/xdg/autostart/io.github.falldaemon.engplayer.desktop
+	install -m 644 LICENSE $(DESTDIR)$(sharedir)/licenses/io.github.falldaemon.engplayer/LICENSE
 
 	sed -i "s|Exec=.*|Exec=$(bindir)/engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
 	sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
@@ -63,30 +65,25 @@ install-manual: all
 	mkdir -p $(LOCAL_DESKTOP_DIR)
 	mkdir -p $(LOCAL_ICON_DIR)
 	mkdir -p $(LOCAL_SYSTEMD_DIR)
-
+	
 	install -m 644 io.github.falldaemon.engplayer.desktop.in $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
 	sed -i "s|Exec=.*|Exec=$(LOCAL_INSTALL_DIR)/venv/bin/python3 $(LOCAL_INSTALL_DIR)/main.py|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
 	sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
-
 	cp -r . $(LOCAL_INSTALL_DIR)/
 	$(PYTHON) -m venv $(LOCAL_INSTALL_DIR)/venv
 	$(LOCAL_INSTALL_DIR)/venv/bin/pip install --upgrade pip wheel
-	$(LOCAL_INSTALL_DIR)/venv/bin/pip install -r requirements.txt || $(LOCAL_INSTALL_DIR)/venv/bin/pip install requests pygobject mutagen yt-dlp fuzzywuzzy python-Levenshtein wheel
+	$(LOCAL_INSTALL_DIR)/venv/bin/pip install -r requirements.txt || $(LOCAL_INSTALL_DIR)/venv/bin/pip install requests pygobject mutagen yt-dlp fuzzywuzzy python-Levenshtein wheel guessit protobuf
 	install -m 755 engplayer.sh $(LOCAL_BIN_DIR)/engplayer
-
 	sed -i "s|/app/share/engplayer|$(LOCAL_INSTALL_DIR)|g" $(LOCAL_BIN_DIR)/engplayer
-
+	sed -i "s|exec python3|exec $(LOCAL_INSTALL_DIR)/venv/bin/python3|g" $(LOCAL_BIN_DIR)/engplayer
 	install -m 644 resources/icons/io.github.falldaemon.engplayer.png $(LOCAL_ICON_DIR)/io.github.falldaemon.engplayer.png
-
 	sed -e "s|@INSTALL_DIR@|$(LOCAL_INSTALL_DIR)|g" io.github.falldaemon.engplayer.recorder.service.in > $(LOCAL_SYSTEMD_DIR)/io.github.falldaemon.engplayer.recorder.service
-
 	systemctl --user daemon-reload
 	systemctl --user enable --now io.github.falldaemon.engplayer.recorder.service
-
 	update-desktop-database $(LOCAL_DESKTOP_DIR) || true
 	gtk-update-icon-cache -f -t $(LOCAL_ICON_DIR)/../.. || true
 
-	@echo "Installation complete! (Please copy desktop files manually if needed for local menu)"
+	@echo "Installation complete! (Run 'engplayer' to start)"
 
 uninstall:
 	@echo "Uninstalling EngPlayer (Manual Install)..."
