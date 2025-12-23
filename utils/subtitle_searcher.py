@@ -9,13 +9,14 @@ import io
 import tempfile
 import gettext
 import locale
+from core.config import VERSION
 _ = gettext.gettext
 API_SEARCH_URL = "https://api.opensubtitles.com/api/v1/subtitles"
 API_DOWNLOAD_URL = "https://api.opensubtitles.com/api/v1/download"
 HEADERS = {
     'Accept': 'application/json',
     'Content-Type': 'application/json',
-    'User-Agent': 'EngPlayer v0.1'
+    'User-Agent': f'EngPlayer/{VERSION}'
 }
 
 def search_subtitles_online(file_path, title_for_search, api_key, callback_on_main_thread, tmdb_id=None, year=None):

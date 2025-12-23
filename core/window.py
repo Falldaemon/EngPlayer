@@ -70,6 +70,7 @@ from ui.catchup_dialog import CatchupDialog
 from ui.subtitle_results_dialog import SubtitleResultsDialog
 from utils import subtitle_searcher
 from data_providers import trakt_client
+from core.config import VERSION
 
 _ = gettext.gettext
 
@@ -3757,7 +3758,7 @@ class MainWindow(Adw.ApplicationWindow):
             application_name="EngPlayer",
             application_icon="io.github.falldaemon.engplayer",
             developer_name="Engin Eren",
-            version="0.1.1",
+            version=VERSION,
             copyright="© 2025 Engin Eren",
             website="https://github.com/Falldaemon/EngPlayer",
             issue_url="https://github.com/Falldaemon/EngPlayer/issues",

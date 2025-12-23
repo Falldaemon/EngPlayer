@@ -83,6 +83,17 @@
   </content_rating>
   
   <releases>
+    <release version="0.1.2" date="2025-12-23">
+      <description>
+        <p>This update introduces visual improvements and better version management.</p>
+        <ul>
+          <li>Dynamic EPG: Current program titles are now displayed directly in the channel list.</li>
+          <li>Visual Progress Bars: Added sleek indicators to track current program completion.</li>
+          <li>Unified Versioning: Centralized version control under core settings for better synchronization.</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="0.1.1" date="2025-12-14">
       <description>
         <p>First public release of EngPlayer.</p>

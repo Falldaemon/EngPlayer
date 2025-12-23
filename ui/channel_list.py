@@ -16,6 +16,7 @@ import urllib.request
 import logging
 import os
 import database
+from datetime import datetime, timezone
 from utils.theme_utils import get_icon_theme_folder
 from background import image_download_pool
 try:
@@ -67,6 +68,12 @@ class ChannelList(Gtk.Box):
         self.active_row = None
 
     def populate_channels_async(self, channels, icon_path=""):
+        """
+        Populates the channel list and starts a background timer to refresh EPG status.
+        """
+        if hasattr(self, 'epg_update_timer_id') and self.epg_update_timer_id:
+            GLib.source_remove(self.epg_update_timer_id)
+            self.epg_update_timer_id = None
         while (child := self.channel_listbox.get_first_child()):
             self.channel_listbox.remove(child)
         self.view_stack.set_visible_child_name("loading")
@@ -74,32 +81,38 @@ class ChannelList(Gtk.Box):
         favorite_urls_set = database.get_all_favorite_channel_urls()
         locked_urls_set = database.get_all_locked_channel_urls()
         logo_map = {}
+        epg_data = None
+        epg_clean_map = None
         main_window = self.get_ancestor(Gtk.Window)
-        if main_window and hasattr(main_window, 'logo_map'):
-            if isinstance(main_window.logo_map, dict):
+        if main_window:
+            if hasattr(main_window, 'logo_map'):
                 logo_map = main_window.logo_map
-                logging.debug(f"ChannelList: Received logo map with {len(logo_map)} entries from main window.")
-            else:
-                logging.error(f"ChannelList: 'logo_map' found in main window but it is not a dict! Type: {type(main_window.logo_map)}")
-        else:
-            logging.warning("ChannelList: Logo map (logo_map) could not be retrieved from main window.")
+            if hasattr(main_window, 'epg_data'):
+                epg_data = main_window.epg_data
+            if hasattr(main_window, 'epg_clean_map'):
+                epg_clean_map = main_window.epg_clean_map
         channel_generator = (channel for channel in channels)
         GLib.idle_add(
             self._populate_chunk,
             channel_generator,
             logo_map,
             favorite_urls_set,
-            locked_urls_set
+            locked_urls_set,
+            epg_data,
+            epg_clean_map
         )
+        self.epg_update_timer_id = GLib.timeout_add_seconds(60, self._update_all_rows_epg)
 
-    def _populate_chunk(self, channel_generator, logo_map, favorite_urls, locked_urls):
+    def _populate_chunk(self, channel_generator, logo_map, favorite_urls, locked_urls, epg_data, epg_clean_map):
+        """Processes channel chunks and calculates progress for each current program."""
         chunk_size = 50
         try:
             for _ in range(chunk_size):
                 channel = next(channel_generator)
                 is_fav = channel["url"] in favorite_urls
                 is_locked = channel["url"] in locked_urls
-                self._add_row_to_listbox(channel, logo_map, is_fav, is_locked)
+                epg_info = self._get_current_program_info(channel, epg_data, epg_clean_map)
+                self._add_row_to_listbox(channel, logo_map, is_fav, is_locked, epg_info)
             return True
         except StopIteration:
             self.spinner.stop()
@@ -110,7 +123,8 @@ class ChannelList(Gtk.Box):
             logging.exception(f"Error in _populate_chunk (ChannelList): {e}")
             return True
 
-    def _add_row_to_listbox(self, channel, logo_map, is_fav, is_locked):
+    def _add_row_to_listbox(self, channel, logo_map, is_fav, is_locked, epg_info=None):
+        """Creates a ListBoxRow and stores widget references for dynamic updates."""
         row = Gtk.ListBoxRow()
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         hbox.set_margin_start(10); hbox.set_margin_end(10)
@@ -122,9 +136,27 @@ class ChannelList(Gtk.Box):
         row.correct_logo_path = logo_to_load
         if logo_to_load and logo_to_load.strip():
             self._load_logo_and_replace(logo_to_load, placeholder)
-        label = Gtk.Label(label=channel["name"], xalign=0)
-        label.set_ellipsize(Pango.EllipsizeMode.END); label.set_hexpand(True)
-        hbox.append(label)
+        label_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        label_vbox.set_hexpand(True)
+        label_vbox.set_valign(Gtk.Align.CENTER)
+        name_label = Gtk.Label(label=channel["name"], xalign=0)
+        name_label.set_ellipsize(Pango.EllipsizeMode.END)
+        label_vbox.append(name_label)
+        row.epg_label = None
+        row.epg_progress = None
+        row.label_vbox = label_vbox
+        row.channel_data = channel
+        if epg_info:
+            row.epg_label = Gtk.Label(label=epg_info['title'], xalign=0)
+            row.epg_label.set_ellipsize(Pango.EllipsizeMode.END)
+            row.epg_label.add_css_class("caption")
+            label_vbox.append(row.epg_label)
+            if epg_info['progress'] is not None:
+                row.epg_progress = Gtk.ProgressBar()
+                row.epg_progress.set_fraction(epg_info['progress'])
+                row.epg_progress.add_css_class("epg-progress-bar")
+                label_vbox.append(row.epg_progress)
+        hbox.append(label_vbox)
         theme_folder = get_icon_theme_folder()
         row.fav_icon = Gtk.Image.new_from_file(os.path.join("resources", "icons", theme_folder, "favorite-icon.svg"))
         row.fav_icon.set_pixel_size(16); hbox.append(row.fav_icon)
@@ -132,7 +164,6 @@ class ChannelList(Gtk.Box):
         row.lock_icon.set_pixel_size(16); hbox.append(row.lock_icon)
         row.fav_icon.set_visible(is_fav)
         row.lock_icon.set_visible(is_locked)
-        row.channel_data = channel
         right_click_gesture = Gtk.GestureClick.new(); right_click_gesture.set_button(3)
         right_click_gesture.connect("pressed", self._on_row_right_clicked, row)
         row.add_controller(right_click_gesture)
@@ -448,3 +479,66 @@ class ChannelList(Gtk.Box):
             self.channel_listbox.insert(row_to_move, target_index)
             self.channel_listbox.select_row(row_to_move)
         return success
+
+    def _get_current_program_info(self, channel, epg_data, epg_clean_map):
+        """Calculates the title and the progress fraction (0.0 to 1.0) of the current program."""
+        if not epg_data:
+            return None
+        tvg_id = channel.get("tvg-id")
+        if not tvg_id:
+            return None
+        programs = epg_data.get(tvg_id)
+        if not programs and epg_clean_map:
+            clean_id = self._clean_key(tvg_id)
+            if clean_id:
+                programs = epg_clean_map.get(clean_id)
+        if not programs:
+            return None
+        now = datetime.now(timezone.utc)
+        for prog in programs:
+            if prog['start'] <= now <= prog['stop']:
+                total_duration = (prog['stop'] - prog['start']).total_seconds()
+                elapsed_time = (now - prog['start']).total_seconds()
+                fraction = 0.0
+                if total_duration > 0:
+                    fraction = max(0.0, min(1.0, elapsed_time / total_duration))
+                return {
+                    'title': prog['title'],
+                    'progress': fraction
+                }
+        return None
+
+    def _update_all_rows_epg(self):
+        """
+        Iterates through all visible rows and updates EPG titles and progress bars.
+        """
+        main_window = self.get_ancestor(Gtk.Window)
+        if not main_window or not hasattr(main_window, 'epg_data'):
+            return True
+        epg_data = main_window.epg_data
+        epg_clean_map = getattr(main_window, 'epg_clean_map', None)
+        row = self.channel_listbox.get_first_child()
+        while row:
+            if hasattr(row, 'channel_data'):
+                epg_info = self._get_current_program_info(row.channel_data, epg_data, epg_clean_map)
+                if epg_info:
+                    if not row.epg_label:
+                        row.epg_label = Gtk.Label(xalign=0, ellipsize=Pango.EllipsizeMode.END)
+                        row.epg_label.add_css_class("caption")
+                        row.label_vbox.append(row.epg_label)
+                    row.epg_label.set_text(epg_info['title'])
+                    if epg_info['progress'] is not None:
+                        if not row.epg_progress:
+                            row.epg_progress = Gtk.ProgressBar()
+                            row.epg_progress.add_css_class("epg-progress-bar")
+                            row.label_vbox.append(row.epg_progress)
+                        row.epg_progress.set_fraction(epg_info['progress'])
+                else:
+                    if row.epg_label:
+                        row.label_vbox.remove(row.epg_label)
+                        row.epg_label = None
+                    if row.epg_progress:
+                        row.label_vbox.remove(row.epg_progress)
+                        row.epg_progress = None
+            row = row.get_next_sibling()
+        return True
