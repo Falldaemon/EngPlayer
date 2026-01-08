@@ -236,13 +236,23 @@ class ChannelList(Gtk.Box):
             logging.warning("PiP requested but channel URL is missing.")
 
     def _clean_key(self, text):
-        """
-        Creates a consistent cleaning key for logo map keys and channel names.
-        (v2 - Fixed Sorting)
-        """
         if not text:
             return None
         name = text.lower().strip()
+        match = re.match(r'^([a-z]{2,3})[| \-_]+(.*)', name)
+        if match:
+            lang_code = match.group(1)
+            rest_of_name = match.group(2)
+            common_codes = [
+                "tr", "us", "uk", "fr", "de", "it", "es", "pt", "nl", "be", 
+                "ru", "gr", "az", "ch", "at", "pl", "ro", "bg", "hu", "cz", 
+                "sk", "al", "rs", "hr", "ba", "mk", "se", "no", "dk", "fi", 
+                "ie", "ca", "au", "nz", "br", "ar", "mx", "ae", "sa", "eg",
+                "tur", "usa", "gbr", "fra", "deu", "ita", "esp", "prt", "nld", "bel",
+                "rus", "grc", "aze", "che", "aut", "pol", "rou", "bgr", "hun", "cze"
+            ]           
+            if lang_code in common_codes:
+                name = f"{rest_of_name}.{lang_code}"
         try:
             name = unicodedata.normalize("NFKD", name)
             name = "".join([c for c in name if not unicodedata.combining(c)])
@@ -250,43 +260,69 @@ class ChannelList(Gtk.Box):
              pass
         name = re.sub(r'(\(.*\))|(\[.*?\])|(".*?")|(\=.*)', ' ', name)
         name = re.sub(r'\b(HD|FHD|UHD|4K|8K|SD)\b', ' ', name, flags=re.IGNORECASE)
-        name = re.sub(r'[^\w\d\s]+', ' ', name)
-        name = re.sub(
-            r'\b(tr|de|us|uk|fr|it|es|ru|br|ar|mx|ca|cn|jp|kr|nl|pl|pt|gr|se|no|dk|fi|in|ir|iq|sa|ae|az|kz|by|ro|bg|hu|cz|sk|si|hr|ch|be|at|ua|lt|lv|ee|rs|ba|me|mk|al)\b',
-            ' ', name, flags=re.IGNORECASE
-        )
-        name = re.sub(r'(\d+)\s*(hd|sd|uhd|fhd|4k|8k)', r'\1', name, flags=re.IGNORECASE)
-        name = re.sub(r'\s+', '', name)
+        name = re.sub(r'[^\w\d\s.]+', ' ', name)
+        name = re.sub(r'\s+', '', name)       
         return name.strip().lower()
+        
+    def _check_digits_match(self, str1, str2):
+        d1 = "".join(re.findall(r'\d', str1))
+        d2 = "".join(re.findall(r'\d', str2))
+        return d1 == d2   
+        
+    def _check_country_match(self, key1, key2):
+        if "." in key1 and "." in key2:
+            return key1.split(".")[-1] == key2.split(".")[-1]
+        if "." in key2:
+            epg_suffix = key2.split(".")[-1].lower()
+            if 2 <= len(epg_suffix) <= 3:
+                channel_prefix = key1[:len(epg_suffix)].lower()               
+                if channel_prefix != epg_suffix:
+                    common_iso_codes = [
+                        "tr", "us", "uk", "fr", "de", "it", "es", "pt", "nl", "be", 
+                        "ru", "gr", "az", "de", "ch", "at", "pl", "ro", "bg", "hu", 
+                        "cz", "sk", "al", "rs", "hr", "ba", "mk", "se", "no", "dk", 
+                        "fi", "ie", "ca", "au", "nz", "br", "ar", "mx", "ae", "sa", 
+                        "eg", "in", "cn", "jp", "kr", "za",
+                        "tur", "usa", "gbr", "fra", "deu", "ita", "esp", "prt", "nld", "bel",
+                        "rus", "grc", "aze", "che", "aut", "pol", "rou", "bgr", "hun", "cze",
+                        "svk", "alb", "srb", "hrv", "bih", "mkd", "swe", "nor", "dnk", "fin",
+                        "irl", "can", "aus", "nzl", "bra", "arg", "mex", "are", "sau", "egy"
+                    ]
+                    if channel_prefix in common_iso_codes:
+                        return False               
+        return True             
 
     def _find_logo_path(self, channel_data, logo_map):
-        """
-        Performs a 4-step search in the logo map for the given channel data.
-        Returns the original 'logo' URL from M3U if not found.
-        """
         fallback_logo_url = channel_data.get("logo")
         if not logo_map:
             return fallback_logo_url
-        channel_name = channel_data.get("name")
-        channel_tvg_id = channel_data.get("tvg-id")
-        if channel_tvg_id:
-            key_from_tvg_id = self._clean_key(channel_tvg_id)
-            if key_from_tvg_id and key_from_tvg_id in logo_map:
-                logging.debug(f"Logo Found (Step 1: TVG-ID): '{channel_name}' ({channel_tvg_id}) -> '{key_from_tvg_id}'")
-                return logo_map[key_from_tvg_id]
-        if channel_name:
-            key_from_name = self._clean_key(channel_name)
-            if key_from_name and key_from_name in logo_map:
-                logging.debug(f"Logo Found (Step 2: Channel Name): '{channel_name}' -> '{key_from_name}'")
-                return logo_map[key_from_name]
-        if FUZZ_AVAILABLE and channel_name:
-            key_from_name_clean = self._clean_key(channel_name)
-            if key_from_name_clean:
-                best_match, score = process.extractOne(key_from_name_clean, logo_map.keys())
-                if score > 90:
-                    logging.debug(f"Logo Found (Step 3: Fuzzy %{score}): '{channel_name}' -> '{best_match}'")
-                    return logo_map[best_match]
-        logging.debug(f"Logo not found (Step 4: Fallback): M3U logo ('{fallback_logo_url}') will be used for '{channel_name}'.")
+        t_id = (channel_data.get("tvg-id") or "").strip()
+        t_name = (channel_data.get("tvg-name") or "").strip()
+        name = (channel_data.get("name") or "").strip()
+        search_keys = []
+        for raw_val in [t_id, t_name, name]:
+            if raw_val:
+                clean = self._clean_key(raw_val)
+                if clean and clean not in search_keys:
+                    search_keys.append(clean)
+        for clean_key in search_keys:
+            if clean_key in logo_map:
+                logging.debug(f"Logo found (exact match): '{name}' -> '{clean_key}.png'")
+                return logo_map[clean_key]
+        if FUZZ_AVAILABLE and search_keys:
+            primary_key = search_keys[0]
+            best_match_tuple = process.extractOne(primary_key, logo_map.keys())           
+            if best_match_tuple:
+                best_match, score = best_match_tuple
+                if score >= 80 and \
+                   self._check_digits_match(primary_key, best_match) and \
+                   self._check_country_match(primary_key, best_match):
+                    len1, len2 = len(primary_key), len(best_match)
+                    ratio = max(len1, len2) / min(len1, len2) if min(len1, len2) > 0 else 0
+                    first_char_match = primary_key[0] == best_match[0]                   
+                    if ratio <= 2.0 and first_char_match:
+                        logging.debug(f"Logo Found (Smart Fuzzy %{score}): '{name}' -> '{best_match}'")
+                        return logo_map[best_match]
         return fallback_logo_url
 
     def _on_add_to_list_activated(self, list_id):
@@ -481,17 +517,37 @@ class ChannelList(Gtk.Box):
         return success
 
     def _get_current_program_info(self, channel, epg_data, epg_clean_map):
-        """Calculates the title and the progress fraction (0.0 to 1.0) of the current program."""
         if not epg_data:
             return None
-        tvg_id = channel.get("tvg-id")
-        if not tvg_id:
+        t_id = (channel.get("tvg-id") or "").strip()
+        t_name = (channel.get("tvg-name") or "").strip()
+        name = (channel.get("name") or "").strip()
+        search_key = t_id or t_name or name
+        if not search_key:
             return None
-        programs = epg_data.get(tvg_id)
+        programs = epg_data.get(search_key)
         if not programs and epg_clean_map:
-            clean_id = self._clean_key(tvg_id)
+            clean_id = self._clean_key(search_key)
             if clean_id:
                 programs = epg_clean_map.get(clean_id)
+                if not programs and FUZZ_AVAILABLE and process:
+                    best_match_tuple = process.extractOne(clean_id, epg_clean_map.keys())
+                    if best_match_tuple:
+                        best_match, score = best_match_tuple
+                        if score >= 80 and \
+                           self._check_digits_match(clean_id, best_match) and \
+                           self._check_country_match(clean_id, best_match):
+                            len1, len2 = len(clean_id), len(best_match)
+                            ratio = max(len1, len2) / min(len1, len2) if min(len1, len2) > 0 else 0
+                            first_char_match = clean_id[0] == best_match[0] if clean_id and best_match else False
+                            if ratio <= 2.0 and first_char_match:
+                                programs = epg_clean_map[best_match]
+                            else:
+                                reason = "Ratio" if ratio > 2.0 else "First Char"
+                                logging.debug(f"List EPG Rejected ({reason}): '{clean_id}' vs '{best_match}'")
+                if not programs:
+                    soft_id = clean_id.replace("tv.", ".")
+                    programs = epg_clean_map.get(soft_id)
         if not programs:
             return None
         now = datetime.now(timezone.utc)

@@ -5,7 +5,7 @@ import base64
 from gi.repository import GLib
 
 APP_ID = "io.github.falldaemon.engplayer"
-VERSION = "0.1.2"
+VERSION = "0.1.3"
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = os.path.dirname(current_dir)

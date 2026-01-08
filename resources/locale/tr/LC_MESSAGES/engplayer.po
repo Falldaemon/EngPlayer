@@ -1126,6 +1126,218 @@ msgstr "Kayıt dosyası için özel bir isim girin"
 msgid "E.g. TV Show Name (Optional)"
 msgstr "Örn: Kurtlar Vadisi (İsteğe Bağlı)"
 
+# --- Media Information Dialog ---
+msgid "Stream Technical Information"
+msgstr "Akış Teknik Bilgileri"
+
+msgid "Codec"
+msgstr "Kodlayıcı"
+
+msgid "Resolution"
+msgstr "Çözünürlük"
+
+msgid "Frame Rate (FPS)"
+msgstr "Kare Hızı (FPS)"
+
+msgid "Decoded Format"
+msgstr "Çözülen Biçim"
+
+msgid "Language"
+msgstr "Dil"
+
+msgid "Channels"
+msgstr "Kanallar"
+
+msgid "Sample Rate"
+msgstr "Örnekleme Hızı"
+
+msgid "Bitrate"
+msgstr "Bit Hızı"
+
+msgid "Location"
+msgstr "Konum"
+
+# --- Player Controls Tooltip ---
+msgid "Stream Information"
+msgstr "Yayın Bilgileri"
+
+# --- Video Settings ---
+msgid "Video Settings"
+msgstr "Görüntü Ayarları"
+
+msgid "Contrast"
+msgstr "Kontrast"
+
+msgid "Brightness"
+msgstr "Parlaklık"
+
+msgid "Saturation"
+msgstr "Doygunluk"
+
+msgid "Hue"
+msgstr "Renk Tonu"
+
+msgid "Reset to Defaults"
+msgstr "Varsayılanlara Dön"
+
+# --- Podcasts & New Media Features ---
+
+msgid "Podcasts"
+msgstr "Podcast'ler"
+
+msgid "Podcast List"
+msgstr "Podcast Listesi"
+
+msgid "Search podcasts..."
+msgstr "Podcast ara..."
+
+msgid "Episodes"
+msgstr "Bölümler"
+
+msgid "{} Episodes"
+msgstr "{} Bölüm"
+
+msgid "Back to Podcast List"
+msgstr "Podcast Listesine Dön"
+
+msgid "Back to Media Menu"
+msgstr "Medya Menüsüne Dön"
+
+msgid "Add Media Source"
+msgstr "Medya Kaynağı Ekle"
+
+msgid "Choose the type of source you want to add."
+msgstr "Eklemek istediğiniz kaynak türünü seçin."
+
+msgid "Local Folder"
+msgstr "Yerel Klasör"
+
+msgid "Podcast URL"
+msgstr "Podcast URL'si"
+
+msgid "Add Podcast"
+msgstr "Podcast Ekle"
+
+msgid "Enter the podcast title and RSS URL."
+msgstr "Podcast başlığını ve RSS adresini girin."
+
+msgid "Podcast Title"
+msgstr "Podcast Başlığı"
+
+msgid "Podcast RSS URL"
+msgstr "Podcast RSS Adresi"
+
+msgid "Podcast added successfully."
+msgstr "Podcast başarıyla eklendi."
+
+msgid "Error: Podcast could not be added (Check URL/Duplicate)."
+msgstr "Hata: Podcast eklenemedi (Adresi kontrol edin/Mükerrer)."
+
+msgid "Please fill in both fields."
+msgstr "Lütfen her iki alanı da doldurun."
+
+msgid "Error loading podcast feed."
+msgstr "Podcast akışı yüklenirken hata oluştu."
+
+msgid "Error: Could not load episodes (Empty list)."
+msgstr "Hata: Bölümler yüklenemedi (Liste boş)."
+
+msgid "End of podcast list."
+msgstr "Podcast listesinin sonu."
+
+msgid "Move Up"
+msgstr "Yukarı Taşı"
+
+msgid "Move Down"
+msgstr "Aşağı Taşı"
+
+msgid "Delete Podcast"
+msgstr "Podcast'i Sil"
+
+msgid "Are you sure you want to delete '{}'?"
+msgstr "'{}' podcast'ini silmek istediğinizden emin misiniz?"
+
+msgid "Podcast deleted successfully."
+msgstr "Podcast başarıyla silindi."
+
+msgid "Error deleting podcast."
+msgstr "Podcast silinirken hata oluştu."
+
+msgid "Unknown Podcast"
+msgstr "Bilinmeyen Podcast"
+
+# --- Network Stream & Live URL Features ---
+msgid "Network Stream"
+msgstr "Ağ Akışı"
+
+msgid "Open Network Stream"
+msgstr "Ağ Akışı Aç"
+
+msgid "Enter the URL to play directly."
+msgstr "Doğrudan oynatmak için URL'yi girin."
+
+msgid "Audio Only Mode"
+msgstr "Sadece Ses Modu"
+
+msgid "Enable this if the URL is a radio station or music file."
+msgstr "URL bir radyo istasyonu veya müzik dosyasıysa bunu etkinleştirin."
+
+msgid "Resolving stream URL..."
+msgstr "Bağlantı çözümleniyor..."
+
+msgid "Please enter a valid URL."
+msgstr "Lütfen geçerli bir URL girin."
+
+msgid "Error: Video stream could not be extracted from this site."
+msgstr "Hata: Video akışı bu siteden çıkarılamadı."
+
+msgid "Loading playlist..."
+msgstr "Oynatma listesi yükleniyor..."
+
+msgid "Error loading playlist."
+msgstr "Oynatma listesi yüklenirken hata oluştu."
+
+msgid "No channels found in playlist."
+msgstr "Listede kanal bulunamadı."
+
+msgid "{} channels loaded."
+msgstr "{} kanal yüklendi."
+
+msgid "Error: This is a playlist package. Please use 'Add Profile'."
+msgstr "Hata: Bu bir oynatma listesi paketi. Lütfen 'Profil Ekle'yi kullanın."
+
+# --- Temporary Playlist (Side Menu) ---
+msgid "Network Playlist"
+msgstr "Ağ Listesi"
+
+msgid "Close Playlist"
+msgstr "Listeyi Kapat"
+
+msgid "Filter channels..."
+msgstr "Kanalları filtrele..."
+
+msgid "Playlist ({})"
+msgstr "Oynatma Listesi ({})"
+
+# --- Podcast Updates ---
+msgid "Fetching podcast info..."
+msgstr "Podcast bilgileri alınıyor..."
+
+msgid "Please enter a URL."
+msgstr "Lütfen bir URL girin."
+
+msgid "Error: Podcast could not be added."
+msgstr "Hata: Podcast eklenemedi."
+
+msgid "Resume Podcast"
+msgstr "Podcast'e Devam Et"
+
+msgid "You listened to this episode until {}. Resume?"
+msgstr "Bu bölümü {} süresine kadar dinlediniz. Devam edilsin mi?"
+
+msgid "Added to playlist: {}"
+msgstr "Oynatma listesine eklendi: {}"
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Bu ürün TMDb API'sini kullanır ancak TMDb tarafından onaylanmamış veya sertifikalandırılmamıştır."
 

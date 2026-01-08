@@ -19,7 +19,8 @@ class MediaLibrarySidebar(Gtk.Box):
         library_types = {
             "videos": _("Video Library"),
             "pictures": _("Picture Library"),
-            "music": _("Music Library")
+            "music": _("Music Library"),
+            "podcasts": _("Podcast Library")
         }
         for key, label in library_types.items():
             btn = Gtk.Button(label=label)

@@ -127,11 +127,15 @@
 .opensubtitles-api-dialog,
 .subtitle-results-dialog,
 .move-channel-dialog,
+.media-info-dialog,
 .trakt-api-dialog,    
 .trakt-auth-dialog,
 .new-list-dialog,
 .move-list-dialog,
-.about-window {
+.video-settings-window,
+.about-window,
+.add-podcast-dialog,
+.source-selection-dialog {
     background-color: alpha(@theme_bg_color, 0.90); 
     border-radius: 12px;
 

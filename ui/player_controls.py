@@ -92,6 +92,7 @@ class PlayerControls(Gtk.Box):
             "audio-track": "language.svg",
             "subtitles": "media-show-subtitles.svg",
             "volume": "audio-speakers.svg",
+            "info": "info.svg",
             "fullscreen": "view-fullscreen.svg"
         }
         for key, icon_name in right_icons.items():
@@ -102,6 +103,7 @@ class PlayerControls(Gtk.Box):
         self.buttons["audio-track"].set_tooltip_text(_("Select Audio Track"))
         self.buttons["subtitles"].set_tooltip_text(_("Subtitle Options"))
         self.buttons["volume"].set_tooltip_text(_("Volume Control"))
+        self.buttons["info"].set_tooltip_text(_("Stream Information"))
         self.buttons["fullscreen"].set_tooltip_text(_("Toggle Fullscreen"))    
         self.audio_popover = Gtk.PopoverMenu()
         self.buttons["audio-track"].connect("clicked", lambda btn: self.audio_popover.popup())

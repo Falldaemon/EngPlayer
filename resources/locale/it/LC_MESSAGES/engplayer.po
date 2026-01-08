@@ -1125,6 +1125,218 @@ msgstr "Inserisci un nome personalizzato per il file di registrazione"
 msgid "E.g. TV Show Name (Optional)"
 msgstr "Es. Nome del programma (Opzionale)"
 
+# --- Media Information Dialog ---
+msgid "Stream Technical Information"
+msgstr "Informazioni Tecniche sullo Stream"
+
+msgid "Codec"
+msgstr "Codec"
+
+msgid "Resolution"
+msgstr "Risoluzione"
+
+msgid "Frame Rate (FPS)"
+msgstr "Frequenza Fotogrammi (FPS)"
+
+msgid "Decoded Format"
+msgstr "Formato Decodificato"
+
+msgid "Language"
+msgstr "Lingua"
+
+msgid "Channels"
+msgstr "Canali"
+
+msgid "Sample Rate"
+msgstr "Frequenza di Campionamento"
+
+msgid "Bitrate"
+msgstr "Bitrate"
+
+msgid "Location"
+msgstr "Posizione"
+
+# --- Player Controls Tooltip ---
+msgid "Stream Information"
+msgstr "Informazioni sullo Stream"
+
+# --- Video Settings ---
+msgid "Video Settings"
+msgstr "Impostazioni video"
+
+msgid "Contrast"
+msgstr "Contrasto"
+
+msgid "Brightness"
+msgstr "Luminosità"
+
+msgid "Saturation"
+msgstr "Saturazione"
+
+msgid "Hue"
+msgstr "Tonalità"
+
+msgid "Reset to Defaults"
+msgstr "Ripristina predefiniti"
+
+# --- Podcasts & New Media Features ---
+
+msgid "Podcasts"
+msgstr "Podcast"
+
+msgid "Podcast List"
+msgstr "Elenco podcast"
+
+msgid "Search podcasts..."
+msgstr "Cerca podcast..."
+
+msgid "Episodes"
+msgstr "Episodi"
+
+msgid "{} Episodes"
+msgstr "{} Episodi"
+
+msgid "Back to Podcast List"
+msgstr "Torna all'elenco dei podcast"
+
+msgid "Back to Media Menu"
+msgstr "Torna al menu multimediale"
+
+msgid "Add Media Source"
+msgstr "Aggiungi sorgente multimediale"
+
+msgid "Choose the type of source you want to add."
+msgstr "Scegli il tipo di sorgente che vuoi aggiungere."
+
+msgid "Local Folder"
+msgstr "Cartella locale"
+
+msgid "Podcast URL"
+msgstr "URL del podcast"
+
+msgid "Add Podcast"
+msgstr "Aggiungi podcast"
+
+msgid "Enter the podcast title and RSS URL."
+msgstr "Inserisci il titolo del podcast e l'URL RSS."
+
+msgid "Podcast Title"
+msgstr "Titolo del podcast"
+
+msgid "Podcast RSS URL"
+msgstr "URL RSS del podcast"
+
+msgid "Podcast added successfully."
+msgstr "Podcast aggiunto con successo."
+
+msgid "Error: Podcast could not be added (Check URL/Duplicate)."
+msgstr "Errore: impossibile aggiungere il podcast (Controlla URL/Duplicato)."
+
+msgid "Please fill in both fields."
+msgstr "Si prega di compilare entrambi i campi."
+
+msgid "Error loading podcast feed."
+msgstr "Errore durante il caricamento del feed del podcast."
+
+msgid "Error: Could not load episodes (Empty list)."
+msgstr "Errore: impossibile caricare gli episodi (elenco vuoto)."
+
+msgid "End of podcast list."
+msgstr "Fine dell'elenco dei podcast."
+
+msgid "Move Up"
+msgstr "Sposta su"
+
+msgid "Move Down"
+msgstr "Sposta giù"
+
+msgid "Delete Podcast"
+msgstr "Elimina podcast"
+
+msgid "Are you sure you want to delete '{}'?"
+msgstr "Sei sicuro di voler eliminare '{}'?"
+
+msgid "Podcast deleted successfully."
+msgstr "Podcast eliminato con successo."
+
+msgid "Error deleting podcast."
+msgstr "Errore durante l'eliminazione del podcast."
+
+msgid "Unknown Podcast"
+msgstr "Podcast sconosciuto"
+
+# --- Network Stream & Live URL Features ---
+msgid "Network Stream"
+msgstr "Flusso di Rete"
+
+msgid "Open Network Stream"
+msgstr "Apri Flusso di Rete"
+
+msgid "Enter the URL to play directly."
+msgstr "Inserisci l'URL per riprodurre direttamente."
+
+msgid "Audio Only Mode"
+msgstr "Modalità Solo Audio"
+
+msgid "Enable this if the URL is a radio station or music file."
+msgstr "Attiva se l'URL è una stazione radio o un file musicale."
+
+msgid "Resolving stream URL..."
+msgstr "Risoluzione URL del flusso..."
+
+msgid "Please enter a valid URL."
+msgstr "Inserisci un URL valido."
+
+msgid "Error: Video stream could not be extracted from this site."
+msgstr "Errore: Impossibile estrarre il flusso video da questo sito."
+
+msgid "Loading playlist..."
+msgstr "Caricamento playlist..."
+
+msgid "Error loading playlist."
+msgstr "Errore durante il caricamento della playlist."
+
+msgid "No channels found in playlist."
+msgstr "Nessun canale trovato nella playlist."
+
+msgid "{} channels loaded."
+msgstr "{} canali caricati."
+
+msgid "Error: This is a playlist package. Please use 'Add Profile'."
+msgstr "Errore: Questo è un pacchetto playlist. Usa 'Aggiungi Profilo'."
+
+# --- Temporary Playlist (Side Menu) ---
+msgid "Network Playlist"
+msgstr "Playlist di Rete"
+
+msgid "Close Playlist"
+msgstr "Chiudi Playlist"
+
+msgid "Filter channels..."
+msgstr "Filtra canali..."
+
+msgid "Playlist ({})"
+msgstr "Playlist ({})"
+
+# --- Podcast Updates ---
+msgid "Fetching podcast info..."
+msgstr "Recupero informazioni podcast..."
+
+msgid "Please enter a URL."
+msgstr "Inserisci un URL."
+
+msgid "Error: Podcast could not be added."
+msgstr "Errore: Impossibile aggiungere il podcast."
+
+msgid "Resume Podcast"
+msgstr "Riprendi podcast"
+
+msgid "You listened to this episode until {}. Resume?"
+msgstr "Hai ascoltato questo episodio fino a {}. Riprendere?"
+
+msgid "Added to playlist: {}"
+msgstr "Aggiunto alla playlist: {}"
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Questo prodotto utilizza l'API TMDb ma non è supportato né certificato da TMDb."
 

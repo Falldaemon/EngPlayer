@@ -44,6 +44,12 @@ Audio Control: 10-Band Equalizer and preset audio profiles (Rock, Pop, Jazz, etc
 
 Subtitle Support: Embedded subtitles, external file loading, and automatic download via OpenSubtitles.
 
+Podcast Support: Added full podcast integration that remembers your playback position (resume) and marks episodes as played.
+
+Video Settings: Added controls to adjust Brightness, Contrast, and Saturation during playback.
+
+External Stream Playback: Added support to play external URLs directly.
+
 📂 Local Media Library
 Scans Video, Music, and Picture folders on your computer to create a library.
 

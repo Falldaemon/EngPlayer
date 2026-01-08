@@ -31,7 +31,6 @@ from ui.password_dialog import PasswordDialog
 from ui.password_prompt_dialog import PasswordPromptDialog
 from ui.favorites_view import FavoritesView
 from ui.detail_view import DetailView
-from data_providers import m3u_provider, tmdb_client
 from data_providers import m3u_provider, tmdb_client, xtream_client
 from playback.player import Player
 from core.config import get_fallback_tmdb_key
@@ -71,6 +70,14 @@ from ui.subtitle_results_dialog import SubtitleResultsDialog
 from utils import subtitle_searcher
 from data_providers import trakt_client
 from core.config import VERSION
+from ui.media_info_dialog import MediaInfoDialog
+from ui.video_settings_window import VideoSettingsWindow
+from ui.podcast_feed_list import PodcastFeedList
+from ui.podcast_detail_view import PodcastDetailView
+from ui.podcast_episode_list import PodcastEpisodeList
+from utils import rss_parser
+from ui.temp_playlist_view import TempPlaylistView
+import urllib.request
 
 _ = gettext.gettext
 
@@ -86,6 +93,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_content(root_box)
         self.toast_overlay = Adw.ToastOverlay()
         self.player = Player()
+        self.video_settings_win = None
         self.inhibitor = SleepInhibitor(self.get_application())
         self.subtitle_delay_ms = 0
         self.all_channels_map = {}
@@ -105,6 +113,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.current_playing_media_path = None
         self.seek_on_start = None
         self.is_seeking = False
+        self.is_temp_playlist_music = False
         self.startup_volume = 0.8
         self.is_volume_initialized = False
         self.last_slider_position = 0
@@ -183,6 +192,9 @@ class MainWindow(Adw.ApplicationWindow):
         theme_row.add_suffix(self.theme_combo)
         theme_row.set_activatable_widget(self.theme_combo)
         popover_box.append(theme_row)
+        video_settings_btn = Gtk.Button(label=_("Video Settings"))
+        video_settings_btn.connect("clicked", self.on_open_video_settings_clicked)
+        popover_box.append(video_settings_btn)
         accent_color_btn = Gtk.Button(label=_("Accent Color"))
         accent_color_btn.connect("clicked", self._on_open_color_picker)
         popover_box.append(accent_color_btn)
@@ -271,11 +283,27 @@ class MainWindow(Adw.ApplicationWindow):
         self.media_stack.add_titled(self.media_sidebar, "sidebar", "Media Sidebar")
         self.track_list_view = TrackListView()
         self.media_stack.add_titled(self.track_list_view, "tracks", "Track List")
+        self.podcast_feed_list = PodcastFeedList()
+        self.podcast_detail_view = PodcastDetailView()
+        self.podcast_detail_view.connect("episode-clicked", self.on_podcast_episode_clicked)
+        self.main_content_stack.add_named(self.podcast_detail_view, "podcast_detail_view")
+        self.podcast_feed_list.connect("back-clicked", self.on_podcast_list_back_clicked)
+        self.podcast_feed_list.connect("podcast-selected", self.on_podcast_feed_selected)
+        self.podcast_feed_list.connect("podcast-right-clicked", self.on_podcast_list_right_clicked)
+        self.media_stack.add_titled(self.podcast_feed_list, "podcasts_list", "Podcast List")
+        self.podcast_episode_list = PodcastEpisodeList()
+        self.podcast_episode_list.connect("back-clicked", self.on_episode_list_back_clicked)
+        self.podcast_episode_list.connect("episode-selected", self.on_episode_playing_requested)
+        self.media_stack.add_titled(self.podcast_episode_list, "podcast_episodes", "Episodes")
         self.sidebar.list_stack.add_titled(self.media_stack, "media", "Media")
         self.series_sidebar = BouquetList()
         self.series_sidebar.show_locked_button.set_visible(False)
         self.series_sidebar.bouquet_listbox.connect("row-activated", self.on_series_category_selected)
         self.sidebar.list_stack.add_titled(self.series_sidebar, "series", "Series")
+        self.temp_playlist_view = TempPlaylistView()
+        self.temp_playlist_view.connect("channel-selected", self.on_temp_channel_selected)
+        self.temp_playlist_view.connect("close-clicked", self.on_temp_playlist_closed)
+        self.sidebar.list_stack.add_named(self.temp_playlist_view, "temp_list")
         self.video_view = VideoView(); self.video_view.set_paintable(self.player.paintable)
         self.main_content_stack.add_titled(self.video_view, "player_view", "Player")
         self.video_view.controls.time_label_current.set_width_chars(8)
@@ -346,6 +374,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.media_sidebar.buttons["videos"].connect("clicked", self.on_media_type_selected, "video")
         self.media_sidebar.buttons["pictures"].connect("clicked", self.on_media_type_selected, "picture")
         self.media_sidebar.buttons["music"].connect("clicked", self.on_media_type_selected, "music")
+        self.media_sidebar.buttons["podcasts"].connect("clicked", self.on_media_type_selected, "podcasts")
         self.detail_view.connect("play-requested", self.on_detail_view_play_requested)
         self.detail_view.connect("back-requested", self.on_detail_view_back_requested)
         self.detail_view.connect("trailer-requested", self.on_trailer_requested)
@@ -366,6 +395,7 @@ class MainWindow(Adw.ApplicationWindow):
         controls.connect("stop-trailer-clicked", self.on_stop_trailer_clicked)
         controls.connect("catch-up-button-clicked", self.on_catch_up_button_clicked)
         controls.buttons["fullscreen"].connect("clicked", self.on_fullscreen_clicked)
+        controls.buttons["info"].connect("clicked", self.on_info_button_clicked)
         controls.volume_scale.connect("value-changed", self.on_volume_changed)
         controls.buttons["seek-forward"].connect("clicked", self.on_seek_forward_clicked)
         controls.buttons["seek-backward"].connect("clicked", self.on_seek_backward_clicked)
@@ -427,6 +457,16 @@ class MainWindow(Adw.ApplicationWindow):
     def on_media_type_selected(self, button, media_type):
         self.image_viewer.stop_all_activity()
         self.player.pause()
+        if media_type == "podcasts":
+            for btn in self.media_sidebar.buttons.values():
+                btn.remove_css_class("active-nav-button")
+            button.add_css_class("active-nav-button")
+            podcasts = database.get_all_podcasts()
+            self.podcast_feed_list.populate(podcasts)
+            self.media_stack.set_visible_child_name("podcasts_list")
+            self.main_content_stack.set_visible_child_name("placeholder_view")
+            self.active_media_type = "podcasts"
+            return 
         for btn in self.media_sidebar.buttons.values():
             btn.remove_css_class("active-nav-button")
         button.add_css_class("active-nav-button")
@@ -474,8 +514,9 @@ class MainWindow(Adw.ApplicationWindow):
             self.favorites_view.reset_view()
         elif view_name == "media":
             self.main_content_stack.set_visible_child_name("collection_view")
-            if self.media_stack.get_visible_child_name() == "tracks":
-                self.media_stack.set_visible_child_name("sidebar")
+            self.media_stack.set_visible_child_name("sidebar")
+            for btn in self.media_sidebar.buttons.values():
+                btn.remove_css_class("active-nav-button")               
             self.collection_grid_view.populate_collections([])
         elif view_name == "series":
             self.sidebar.list_stack.set_visible_child_name("series")
@@ -521,6 +562,21 @@ class MainWindow(Adw.ApplicationWindow):
         GLib.idle_add(self.play_next_track)
 
     def play_next_track(self):
+        if self.media_stack.get_visible_child_name() == "podcast_episodes":
+            listbox = self.podcast_episode_list.listbox
+            selected_row = listbox.get_selected_row()
+            if not selected_row: return           
+            current_index = selected_row.get_index()
+            next_row = listbox.get_row_at_index(current_index + 1)          
+            if next_row:
+                listbox.select_row(next_row)
+                url = getattr(next_row, "audio_url", None)
+                title = getattr(next_row, "title", "Unknown Episode")
+                if url:
+                    self._start_playback(url=url, media_type='music', channel_data={'name': title})
+            else:
+                self.show_toast(_("End of podcast list."))
+            return
         listbox = self.track_list_view.track_listbox
         all_tracks = self.track_list_view.current_tracks
         if not all_tracks:
@@ -541,6 +597,20 @@ class MainWindow(Adw.ApplicationWindow):
         self.video_view.set_paintable(new_paintable)
 
     def play_previous_track(self):
+        if self.media_stack.get_visible_child_name() == "podcast_episodes":
+            listbox = self.podcast_episode_list.listbox
+            selected_row = listbox.get_selected_row()
+            if not selected_row: return           
+            current_index = selected_row.get_index()
+            if current_index > 0:
+                prev_row = listbox.get_row_at_index(current_index - 1)
+                if prev_row:
+                    listbox.select_row(prev_row)
+                    url = getattr(prev_row, "audio_url", None)
+                    title = getattr(prev_row, "title", "Unknown Episode")
+                    if url:
+                        self._start_playback(url=url, media_type='music', channel_data={'name': title})
+            return
         listbox = self.track_list_view.track_listbox
         all_tracks = self.track_list_view.current_tracks
         if not all_tracks:
@@ -756,6 +826,8 @@ class MainWindow(Adw.ApplicationWindow):
             logging.info("Trailer playback started, position saving disabled.")
         elif episode_data or media_type in ['media', 'vod']:
             self.current_playing_media_path = url
+        elif media_type == 'music' and url.startswith("http"):
+             self.current_playing_media_path = url
         else:
             self.current_playing_media_path = None
         controls = self.video_view.controls
@@ -830,7 +902,7 @@ class MainWindow(Adw.ApplicationWindow):
             except Exception as e:
                  logging.error(f"Could not convert local file path to URI: {e}, using original path.")
                  final_url = f"file://{os.path.abspath(url)}"
-        self.player.play_url(final_url)
+        self.player.play_url(final_url, media_type=media_type)
         if media_type == 'music':
             self.player.enable_equalizer()
         else:
@@ -925,6 +997,14 @@ class MainWindow(Adw.ApplicationWindow):
         logging.debug("on_playback_finished called.")
         if self.current_media_type == 'music':
             logging.info("Music track finished (EOS). Calling play_next_track.")
+            path_to_mark = self.current_playing_media_path
+            if path_to_mark and path_to_mark.startswith("http"):
+                logging.info(f"Marking Podcast '{path_to_mark}' as finished (is_finished=1).")
+                database.save_playback_progress(
+                    path_to_mark,
+                    position=0,
+                    is_finished=1
+                )
             GLib.idle_add(self.play_next_track)
             self.video_view.controls.set_playing_state(False)
             self.inhibitor.uninhibit()
@@ -1460,6 +1540,15 @@ class MainWindow(Adw.ApplicationWindow):
             logging.error(f"Could not start recording: {e}")
             self.show_toast(_("Error: Could not start recording!"))
             self.active_recorder = None
+            
+    def on_info_button_clicked(self, button):
+        """Opens the technical information dialog for the current stream."""
+        if not self.player:
+            return
+            
+        logging.info("Opening Media Info Dialog.")
+        dialog = MediaInfoDialog(self, self.player)
+        dialog.present()            
 
     def on_catch_up_button_clicked(self, controls):
         """Opens the CatchupDialog when the catch-up button is clicked."""
@@ -1975,54 +2064,119 @@ class MainWindow(Adw.ApplicationWindow):
             if t['index'] == track_index:
                 database.set_config_value('preferred_subtitle_lang', t['name'])
                 break
+                
+    def _check_digits_match(self, str1, str2):
+        d1 = "".join(re.findall(r'\d', str1))
+        d2 = "".join(re.findall(r'\d', str2))
+        return d1 == d2  
+        
+    def _check_country_match(self, key1, key2):
+        if "." in key1 and "." in key2:
+            return key1.split(".")[-1] == key2.split(".")[-1]
+        if "." in key2:
+            epg_suffix = key2.split(".")[-1].lower()
+            if 2 <= len(epg_suffix) <= 3:
+                channel_prefix = key1[:len(epg_suffix)].lower()               
+                if channel_prefix != epg_suffix:
+                    common_iso_codes = [
+                        "tr", "us", "uk", "fr", "de", "it", "es", "pt", "nl", "be", 
+                        "ru", "gr", "az", "de", "ch", "at", "pl", "ro", "bg", "hu", 
+                        "cz", "sk", "al", "rs", "hr", "ba", "mk", "se", "no", "dk", 
+                        "fi", "ie", "ca", "au", "nz", "br", "ar", "mx", "ae", "sa", 
+                        "eg", "in", "cn", "jp", "kr", "za",
+                        "tur", "usa", "gbr", "fra", "deu", "ita", "esp", "prt", "nld", "bel",
+                        "rus", "grc", "aze", "che", "aut", "pol", "rou", "bgr", "hun", "cze",
+                        "svk", "alb", "srb", "hrv", "bih", "mkd", "swe", "nor", "dnk", "fin",
+                        "irl", "can", "aus", "nzl", "bra", "arg", "mex", "are", "sau", "egy"
+                    ]
+                    if channel_prefix in common_iso_codes:
+                        return False               
+        return True                   
 
     def _find_epg_data_for_channel(self, provider_tvg_id):
-            """
-            Performs a 4-step (direct, clean, fuzzy) search in the EPG data
-            using the provider's TVG-ID.
-            """
-            if not provider_tvg_id:
-                return None
-            if provider_tvg_id in self.epg_data:
-                logging.debug(f"EPG Found (Step 1: Direct): '{provider_tvg_id}'")
-                return self.epg_data[provider_tvg_id]
-            clean_key = self._clean_key(provider_tvg_id)
-            if not clean_key:
-                return None
-            if clean_key in self.epg_clean_map:
-                logging.debug(f"EPG Found (Step 2: Clean Key): '{provider_tvg_id}' -> '{clean_key}'")
-                return self.epg_clean_map[clean_key]
-            if FUZZ_AVAILABLE and process:
-                if not self.epg_clean_map:
-                    logging.debug("Fuzzy EPG search skipped (EPG map is empty).")
-                else:
-                    best_match_tuple = process.extractOne(clean_key, self.epg_clean_map.keys())
-                    if best_match_tuple:
-                        best_match, score = best_match_tuple
-                        if score > 90:
-                            logging.debug(f"EPG Found (Step 3: Fuzzy %{score}): '{provider_tvg_id}' -> '{clean_key}' ~ '{best_match}'")
-                            return self.epg_clean_map[best_match]
-            logging.debug(f"EPG Not Found (Step 4): No match for '{provider_tvg_id}'.")
+        """
+        Performs a 4-step (direct, clean, fuzzy) search in the EPG data
+        using the provider's TVG-ID.
+        """
+        if not provider_tvg_id:
             return None
+        if provider_tvg_id in self.epg_data:
+            logging.debug(f"EPG Found (Step 1: Direct): '{provider_tvg_id}'")
+            return self.epg_data[provider_tvg_id]
+        clean_key = self._clean_key(provider_tvg_id)
+        if not clean_key:
+            return None          
+        if clean_key in self.epg_clean_map:
+            logging.debug(f"EPG Found (Step 2: Clean Key): '{provider_tvg_id}' -> '{clean_key}'")
+            return self.epg_clean_map[clean_key]
+        if FUZZ_AVAILABLE and process:
+            if not self.epg_clean_map:
+                logging.debug("Fuzzy EPG search skipped (EPG map is empty).")
+            else:
+                best_match_tuple = process.extractOne(clean_key, self.epg_clean_map.keys())
+                if best_match_tuple:
+                    best_match, score = best_match_tuple
+                    if score >= 80 and \
+                       self._check_digits_match(clean_key, best_match) and \
+                       self._check_country_match(clean_key, best_match):
+                        len1, len2 = len(clean_key), len(best_match)
+                        ratio = max(len1, len2) / min(len1, len2) if min(len1, len2) > 0 else 0
+                        first_char_match = clean_key[0] == best_match[0] if clean_key and best_match else False                       
+                        if ratio <= 2.0 and first_char_match:
+                            logging.debug(f"EPG Found (Step 3: Fuzzy %{score}): '{provider_tvg_id}' -> '{best_match}'")
+                            return self.epg_clean_map[best_match]
+                        else:
+                            reject_reason = "Ratio" if ratio > 2.0 else "First Char"
+                            logging.debug(f"EPG Rejected ({reject_reason}): '{clean_key}' vs '{best_match}' (Ratio: {ratio:.2f})")
+                soft_key = clean_key.replace("tv.", ".")
+                if soft_key in self.epg_clean_map:
+                    logging.debug(f"EPG Found (Step 3.5: Soft Match): '{provider_tvg_id}' as '{soft_key}'")
+                    return self.epg_clean_map[soft_key]
+        logging.debug(f"EPG Not Found (Step 4): No match for '{provider_tvg_id}'.")
+        return None
 
     def _update_epg_for_channel(self, channel_data):
-        self.current_epg_program = None
-        channel_id = channel_data.get("tvg-id")
-        channel_programs = self._find_epg_data_for_channel(channel_id)
+        if not channel_data:
+            logging.debug("EPG Update: No channel_data provided.")
+            return
+        t_id = (channel_data.get("tvg-id") or "").strip()
+        t_name = (channel_data.get("tvg-name") or "").strip()
+        name = (channel_data.get("name") or "").strip()
+        search_key = None
+        if t_id:
+            search_key = t_id
+            logging.debug(f"EPG Search: Using tvg-id -> '{search_key}'")
+        elif t_name:
+            search_key = t_name
+            logging.debug(f"EPG Search: tvg-id empty, falling back to tvg-name -> '{search_key}'")
+        elif name:
+            search_key = name
+            logging.debug(f"EPG Search: ID and Name tags empty, using display name -> '{search_key}'")
+
+        if not search_key:
+            logging.debug("EPG Search: All identification tags are empty! Skipping.")
+            self.video_view.update_epg([])
+            return
+        channel_programs = self._find_epg_data_for_channel(search_key)       
         if not channel_programs:
-            self.video_view.update_epg([]); return
+            self.video_view.update_epg([])
+            return
         programs_to_display = []
         now = datetime.now(timezone.utc)
-        found_current = False; program_count = 0
+        found_current = False
+        program_count = 0
         for program in channel_programs:
-            if program["stop"] < now: continue
+            if program["stop"] < now:
+                continue          
             is_current = False
             if not found_current and program["start"] <= now < program["stop"]:
-                is_current = True; found_current = True
-                self.current_epg_program = program
+                is_current = True
+                found_current = True
+                self.current_epg_program = program          
             programs_to_display.append({"data": program, "is_current": is_current})
             program_count += 1
-            if program_count >= 10: break
+            if program_count >= 10:
+                break
         self.video_view.update_epg(programs_to_display)
 
     def _update_player_ui_for_media_type(self, media_type):
@@ -2279,6 +2433,8 @@ class MainWindow(Adw.ApplicationWindow):
     def _update_stream_info(self):
         if self.main_content_stack.get_visible_child_name() != "player_view":
             return True
+        if not self.player or not self.player.player:
+            return True    
         controls = self.video_view.controls
         is_seekable = False
         duration_sec = 0
@@ -2300,25 +2456,8 @@ class MainWindow(Adw.ApplicationWindow):
                       duration_sec = duration_ns / Gst.SECOND
             show_slider = is_seekable
         elif self.current_media_type == 'iptv':
-            profile_type = self.profile_data.get("type")
-            start_ns_iptv, end_ns_iptv = self.player.get_seek_range()
-            gst_says_seekable = False
-            duration_ns_iptv = 0
-            if start_ns_iptv is not None and end_ns_iptv is not None and end_ns_iptv > start_ns_iptv:
-                 duration_ns_iptv = end_ns_iptv - start_ns_iptv
-                 if duration_ns_iptv > 60 * Gst.SECOND:
-                      gst_says_seekable = True
-                      duration_sec = duration_ns_iptv / Gst.SECOND
-            if profile_type == "xtream":
-                has_catchup = False
-                if self.current_playing_channel_data:
-                    if isinstance(self.current_channel_archive_duration, int) and self.current_channel_archive_duration > 0:
-                        has_catchup = True
-                show_slider = has_catchup and gst_says_seekable
-                is_seekable = show_slider
-            else:
-                  show_slider = gst_says_seekable
-                  is_seekable = show_slider
+            show_slider = False
+            is_seekable = False
         controls.set_seek_controls_visibility(show_slider)
         relative_position_sec = 0
         if show_slider:
@@ -2425,10 +2564,27 @@ class MainWindow(Adw.ApplicationWindow):
         return True
 
     def on_add_source_clicked(self, button):
-        """
-        Opens a GTK FileChooserDialog (not native) to ensure folder navigation
-        works correctly on all desktops (especially KDE/Debian/Fedora).
-        """
+        dialog = Adw.MessageDialog.new(self, _("Add Media Source"), _("Choose the type of source you want to add."))
+        dialog.add_css_class("source-selection-dialog")      
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("folder", _("Local Folder"))
+        dialog.add_response("podcast", _("Podcast URL"))
+        dialog.add_response("stream", _("Network Stream"))      
+        dialog.set_close_response("cancel")
+        dialog.set_default_response("folder")     
+        dialog.connect("response", self._on_add_source_type_response)
+        dialog.present()
+
+    def _on_add_source_type_response(self, dialog, response_id):
+        dialog.close()
+        if response_id == "folder":
+            self._open_media_folder_chooser()
+        elif response_id == "podcast":
+            self._open_podcast_url_dialog()
+        elif response_id == "stream":
+            self._open_network_stream_dialog()
+
+    def _open_media_folder_chooser(self):
         dialog = Gtk.FileChooserDialog(
             title=_("Select Media Folder"),
             transient_for=self,
@@ -2438,6 +2594,71 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.add_button(_("Select"), Gtk.ResponseType.ACCEPT)
         dialog.connect("response", self.on_media_folder_dialog_response)
         dialog.present()
+
+    def _open_podcast_url_dialog(self):
+        dialog = Adw.MessageDialog.new(self, _("Add Podcast"), _("Enter the podcast title and RSS URL."))
+        dialog.add_css_class("add-podcast-dialog")
+        dialog.set_modal(True)
+        dialog.set_transient_for(self)
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content_box.set_margin_top(12)
+        content_box.set_margin_bottom(12)
+        content_box.set_margin_start(12)
+        content_box.set_margin_end(12)
+        title_entry = Gtk.Entry()
+        title_entry.set_placeholder_text(_("Podcast Title"))
+        content_box.append(title_entry)
+        url_entry = Gtk.Entry()
+        url_entry.set_placeholder_text(_("Podcast RSS URL"))
+        content_box.append(url_entry)      
+        dialog.set_extra_child(content_box)      
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("add", _("Add"))
+        dialog.set_default_response("add")
+        dialog.set_close_response("cancel")      
+        dialog.connect("response", self._on_podcast_dialog_response, title_entry, url_entry)
+        dialog.present()
+
+    def _on_podcast_dialog_response(self, dialog, response_id, title_entry, url_entry):
+        if response_id == "add":
+            user_title = title_entry.get_text().strip()
+            url = url_entry.get_text().strip()           
+            if url:
+                self.show_toast(_("Fetching podcast info..."))
+                thread = threading.Thread(
+                    target=self._add_podcast_thread, 
+                    args=(url, user_title), 
+                    daemon=True
+                )
+                thread.start()
+            else:
+                self.show_toast(_("Please enter a URL."))
+        dialog.set_visible(False)
+        def _destroy_dialog():
+            dialog.destroy()
+            return GLib.SOURCE_REMOVE
+        GLib.idle_add(_destroy_dialog)
+
+    def _add_podcast_thread(self, url, user_title):
+        data = rss_parser.parse_podcast_feed(url)      
+        image_url = None
+        final_title = user_title      
+        if data:
+            if not final_title:
+                final_title = data.get("title", "Unknown Podcast")
+            image_url = data.get("image")      
+        if not final_title:
+            final_title = "New Podcast"
+        if database.add_podcast(final_title, url, image_url):
+            GLib.idle_add(self._on_podcast_added_success)
+        else:
+            GLib.idle_add(self.show_toast, _("Error: Podcast could not be added."))
+
+    def _on_podcast_added_success(self):
+        self.show_toast(_("Podcast added successfully."))
+        if self.active_media_type == "podcasts":
+            podcasts = database.get_all_podcasts()
+            self.podcast_feed_list.populate(podcasts)
 
     def on_media_folder_dialog_response(self, dialog, response_id):
         """
@@ -3555,35 +3776,35 @@ class MainWindow(Adw.ApplicationWindow):
                 self.show_toast(_("Error: Recording was not removed from list."))
 
     def _clean_key(self, text):
-        """
-        Creates a consistent cleaning key for logo map keys and channel names.
-        (v2 - Fixed Sorting)
-        """
         if not text:
             return None
         name = text.lower().strip()
+        match = re.match(r'^([a-z]{2,3})[| \-_]+(.*)', name)
+        if match:
+            lang_code = match.group(1)
+            rest_of_name = match.group(2)
+            common_codes = [
+                "tr", "us", "uk", "fr", "de", "it", "es", "pt", "nl", "be", 
+                "ru", "gr", "az", "ch", "at", "pl", "ro", "bg", "hu", "cz", 
+                "sk", "al", "rs", "hr", "ba", "mk", "se", "no", "dk", "fi", 
+                "ie", "ca", "au", "nz", "br", "ar", "mx", "ae", "sa", "eg",
+                "tur", "usa", "gbr", "fra", "deu", "ita", "esp", "prt", "nld", "bel",
+                "rus", "grc", "aze", "che", "aut", "pol", "rou", "bgr", "hun", "cze"
+            ]           
+            if lang_code in common_codes:
+                name = f"{rest_of_name}.{lang_code}"
         try:
             name = unicodedata.normalize("NFKD", name)
             name = "".join([c for c in name if not unicodedata.combining(c)])
         except Exception:
-              pass
+             pass
         name = re.sub(r'(\(.*\))|(\[.*?\])|(".*?")|(\=.*)', ' ', name)
         name = re.sub(r'\b(HD|FHD|UHD|4K|8K|SD)\b', ' ', name, flags=re.IGNORECASE)
-        name = re.sub(r'[^\w\d\s]+', ' ', name)
-        name = re.sub(
-            r'\b(tr|de|us|uk|fr|it|es|ru|br|ar|mx|ca|cn|jp|kr|nl|pl|pt|gr|se|no|dk|fi|in|ir|iq|sa|ae|az|kz|by|ro|bg|hu|cz|sk|si|hr|ch|be|at|ua|lt|lv|ee|rs|ba|me|mk|al)\b',
-            ' ', name, flags=re.IGNORECASE
-        )
-        name = re.sub(r'(\d+)\s*(hd|sd|uhd|fhd|4k|8k)', r'\1', name, flags=re.IGNORECASE)
-        name = re.sub(r'\s+', '', name)
+        name = re.sub(r'[^\w\d\s.]+', ' ', name)
+        name = re.sub(r'\s+', '', name)       
         return name.strip().lower()
 
     def _build_logo_map(self, folder_path):
-        """
-        (FINAL FIX v15)
-        Scans logos and creates a map using the same logic as
-        '_clean_key' from 'ui/channel_list.py'.
-        """
         if not folder_path or not os.path.isdir(folder_path):
             logging.warning(f"Could not build logo map: Invalid folder path: {folder_path}")
             return {}
@@ -3703,6 +3924,20 @@ class MainWindow(Adw.ApplicationWindow):
         except Exception as e:
             logging.error(f"Error applying accent color: {e}") 
             
+    def on_open_video_settings_clicked(self, button):
+        self.settings_popover.popdown()
+        if self.video_settings_win:
+            self.video_settings_win.present()
+            return
+        self.video_settings_win = VideoSettingsWindow(self.player)
+        self.video_settings_win.set_transient_for(self)
+        self.video_settings_win.connect("close-request", self._on_video_settings_close)       
+        self.video_settings_win.present()
+
+    def _on_video_settings_close(self, window):
+        self.video_settings_win = None
+        return False          
+            
     def _on_open_color_picker(self, *args):
         self.settings_popover.popdown()
         dialog = Gtk.ColorChooserDialog(title=_("Select Accent Color"), transient_for=self)
@@ -3729,7 +3964,372 @@ class MainWindow(Adw.ApplicationWindow):
             database.set_config_value("app_accent_color", color_hex)
             self.apply_accent_color(color_hex)
             self.show_toast(_("Accent color updated!"))           
-        dialog.destroy()                       
+        dialog.destroy()  
+        
+    def on_podcast_list_back_clicked(self, widget):
+        self.media_stack.set_visible_child_name("sidebar")
+        for btn in self.media_sidebar.buttons.values():
+            btn.remove_css_class("active-nav-button")
+
+    def on_podcast_selected(self, widget, pod_id, title, url):
+        logging.info(f"Podcast selected: {title} ({url})")
+        self.main_content_stack.set_visible_child_name("podcast_detail_view")
+        self.podcast_detail_view.show_loading()
+        
+        thread = threading.Thread(
+            target=self._fetch_rss_thread,
+            args=(url,),
+            daemon=True
+        )
+        thread.start()
+
+    def _fetch_rss_thread(self, url):
+        data = rss_parser.parse_podcast_feed(url)
+        GLib.idle_add(self._on_rss_fetched, data)
+
+    def _on_rss_fetched(self, data):
+        if data:
+            self.podcast_detail_view.populate(data)
+        else:
+            self.show_toast(_("Error loading podcast feed."))
+            self.main_content_stack.set_visible_child_name("placeholder_view")  
+            
+    def on_podcast_episode_clicked(self, view, url, title):
+        logging.info(f"Podcast episode clicked: {title}")
+        db_key = url     
+        saved_position = database.get_playback_position(db_key)       
+        if saved_position:
+            minutes, seconds = divmod(int(saved_position), 60)
+            time_str = f"{minutes}:{seconds:02d}"           
+            dialog = Adw.MessageDialog(
+                transient_for=self,
+                heading=_("Resume Podcast"),
+                body=_("You listened to this episode until {}. Resume?").format(time_str)
+            )
+            dialog.add_css_class("resume-dialog")
+            dialog.add_response("resume", _("Resume"))
+            dialog.add_response("restart", _("Start Over"))
+            dialog.set_default_response("resume")
+            dialog.set_response_appearance("resume", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_close_response("restart")
+            dialog.connect("response", self._on_resume_podcast_response, url, title, saved_position)
+            dialog.present()
+        else:
+            self._start_podcast_playback(url, title)
+
+    def _on_resume_podcast_response(self, dialog, response_id, url, title, position):
+        start_pos = position if response_id == "resume" else 0
+        self._start_podcast_playback(url, title, start_pos)
+
+    def _start_podcast_playback(self, url, title, start_pos=0):
+        self.main_content_stack.set_visible_child_name("player_view")
+        self._start_playback(
+            url=url, 
+            media_type='music', 
+            channel_data={'name': title}, 
+            start_position=start_pos
+        )
+        
+    def on_podcast_feed_selected(self, widget, pod_id, title, url):
+        logging.info(f"Opening podcast feed: {title}")
+        self.media_stack.set_visible_child_name("podcast_episodes")
+        self.podcast_episode_list.show_loading()
+        thread = threading.Thread(
+            target=self._fetch_rss_episodes_thread,
+            args=(title, url),
+            daemon=True
+        )
+        thread.start()
+        
+    def _fetch_rss_episodes_thread(self, title, url):
+        episodes = rss_parser.parse_podcast_feed(url)
+        GLib.idle_add(self._on_episodes_ready, title, episodes)
+
+    def _on_episodes_ready(self, title, data):
+        episode_list = []      
+        if isinstance(data, dict):
+            episode_list = data.get("episodes", [])
+        elif isinstance(data, list):
+            episode_list = data           
+        if episode_list:
+            self.podcast_episode_list.populate(title, episode_list)
+        else:
+            self.show_toast(_("Error: Could not load episodes (Empty list)."))
+            self.media_stack.set_visible_child_name("podcasts_list")
+
+    def on_episode_list_back_clicked(self, widget):
+        self.player.pause()
+        self.video_view.controls.set_playing_state(False)
+        self.media_stack.set_visible_child_name("podcasts_list")
+        self.main_content_stack.set_visible_child_name("placeholder_view")
+        
+    def on_episode_playing_requested(self, widget, url, title):
+        logging.info(f"Playing episode (from list): {title}")
+        db_key = url
+        saved_position = database.get_playback_position(db_key)      
+        if saved_position:
+            minutes, seconds = divmod(int(saved_position), 60)
+            time_str = f"{minutes}:{seconds:02d}"          
+            dialog = Adw.MessageDialog(
+                transient_for=self,
+                heading=_("Resume Podcast"),
+                body=_("You listened to this episode until {}. Resume?").format(time_str)
+            )
+            dialog.add_css_class("resume-dialog")
+            dialog.add_response("resume", _("Resume"))
+            dialog.add_response("restart", _("Start Over"))
+            dialog.set_default_response("resume")
+            dialog.set_response_appearance("resume", Adw.ResponseAppearance.SUGGESTED)
+            dialog.set_close_response("restart")
+            dialog.connect("response", self._on_resume_podcast_response, url, title, saved_position)
+            dialog.present()
+        else:
+            self.main_content_stack.set_visible_child_name("player_view")
+            self._start_playback(url=url, media_type='music', channel_data={'name': title}) 
+        
+    def on_podcast_list_right_clicked(self, widget, pod_id, title, row_widget):
+        menu_model = Gio.Menu()
+        menu_model.append(_("Move Up"), "app.pod_move_up")
+        menu_model.append(_("Move Down"), "app.pod_move_down")
+        menu_model.append(_("Delete Podcast"), "app.pod_delete")      
+        popover = Gtk.PopoverMenu.new_from_model(menu_model)
+        popover.set_parent(row_widget)
+        popover.set_has_arrow(False)
+        action_group = Gio.SimpleActionGroup()
+        action_delete = Gio.SimpleAction.new("pod_delete", None)
+        action_delete.connect("activate", self._on_podcast_delete_action, (pod_id, title))
+        action_group.add_action(action_delete)
+        action_up = Gio.SimpleAction.new("pod_move_up", None)
+        action_up.connect("activate", self._on_podcast_move_action, (pod_id, "up"))
+        action_group.add_action(action_up)
+        action_down = Gio.SimpleAction.new("pod_move_down", None)
+        action_down.connect("activate", self._on_podcast_move_action, (pod_id, "down"))
+        action_group.add_action(action_down)      
+        row_widget.insert_action_group("app", action_group)
+        popover.popup()
+
+    def _on_podcast_delete_action(self, action, param, data):
+        pod_id, title = data
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Delete Podcast"),
+            body=_("Are you sure you want to delete '{}'?").format(title),
+            modal=True
+        )
+        dialog.add_css_class("delete-confirm-dialog")      
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("delete", _("Delete"))
+        dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")      
+        dialog.connect("response", self._on_podcast_delete_confirm, pod_id)
+        dialog.present()
+
+    def _on_podcast_delete_confirm(self, dialog, response_id, pod_id):
+        if response_id == "delete":
+            if database.delete_podcast(pod_id):
+                self.show_toast(_("Podcast deleted successfully."))
+                podcasts = database.get_all_podcasts()
+                self.podcast_feed_list.populate(podcasts)
+            else:
+                self.show_toast(_("Error deleting podcast."))
+
+    def _on_podcast_move_action(self, action, param, data):
+        pod_id, direction = data
+        all_podcasts = database.get_all_podcasts() # [(id, title, url, ...), ...]
+        current_index = -1
+        for i, pod in enumerate(all_podcasts):
+            if pod[0] == pod_id:
+                current_index = i
+                break      
+        if current_index == -1: return        
+        target_index = -1
+        if direction == "up" and current_index > 0:
+            target_index = current_index - 1
+        elif direction == "down" and current_index < len(all_podcasts) - 1:
+            target_index = current_index + 1          
+        if target_index != -1:
+            other_pod_id = all_podcasts[target_index][0]
+            if database.swap_podcast_order(pod_id, other_pod_id):
+                podcasts = database.get_all_podcasts()
+                self.podcast_feed_list.populate(podcasts) 
+                
+    def _open_network_stream_dialog(self):
+        dialog = Adw.MessageDialog.new(self, _("Open Network Stream"), _("Enter the URL to play directly."))
+        dialog.add_css_class("add-podcast-dialog")
+        dialog.set_modal(True)
+        dialog.set_transient_for(self)
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        content_box.set_margin_top(12)
+        content_box.set_margin_bottom(12)
+        content_box.set_margin_start(12)
+        content_box.set_margin_end(12)
+        url_entry = Gtk.Entry()
+        url_entry.set_placeholder_text("https://example.com/video.mp4")
+        content_box.append(url_entry)
+        audio_switch_row = Adw.SwitchRow(title=_("Audio Only Mode"))
+        audio_switch_row.set_subtitle(_("Enable this if the URL is a radio station or music file."))
+        content_box.append(audio_switch_row)       
+        dialog.set_extra_child(content_box)       
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("play", _("Play"))
+        dialog.set_default_response("play")
+        dialog.set_close_response("cancel")
+        dialog.connect("response", self._on_network_stream_response, url_entry, audio_switch_row)
+        dialog.present()
+
+    def _on_network_stream_response(self, dialog, response_id, url_entry, audio_switch):
+        if response_id == "play":
+            url = url_entry.get_text().strip()
+            is_audio_only = audio_switch.get_active()           
+            if url:
+                if url.lower().endswith(('.m3u', '.m3u8')):
+                    self._parse_and_show_m3u(url, is_music=is_audio_only)
+                else:
+                    media_type = 'music' if is_audio_only else 'video'
+                    self.show_toast(_("Resolving stream URL..."))                   
+                    thread = threading.Thread(
+                        target=self._smart_stream_resolver_thread, 
+                        args=(url, media_type), 
+                        daemon=True
+                    )
+                    thread.start()
+            else:
+                self.show_toast(_("Please enter a valid URL."))       
+        dialog.close()
+
+    def _smart_stream_resolver_thread(self, url, media_type):
+        final_url = None
+        video_title = "Network Stream"
+        if "github.com" in url and "/blob/" in url:
+            old_url = url
+            url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+            logging.info(f"GitHub Blob URL corrected: {old_url} -> {url}")
+        if url.lower().endswith(('.m3u', '.m3u8')):
+            logging.info("M3U extension detected. Sending to playlist.")
+            is_music = (media_type == 'music')
+            GLib.idle_add(self._parse_and_show_m3u, url, is_music)
+            return
+        try:
+            ydl_opts = {
+                'format': 'best', 
+                'noplaylist': True,
+                'quiet': True,
+                'no_warnings': True,
+                'ignoreerrors': True,
+                'live_from_start': True, 
+            }          
+            self.show_toast(_("Resolving stream URL..."))            
+            with yt_dlp.YoutubeDL(ydl_opts) as ydl:
+                info = ydl.extract_info(url, download=False)              
+                if info:
+                    video_title = info.get('title', video_title)
+                    if 'url' in info:
+                        final_url = info['url']
+                    elif 'entries' in info:
+                        entry = info['entries'][0]
+                        final_url = entry.get('url')
+                        video_title = entry.get('title', video_title)
+                    elif 'formats' in info:
+                        final_url = info['formats'][-1].get('url')
+                    if final_url:
+                        logging.info(f"Media successfully resolved: {video_title}")
+                        logging.debug(f"Stream URL: {final_url}")
+        except Exception as e:
+            logging.warning(f"Resolver (yt-dlp) error: {e}")
+        if not final_url:
+            if url.lower().endswith(('.mp4', '.mkv', '.avi', '.mov', '.flv', '.webm', '.ts', '.mp3', '.m3u8', '.pls')):
+                final_url = url
+                try:
+                    video_title = urllib.parse.unquote(url.rstrip('/').split('/')[-1])
+                except: pass
+            else:
+                if "raw.githubusercontent.com" in url:
+                    final_url = url
+                else:
+                    logging.error(f"URL could not be resolved and does not appear to be a media file: {url}")
+                    GLib.idle_add(self.show_toast, _("Error: Video stream could not be extracted from this site."))
+                    return
+        
+        def update_ui_list():
+            self.is_temp_playlist_music = (media_type == 'music')
+            channels = [(video_title, final_url)]           
+            self._on_m3u_loaded(channels)
+            self.show_toast(_("Added to playlist: {}").format(video_title))
+        GLib.idle_add(update_ui_list)
+
+    def _play_resolved_network_stream(self, url, media_type, title):
+        if url:
+            self.main_content_stack.set_visible_child_name("player_view")
+            self._start_playback(url=url, media_type=media_type, channel_data={'name': title})
+        else:
+            self.show_toast(_("Error: Video stream could not be extracted from this site."))
+                
+    def _parse_and_show_m3u(self, url, is_music=False):
+        self.show_toast(_("Loading playlist..."))
+        self.is_temp_playlist_music = is_music
+        thread = threading.Thread(target=self._m3u_loader_thread, args=(url,), daemon=True)
+        thread.start()
+
+    def _m3u_loader_thread(self, url):
+        if "github.com" in url and "/blob/" in url:
+            logging.info(f"Loader: GitHub Blob URL detected, converting to Raw format...")
+            url = url.replace("github.com", "raw.githubusercontent.com").replace("/blob/", "/")
+        channels = []
+        try:
+            req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+            with urllib.request.urlopen(req, timeout=10) as response:
+                content = response.read().decode('utf-8', errors='ignore')
+            if "#EXT-X-STREAM-INF" in content:
+                logging.info("Master Playlist detected. Adding to list as a single channel.")
+                try:
+                    parts = url.rstrip('/').split('/')
+                    if 'm3u' in parts[-1].lower() and len(parts) > 1:
+                        name = parts[-2]
+                    else:
+                        name = parts[-1]
+                    name = name.replace("%20", " ").capitalize()
+                except:
+                    name = "Network Stream"               
+                channels = [(name, url)]
+                GLib.idle_add(self._on_m3u_loaded, channels)
+                return
+            current_name = None
+            for line in content.splitlines():
+                line = line.strip()
+                if not line: continue               
+                if line.startswith("#EXTINF"):
+                    parts = line.split(",", 1)
+                    if len(parts) > 1:
+                        current_name = parts[1].strip()
+                    else:
+                        current_name = "Unknown Channel"
+                elif not line.startswith("#"):
+                    channel_url = line
+                    name = current_name if current_name else "Channel"
+                    channels.append((name, channel_url))
+                    current_name = None 
+            GLib.idle_add(self._on_m3u_loaded, channels)           
+        except Exception as e:
+            logging.error(f"M3U Load Error: {e}")
+            GLib.idle_add(self.show_toast, _("Error loading playlist."))
+
+    def _on_m3u_loaded(self, channels):
+        if not channels:
+            self.show_toast(_("No channels found in playlist."))
+            return
+        self.temp_playlist_view.populate(channels)
+        for btn in self.top_buttons.values():
+            btn.remove_css_class("active-nav-button")
+        self.sidebar.list_stack.set_visible_child_name("temp_list")
+        self.show_toast(_("{} channels loaded.").format(len(channels)))
+
+    def on_temp_channel_selected(self, view, url, name):
+        media_type = 'music' if self.is_temp_playlist_music else 'iptv'       
+        self.main_content_stack.set_visible_child_name("player_view")
+        self._start_playback(url=url, media_type=media_type, channel_data={'name': name})
+
+    def on_temp_playlist_closed(self, view):
+        self.on_nav_button_clicked(self.top_buttons["iptv"], "iptv")                                                                           
 
     def on_show_about_clicked(self, button):
         """Shows the 'About' dialog with License and TMDb attribution."""

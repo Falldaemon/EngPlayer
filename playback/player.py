@@ -1,6 +1,7 @@
 # playback/player.py
 
 import gi
+import time
 import logging
 import database
 import gettext
@@ -21,11 +22,15 @@ class Player(GObject.Object):
     def __init__(self):
         super().__init__()
         self.player = None
+        self.video_balance = None
         self.paintable = None
         self.equalizer = None
         self.current_uri = None
         self.audio_tracks = []
         self.subtitle_tracks = []
+        self.total_bytes = 0
+        self.last_bitrate = 0
+        self.last_time = time.time()
 
     def _setup_player(self):
         """Creates a clean player and linked elements each time."""
@@ -33,15 +38,11 @@ class Player(GObject.Object):
             self.player.set_state(Gst.State.NULL)
             self.player = None
             self.paintable = None
+            self.video_balance = None
         self.player = Gst.ElementFactory.make("playbin", None)
+        self.player.connect("element-setup", self._on_element_setup)
         if not self.player:
             raise Exception("Failed to create GStreamer 'playbin' element.")
-        try:
-            self.player.set_property("buffer-duration", 8 * Gst.SECOND)
-            self.player.set_property("ring-buffer-max-size", 50 * 1024 * 1024)
-            logging.info("Player buffer set: 8s duration, 100MB size.")
-        except Exception as e:
-            logging.warning(f"Could not set buffer properties: {e}")    
         flags = self.player.get_property("flags")
         TEXT_FLAG = 4
         flags &= ~TEXT_FLAG
@@ -66,28 +67,101 @@ class Player(GObject.Object):
             self.player.set_property("vis-plugin", visualizer)
         else:
             logging.warning("GStreamer 'goom' plugin not found. Visualizer disabled.")
+        c = float(database.get_config_value("video_contrast") or 1.0)
+        b = float(database.get_config_value("video_brightness") or 0.0)
+        s = float(database.get_config_value("video_saturation") or 1.0)
+        h = float(database.get_config_value("video_hue") or 0.0)
         try:
-            pipeline_str = "glupload ! glcolorconvert ! glcolorscale ! gtk4paintablesink name=gtksink"
+            pipeline_str = (
+                "glupload ! glcolorconvert ! glcolorscale ! "
+                "glcolorbalance name=video_correction ! " 
+                "gtk4paintablesink name=gtksink"
+            )
             sink_bin = Gst.parse_bin_from_description(pipeline_str, True)
             self.player.set_property("video-sink", sink_bin)
             real_sink = sink_bin.get_by_name("gtksink")
             self.paintable = real_sink.get_property("paintable")
-            logging.info("GPU Sink (Safe Mode - glcolorscale) active.")
+            self.video_balance = sink_bin.get_by_name("video_correction")            
+            if self.video_balance:
+                self.video_balance.set_property("contrast", c)
+                self.video_balance.set_property("brightness", b)
+                self.video_balance.set_property("saturation", s)
+                self.video_balance.set_property("hue", h)
+                logging.info("GPU Color Balance (glcolorbalance) active.")
+            logging.info("GPU Sink initialized successfully.")
         except Exception as e:
-            logging.error(f"Sink error: {e}. Falling back to default.")
-            gtk_sink = Gst.ElementFactory.make("gtk4paintablesink", None)
-            self.player.set_property("video-sink", gtk_sink)
-            self.paintable = gtk_sink.get_property("paintable")
+            logging.error(f"GPU Sink error: {e}. Switching to Software Fallback.")
+            try:
+                gtk_sink = Gst.ElementFactory.make("gtk4paintablesink", None)
+                self.player.set_property("video-sink", gtk_sink)
+                self.paintable = gtk_sink.get_property("paintable")
+                filter_bin = Gst.parse_bin_from_description(
+                    "videoconvert ! videobalance name=video_correction ! videoconvert", True
+                )
+                self.video_balance = filter_bin.get_by_name("video_correction")
+                
+                if self.video_balance:
+                    self.video_balance.set_property("contrast", c)
+                    self.video_balance.set_property("brightness", b)
+                    self.video_balance.set_property("saturation", s)
+                    self.video_balance.set_property("hue", h)
+                    self.player.set_property("video-filter", filter_bin)
+                    logging.info("Software Color Balance (videobalance) active.")                 
+            except Exception as ex:
+                logging.error(f"Software Fallback error: {ex}")
+                self.video_balance = None
         bus = self.player.get_bus()
         bus.add_signal_watch()
         bus.connect("message::error", self.on_bus_error)
         bus.connect("message::eos", self.on_eos)
         bus.connect("message::state-changed", self.on_bus_state_changed)
         bus.connect("message::application", self.on_application_message)
+        
+    def set_video_correction(self, setting_type, value):
+        if self.video_balance:
+            try:
+                self.video_balance.set_property(setting_type, float(value))
+            except Exception as e:
+                logging.error(f"Failed to apply video setting ({setting_type}): {e}")        
 
-    def play_url(self, url):
+    def _on_element_setup(self, playbin, element):
+        factory = element.get_factory()
+        if factory:
+            klass = factory.get_metadata("klass")
+            if klass and "Source" in klass:
+                pad = element.get_static_pad("src")
+                if pad:
+                    pad.add_probe(Gst.PadProbeType.BUFFER, self._bitrate_probe_cb)
+
+    def _on_source_setup(self, playbin, source):
+        pad = source.get_static_pad("src")
+        if pad:
+            pad.add_probe(Gst.PadProbeType.BUFFER, self._bitrate_probe_cb)
+
+    def _bitrate_probe_cb(self, pad, info):
+        buffer = info.get_buffer()
+        if buffer:
+            self.total_bytes += buffer.get_size()
+        return Gst.PadProbeReturn.OK        
+
+    def play_url(self, url, media_type="video"):
         """Destroys the old player, sets up a new one, and puts playback in the PAUSED state."""
         self._setup_player()
+        is_remote = url.startswith("http") or url.startswith("https")
+        if media_type == "music" and not is_remote:
+            try:
+                self.player.set_property("buffer-duration", 200 * Gst.MSECOND)
+                self.player.set_property("ring-buffer-max-size", 0)
+                logging.info("Local Music Mode: Buffer set to 200ms for instant Audio FX response.")
+            except Exception as e:
+                logging.warning(f"Could not set music buffer: {e}")
+        else:
+            try:
+                self.player.set_property("buffer-duration", 8 * Gst.SECOND)
+                self.player.set_property("ring-buffer-max-size", 50 * 1024 * 1024)
+                logging.info("Stream/Podcast/Video Mode: Buffer set to 8s for stability.")
+            except Exception as e:
+                logging.warning(f"Could not set video buffer: {e}")
         self.emit("paintable-changed", self.paintable)
         self.current_uri = url
         self.player.set_property("uri", url)
@@ -253,6 +327,54 @@ class Player(GObject.Object):
         except Exception as e: logging.debug(f"Could not retrieve audio stream info: {e}")
         return video_text, audio_text
 
+    def get_detailed_stats(self):
+        now = time.time()
+        elapsed = now - self.last_time
+        if elapsed >= 1.0:
+            self.last_bitrate = (self.total_bytes * 8) / elapsed
+            self.total_bytes = 0
+            self.last_time = now
+        stats = {
+            "video_codec": "-", "audio_codec": "-", "resolution": "-",
+            "fps": "-", "format": "-", "channels": "-", "sample_rate": "-",
+            "profile": "-", "level": "-", "language": "-",
+            "bitrate": self.last_bitrate,
+            "url": self.current_uri or "-"
+        }
+        if not self.player:
+            return stats
+        v_pad = self.player.emit("get-video-pad", 0)
+        if v_pad:
+            caps = v_pad.get_current_caps()
+            if caps:
+                s = caps.get_structure(0)
+                stats["resolution"] = f"{s.get_int('width')[1]}x{s.get_int('height')[1]}"
+                stats["format"] = s.get_string("format")
+                stats["profile"] = s.get_string("profile") if s.has_field("profile") else "-"
+                stats["level"] = s.get_string("level") if s.has_field("level") else "-"
+                success, fn, fd = s.get_fraction("framerate")
+                if success and fd > 0:
+                    stats["fps"] = f"{fn / fd:.2f}"
+            tags = self.player.emit("get-video-tags", 0)
+            if tags:
+                success, codec = tags.get_string("video-codec")
+                if success: stats["video_codec"] = codec
+        a_pad = self.player.emit("get-audio-pad", 0)
+        if a_pad:
+            caps = a_pad.get_current_caps()
+            if caps:
+                s = caps.get_structure(0)
+                stats["channels"] = str(s.get_int("channels")[1]) if s.has_field("channels") else "-"
+                rate = s.get_int("rate")[1] if s.has_field("rate") else "-"
+                stats["sample_rate"] = f"{rate} Hz" if rate != "-" else "-"
+            a_tags = self.player.emit("get-audio-tags", 0)
+            if a_tags:
+                success, a_codec = a_tags.get_string("audio-codec")
+                if success: stats["audio_codec"] = a_codec
+                success, lang = a_tags.get_string("language-code")
+                stats["language"] = lang if success else "-"
+        return stats
+
     def on_eos(self, bus, message):
         """Runs when the end of the video is reached and emits a signal."""
         logging.info("Playback finished (EOS).")
@@ -298,3 +420,4 @@ class Player(GObject.Object):
         """Emits our own signal when the 'about-to-finish' signal is received from GStreamer."""
         logging.debug("Player: 'about-to-finish' signal received from GStreamer.")
         self.emit("about-to-finish")
+      

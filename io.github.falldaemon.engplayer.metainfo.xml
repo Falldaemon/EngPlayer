@@ -13,17 +13,19 @@
   <description>
     <p>
       EngPlayer is a modern, fast, and lightweight media player developed with Python and GTK4 for Linux desktops.
-      It serves as a user-friendly entertainment hub that brings your local media library, VOD content, and live streams under one roof.
+      It serves as a user-friendly entertainment hub that brings your local media library, VOD content, Podcasts, and live streams under one roof.
     </p>
     <p>Key Features:</p>
     <ul>
       <li><em>IPTV Support:</em> Seamless integration with Xtream Codes API and M3U playlists.</li>
       <li><em>Smart EPG &amp; Catch-up:</em> Real-time program guides and archive playback support.</li>
       <li><em>Recorder (PVR):</em> Record live streams or schedule recordings for later.</li>
+      <li><em>Podcast Integration:</em> Manage library, listen to episodes, and smart resume support.</li>
+      <li><em>External Stream:</em> Direct playback support for external video and audio URLs.</li>
       <li><em>Cinematic VOD:</em> Automatic metadata fetching (Posters, Cast, Plot) via TMDb integration.</li>
       <li><em>Trakt.tv Sync:</em> Automatically tracks what you're watching (Scrobbling).</li>
       <li><em>Local Library:</em> Manage your Video, Music, and Picture collections with album art support.</li>
-      <li><em>Advanced Player:</em> 10-Band Equalizer, Subtitle download support, and PiP mode.</li>
+      <li><em>Advanced Player:</em> Video Settings (Brightness/Contrast), 10-Band Equalizer, Subtitle download, and PiP mode.</li>
     </ul>
   </description>
 
@@ -83,6 +85,20 @@
   </content_rating>
   
   <releases>
+    <release version="0.1.3" date="2026-01-08">
+      <description>
+        <p>This update introduces Podcast support, external stream playback, and video enhancements.</p>
+        <ul>
+          <li>New Feature: Added Podcast support and library.</li>
+          <li>New Feature: Added external URL playback option.</li>
+          <li>New Feature: Added Video Settings menu.</li>
+          <li>New Feature: Added Channel Information display.</li>
+          <li>Fix: Resolved IPTV slider bar functionality issues.</li>
+          <li>Fix: Corrected EPG logo matching logic.</li>
+        </ul>
+      </description>
+    </release>
+
     <release version="0.1.2" date="2025-12-23">
       <description>
         <p>This update introduces visual improvements and better version management.</p>

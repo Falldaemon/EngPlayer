@@ -123,6 +123,19 @@ def _initialize_library_db():
             FOREIGN KEY (album_id) REFERENCES albums (id) ON DELETE CASCADE
             )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS podcasts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                title TEXT NOT NULL,
+                url TEXT NOT NULL UNIQUE,
+                added_at INTEGER
+            )
+        """)
+        try:
+            cursor.execute("SELECT sort_order FROM podcasts LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'podcasts' table: adding 'sort_order' column.")
+            cursor.execute("ALTER TABLE podcasts ADD COLUMN sort_order INTEGER DEFAULT 0")
         try:
             cursor.execute("SELECT seasons_json FROM media_metadata LIMIT 1")
         except sqlite3.OperationalError:
@@ -1051,3 +1064,98 @@ def update_season_data(media_path, seasons_json_str):
         logging.error(f"Failed to update season data for '{media_path}': {e}")
     finally:
         conn.close()
+    
+def delete_podcast(podcast_id):
+    conn = get_library_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM podcasts WHERE id = ?", (podcast_id,))
+        logging.info(f"Podcast deleted: ID {podcast_id}")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to delete podcast: {e}")
+        return False
+    finally:
+        conn.close()
+
+def swap_podcast_order(podcast_id_1, podcast_id_2):
+    conn = get_library_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT sort_order FROM podcasts WHERE id = ?", (podcast_id_1,))
+            row1 = cursor.fetchone()
+            cursor.execute("SELECT sort_order FROM podcasts WHERE id = ?", (podcast_id_2,))
+            row2 = cursor.fetchone()
+            if not row1 or not row2:
+                return False
+            order1 = row1['sort_order'] if row1['sort_order'] is not None else 0
+            order2 = row2['sort_order'] if row2['sort_order'] is not None else 0
+            if order1 == order2:
+                order1 = podcast_id_1
+                order2 = podcast_id_2
+            conn.execute("UPDATE podcasts SET sort_order = ? WHERE id = ?", (order2, podcast_id_1))
+            conn.execute("UPDATE podcasts SET sort_order = ? WHERE id = ?", (order1, podcast_id_2))
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Error swapping podcast order: {e}")
+        return False
+    finally:
+        conn.close()
+
+def migrate_podcast_images():
+    conn = get_library_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT image_url FROM podcasts LIMIT 1")
+    except sqlite3.OperationalError:
+        logging.info("Migrating 'podcasts' table: adding 'image_url' column.")
+        conn.execute("ALTER TABLE podcasts ADD COLUMN image_url TEXT")
+        conn.commit()
+    finally:
+        conn.close()
+
+def add_podcast(title, url, image_url=None):
+    migrate_podcast_images()   
+    conn = get_library_db_connection()
+    try:
+        with conn:
+            cursor = conn.cursor()
+            cursor.execute("SELECT id FROM podcasts WHERE url = ?", (url,))
+            if cursor.fetchone():
+                return False
+            conn.execute(
+                "INSERT INTO podcasts (title, url, image_url, sort_order) VALUES (?, ?, ?, 0)",
+                (title, url, image_url)
+            )
+        logging.info(f"Podcast added: {title}")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to add podcast: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_all_podcasts():
+    migrate_podcast_images()    
+    conn = get_library_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, title, url, added_at, sort_order, image_url FROM podcasts ORDER BY sort_order ASC, id DESC")
+    podcasts = cursor.fetchall()
+    conn.close()
+    return podcasts
+    
+def is_content_finished(media_path):
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_finished FROM playback_progress WHERE media_path = ?", (media_path,))
+        row = cursor.fetchone()
+        if row and row['is_finished'] == 1:
+            return True
+        return False
+    except sqlite3.Error as e:
+        logging.error(f"Error checking is_content_finished: {e}")
+        return False
+    finally:
+        conn.close()          

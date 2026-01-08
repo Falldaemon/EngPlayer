@@ -1126,6 +1126,215 @@ msgstr ""
 msgid "E.g. TV Show Name (Optional)"
 msgstr ""
 
+# --- Media Information Dialog ---
+msgid "Stream Technical Information"
+msgstr ""
+
+msgid "Codec"
+msgstr ""
+
+msgid "Resolution"
+msgstr ""
+
+msgid "Frame Rate (FPS)"
+msgstr ""
+
+msgid "Decoded Format"
+msgstr ""
+
+msgid "Language"
+msgstr ""
+
+msgid "Channels"
+msgstr ""
+
+msgid "Sample Rate"
+msgstr ""
+
+msgid "Bitrate"
+msgstr ""
+
+msgid "Location"
+msgstr ""
+
+# --- Player Controls Tooltip ---
+msgid "Stream Information"
+msgstr ""
+
+# --- Video Settings ---
+msgid "Video Settings"
+msgstr ""
+
+msgid "Contrast"
+msgstr ""
+
+msgid "Brightness"
+msgstr ""
+
+msgid "Saturation"
+msgstr ""
+
+msgid "Hue"
+msgstr ""
+
+msgid "Reset to Defaults"
+msgstr ""
+
+# --- Podcasts & New Media Features ---
+
+msgid "Podcasts"
+msgstr ""
+
+msgid "Podcast List"
+msgstr ""
+
+msgid "Search podcasts..."
+msgstr ""
+
+msgid "Episodes"
+msgstr ""
+
+msgid "{} Episodes"
+msgstr ""
+
+msgid "Back to Podcast List"
+msgstr ""
+
+msgid "Back to Media Menu"
+msgstr ""
+
+msgid "Add Media Source"
+msgstr ""
+
+msgid "Choose the type of source you want to add."
+msgstr ""
+
+msgid "Local Folder"
+msgstr ""
+
+msgid "Podcast URL"
+msgstr ""
+
+msgid "Add Podcast"
+msgstr ""
+
+msgid "Enter the podcast title and RSS URL."
+msgstr ""
+
+msgid "Podcast Title"
+msgstr ""
+
+msgid "Podcast RSS URL"
+msgstr ""
+
+msgid "Podcast added successfully."
+msgstr ""
+
+msgid "Error: Podcast could not be added (Check URL/Duplicate)."
+msgstr ""
+
+msgid "Please fill in both fields."
+msgstr ""
+
+msgid "Error loading podcast feed."
+msgstr ""
+
+msgid "Error: Could not load episodes (Empty list)."
+msgstr ""
+
+msgid "End of podcast list."
+msgstr ""
+
+msgid "Move Up"
+msgstr ""
+
+msgid "Move Down"
+msgstr ""
+
+msgid "Delete Podcast"
+msgstr ""
+
+msgid "Are you sure you want to delete '{}'?"
+msgstr ""
+
+msgid "Podcast deleted successfully."
+msgstr ""
+
+msgid "Error deleting podcast."
+msgstr ""
+
+msgid "Unknown Podcast"
+msgstr ""
+
+# --- Network Stream & Live URL Features ---
+msgid "Network Stream"
+msgstr ""
+
+msgid "Open Network Stream"
+msgstr ""
+
+msgid "Enter the URL to play directly."
+msgstr ""
+
+msgid "Audio Only Mode"
+msgstr ""
+
+msgid "Enable this if the URL is a radio station or music file."
+msgstr ""
+
+msgid "Resolving stream URL..."
+msgstr ""
+
+msgid "Please enter a valid URL."
+msgstr ""
+
+msgid "Error: Video stream could not be extracted from this site."
+msgstr ""
+
+msgid "Loading playlist..."
+msgstr ""
+
+msgid "Error loading playlist."
+msgstr ""
+
+msgid "No channels found in playlist."
+msgstr ""
+
+msgid "{} channels loaded."
+msgstr ""
+
+# --- Temporary Playlist (Side Menu) ---
+msgid "Network Playlist"
+msgstr ""
+
+msgid "Close Playlist"
+msgstr ""
+
+msgid "Filter channels..."
+msgstr ""
+
+msgid "Playlist ({})"
+msgstr ""
+
+# --- Podcast Updates ---
+msgid "Fetching podcast info..."
+msgstr ""
+
+msgid "Please enter a URL."
+msgstr ""
+
+msgid "Error: Podcast could not be added."
+msgstr ""
+
+msgid "Resume Podcast"
+msgstr ""
+
+msgid "You listened to this episode until {}. Resume?"
+msgstr ""
+
+msgid "Added to playlist: {}"
+msgstr ""
+
 # --- License / Legal ---
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr ""
