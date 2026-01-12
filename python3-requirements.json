@@ -123,7 +123,14 @@
                 {
                     "type": "file",
                     "url": "https://files.pythonhosted.org/packages/32/00/ec8597a64f2be301ce1ee3290d067f49f6a7afb226b67d5f15b56d772ba5/rapidfuzz-3.14.3-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
-                    "sha256": "43e38c1305cffae8472572a0584d4ffc2f130865586a81038ca3965301f7c97c"
+                    "sha256": "43e38c1305cffae8472572a0584d4ffc2f130865586a81038ca3965301f7c97c",
+                    "only-arches": ["x86_64"]
+                },
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/59/cf/c3ac8c80d8ced6c1f99b5d9674d397ce5d0e9d0939d788d67c010e19c65f/rapidfuzz-3.13.0-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+                    "sha256": "0da54aa8547b3c2c188db3d1c7eb4d1bb6dd80baa8cdaeaec3d1da3346ec9caa",
+                    "only-arches": ["aarch64"]
                 }
             ]
         },
@@ -137,7 +144,14 @@
                 {
                     "type": "file",
                     "url": "https://files.pythonhosted.org/packages/cp313/l/levenshtein/levenshtein-0.26.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
-                    "sha256": "397e245e77f87836308bd56305bba630010cd8298c34c4c44bd94990cdb3b7b1"
+                    "sha256": "397e245e77f87836308bd56305bba630010cd8298c34c4c44bd94990cdb3b7b1",
+                    "only-arches": ["x86_64"]
+                },
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/7e/23/21209a9e96b878aede3bea104533866762ba621e36fc344aa080db5feb02/levenshtein-0.26.1-cp313-cp313-manylinux_2_17_aarch64.manylinux2014_aarch64.whl",
+                    "sha256": "c3114586032361722ddededf28401ce5baf1cf617f9f49fb86b8766a45a423ff",
+                    "only-arches": ["aarch64"]
                 }
             ]
         },
