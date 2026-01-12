@@ -108,6 +108,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.stream_has_started = False
         self.equalizer_window = None
         self.current_epg_program = None
+        self._failed_active_epg_searches = set()
         self.last_epg_check_time = 0
         self.last_save_time = 0
         self.current_playing_media_path = None
@@ -2151,6 +2152,9 @@ class MainWindow(Adw.ApplicationWindow):
             logging.debug(f"EPG Search: tvg-id empty, falling back to tvg-name -> '{search_key}'")
         elif name:
             search_key = name
+        if search_key in self._failed_active_epg_searches:
+            self.video_view.update_epg([])
+            return    
             logging.debug(f"EPG Search: ID and Name tags empty, using display name -> '{search_key}'")
 
         if not search_key:
@@ -2159,6 +2163,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
         channel_programs = self._find_epg_data_for_channel(search_key)       
         if not channel_programs:
+            self._failed_active_epg_searches.add(search_key) 
             self.video_view.update_epg([])
             return
         programs_to_display = []

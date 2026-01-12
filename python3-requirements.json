@@ -114,16 +114,44 @@
             ]
         },
         {
-            "name": "python3-fuzzywuzzy",
+			"name": "python3-rapidfuzz",
             "buildsystem": "simple",
             "build-commands": [
-                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"fuzzywuzzy\" --no-build-isolation"
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"rapidfuzz\" --no-build-isolation"
             ],
             "sources": [
                 {
                     "type": "file",
-                    "url": "https://files.pythonhosted.org/packages/43/ff/74f23998ad2f93b945c0309f825be92e04e0348e062026998b5eefef4c33/fuzzywuzzy-0.18.0-py2.py3-none-any.whl",
-                    "sha256": "928244b28db720d1e0ee7587acf660ea49d7e4c632569cad4f1cd7e68a5f0993"
+                    "url": "https://files.pythonhosted.org/packages/32/00/ec8597a64f2be301ce1ee3290d067f49f6a7afb226b67d5f15b56d772ba5/rapidfuzz-3.14.3-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl",
+                    "sha256": "43e38c1305cffae8472572a0584d4ffc2f130865586a81038ca3965301f7c97c"
+                }
+            ]
+        },
+        {
+            "name": "python3-Levenshtein",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"Levenshtein\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/cp313/l/levenshtein/levenshtein-0.26.1-cp313-cp313-manylinux_2_17_x86_64.manylinux2014_x86_64.whl",
+                    "sha256": "397e245e77f87836308bd56305bba630010cd8298c34c4c44bd94990cdb3b7b1"
+                }
+            ]
+        },
+        {
+            "name": "python3-thefuzz",
+            "buildsystem": "simple",
+            "build-commands": [
+                "pip3 install --verbose --exists-action=i --no-index --find-links=\"file://${PWD}\" --prefix=${FLATPAK_DEST} \"thefuzz\" --no-build-isolation"
+            ],
+            "sources": [
+                {
+                    "type": "file",
+                    "url": "https://files.pythonhosted.org/packages/82/4f/1695e70ceb3604f19eda9908e289c687ea81c4fecef4d90a9d1d0f2f7ae9/thefuzz-0.22.1-py3-none-any.whl",
+                    "sha256": "59729b33556850b90e1093c4cf9e618af6f2e4c985df193fdf3c5b5cf02ca481"
                 }
             ]
         }

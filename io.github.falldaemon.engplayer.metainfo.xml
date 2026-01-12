@@ -85,6 +85,17 @@
   </content_rating>
   
   <releases>
+	<release version="0.1.4" date="2026-01-12">
+      <description>
+        <p>This release addresses playback synchronization issues and display bugs.</p>
+        <ul>
+          <li>Live Stream Fix: Resolved an issue where the video would pause/freeze while audio continued playing during live streams.</li>
+          <li>Display Fix: Fixed full-screen scaling issues on 1024x768 resolutions.</li>
+          <li>General: Various minor bug fixes and improvements.</li>
+        </ul>
+      </description>
+    </release>
+      
     <release version="0.1.3" date="2026-01-08">
       <description>
         <p>This update introduces Podcast support, external stream playback, and video enhancements.</p>

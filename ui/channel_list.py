@@ -19,6 +19,8 @@ import database
 from datetime import datetime, timezone
 from utils.theme_utils import get_icon_theme_folder
 from background import image_download_pool
+from urllib.parse import urlparse 
+_failed_logo_hosts = set()
 try:
     from thefuzz import fuzz, process
     logging.info("Loaded 'thefuzz' library for smart searching.")
@@ -44,6 +46,7 @@ class ChannelList(Gtk.Box):
 
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6, **kwargs)
+        self._failed_epg_searches = set()
         self.active_list_id = None
         self.search_entry = Gtk.SearchEntry(
             placeholder_text=_("Search channel..."),
@@ -71,6 +74,7 @@ class ChannelList(Gtk.Box):
         """
         Populates the channel list and starts a background timer to refresh EPG status.
         """
+        self._failed_epg_searches.clear()
         if hasattr(self, 'epg_update_timer_id') and self.epg_update_timer_id:
             GLib.source_remove(self.epg_update_timer_id)
             self.epg_update_timer_id = None
@@ -397,22 +401,45 @@ class ChannelList(Gtk.Box):
         parent.insert_child_after(image, None)
 
     def _load_logo_and_replace(self, url, placeholder_widget):
+        try:
+            host = urlparse(url).netloc
+            if host in _failed_logo_hosts:
+                return
+        except:
+            pass
         if not placeholder_widget or not placeholder_widget.get_ancestor(Gtk.ListBoxRow):
              return
         def thread_func():
+            try:
+                host = urlparse(url).netloc
+                if host in _failed_logo_hosts:
+                    return
+            except:
+                pass
             pixbuf = None
             try:
                 if url.lower().startswith("http"):
-                    headers = {"User-Agent": "Mozilla/5.0"}; req = urllib.request.Request(url, headers=headers)
-                    with urllib.request.urlopen(req, timeout=10) as resp: data = resp.read()
+                    headers = {"User-Agent": "Mozilla/5.0"}
+                    req = urllib.request.Request(url, headers=headers)
+                    with urllib.request.urlopen(req, timeout=3) as resp:
+                        data = resp.read()
                 else:
                     if os.path.exists(url):
                          with open(url, "rb") as f: data = f.read()
                     else: data = None
                 if data:
-                    loader = GdkPixbuf.PixbufLoader.new(); loader.write(data); loader.close()
+                    loader = GdkPixbuf.PixbufLoader.new()
+                    loader.write(data)
+                    loader.close()
                     pixbuf = loader.get_pixbuf()
             except Exception as e:
+                 try:
+                     bad_host = urlparse(url).netloc
+                     if bad_host not in _failed_logo_hosts:
+                         _failed_logo_hosts.add(bad_host)
+                         logging.warning(f"🛑 LOGO SERVER BLOCKED: {bad_host} - No more requests will be sent to this address.")
+                 except:
+                     pass
                  logging.warning(f"Failed to load channel logo '{url}': {e}")
             if pixbuf:
                 GLib.idle_add(self._check_and_replace_placeholder, placeholder_widget, pixbuf)
@@ -525,6 +552,8 @@ class ChannelList(Gtk.Box):
         search_key = t_id or t_name or name
         if not search_key:
             return None
+        if search_key in self._failed_epg_searches:
+            return None    
         programs = epg_data.get(search_key)
         if not programs and epg_clean_map:
             clean_id = self._clean_key(search_key)
@@ -547,8 +576,9 @@ class ChannelList(Gtk.Box):
                                 logging.debug(f"List EPG Rejected ({reason}): '{clean_id}' vs '{best_match}'")
                 if not programs:
                     soft_id = clean_id.replace("tv.", ".")
-                    programs = epg_clean_map.get(soft_id)
+                    programs = epg_clean_map.get(soft_id)    
         if not programs:
+            self._failed_epg_searches.add(search_key)
             return None
         now = datetime.now(timezone.utc)
         for prog in programs:

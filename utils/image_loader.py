@@ -47,7 +47,7 @@ def load_image_async(url, widget, on_success_callback=None, on_failure=None):
                         except OSError: pass
             headers = {"User-Agent": "Mozilla/5.0"}
             req = urllib.request.Request(url, headers=headers)
-            with urllib.request.urlopen(req, timeout=5) as resp:
+            with urllib.request.urlopen(req, timeout=6) as resp:
                 data = resp.read()
             if data:
                 loader = GdkPixbuf.PixbufLoader.new()

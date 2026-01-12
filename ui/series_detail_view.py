@@ -40,7 +40,7 @@ class SeriesDetailView(Gtk.Box):
         self.info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
         main_box.append(self.info_box)
         self.poster_image = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
-        self.poster_image.set_size_request(200, 300)
+        self.poster_image.set_size_request(100, 200)
         self.poster_image.set_valign(Gtk.Align.START)
         self.info_box.append(self.poster_image)
         self.title_label = Gtk.Label(xalign=0, wrap=True)
