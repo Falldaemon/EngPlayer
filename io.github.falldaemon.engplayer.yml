@@ -28,4 +28,4 @@ modules:
     sources:
       - type: git
         url: https://github.com/Falldaemon/EngPlayer.git
-        commit: 31b0061684ca838ef9865d3c7a45c46dd5d5a065
+        commit: f933d11d5eeacee525ca1b4a21c22fec768ab237
