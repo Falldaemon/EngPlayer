@@ -77,6 +77,7 @@ from ui.podcast_detail_view import PodcastDetailView
 from ui.podcast_episode_list import PodcastEpisodeList
 from utils import rss_parser
 from ui.temp_playlist_view import TempPlaylistView
+from ui.category_manager_dialog import CategoryManagerDialog
 import urllib.request
 
 _ = gettext.gettext
@@ -89,6 +90,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.set_default_size(1100, 700)
         self.active_media_type = "video"
         self.is_immersive_fullscreen = False
+        self.last_mouse_x = 0
+        self.last_mouse_y = 0
         root_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.set_content(root_box)
         self.toast_overlay = Adw.ToastOverlay()
@@ -153,87 +156,145 @@ class MainWindow(Adw.ApplicationWindow):
         self.header.set_decoration_layout(":minimize,maximize,close")
         root_box.append(self.header)
         self.settings_popover = Gtk.Popover()
-        popover_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, margin_top=6, margin_bottom=6, margin_start=6, margin_end=6)
-        self.settings_popover.set_child(popover_box)
-        password_button = Gtk.Button(label=_("Set/Change Password"))
-        password_button.connect("clicked", self.on_set_password_clicked)
-        popover_box.append(password_button)
-        tmdb_button = Gtk.Button(label=_("Set TMDb API Key"))
-        tmdb_button.connect("clicked", self.on_set_tmdb_api_key_clicked)
-        popover_box.append(tmdb_button)
-        opensubtitles_button = Gtk.Button(label=_("Set OpenSubtitles API Key"))
-        opensubtitles_button.connect("clicked", self.on_set_opensubtitles_api_key_clicked)
-        popover_box.append(opensubtitles_button)
-        self.trakt_login_button = Gtk.Button(label=_("Connect to Trakt.tv"))
-        self.trakt_login_button.connect("clicked", self.on_trakt_login_clicked)
-        popover_box.append(self.trakt_login_button)
-        self._update_trakt_login_button_status()
+        self.settings_popover.add_css_class("settings-popover")
+        scrolled_window = Gtk.ScrolledWindow()
+        scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled_window.set_propagate_natural_height(True)
+        scrolled_window.set_propagate_natural_width(True)
+        scrolled_window.set_min_content_height(350)
+        scrolled_window.set_max_content_height(600)
+        self.settings_popover.set_child(scrolled_window)
+        popover_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
+        scrolled_window.set_child(popover_box)
+        general_list = Gtk.ListBox()
+        general_list.add_css_class("boxed-list")
+        popover_box.append(general_list)
+        row = Adw.ActionRow(title=_("Set/Change Password"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        row.connect("activated", lambda x: self.on_set_password_clicked(None))
+        general_list.append(row)
+        row = Adw.ActionRow(title=_("Set TMDb API Key"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        row.connect("activated", lambda x: self.on_set_tmdb_api_key_clicked(None))
+        general_list.append(row)
+        row = Adw.ActionRow(title=_("Set OpenSubtitles API Key"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        row.connect("activated", lambda x: self.on_set_opensubtitles_api_key_clicked(None))
+        general_list.append(row)
+        self.trakt_row = Adw.ActionRow(title=_("Connect to Trakt.tv"))
+        self.trakt_row.set_activatable(True)
+        self.trakt_row.add_suffix(Gtk.Image.new_from_icon_name("go-next-symbolic"))
+        self.trakt_row.connect("activated", lambda x: self.on_trakt_login_clicked(None))
+        general_list.append(self.trakt_row)
         self.tmdb_switch_row = Adw.SwitchRow(title=_("Use TMDb Metadata"))
         self.tmdb_switch_row.set_active(database.get_use_tmdb_status())
         self.tmdb_switch_row.connect("notify::active", self._on_tmdb_toggle_changed)
-        popover_box.append(self.tmdb_switch_row)
+        general_list.append(self.tmdb_switch_row)
         self.poster_cache_switch_row = Adw.SwitchRow(title=_("Use Poster Cache"))
         self.poster_cache_switch_row.set_subtitle(_("Saves posters to disk (loads faster)"))
         self.poster_cache_switch_row.set_active(database.get_use_poster_disk_cache_status())
         self.poster_cache_switch_row.connect("notify::active", self._on_poster_cache_toggle_changed)
-        popover_box.append(self.poster_cache_switch_row)
+        general_list.append(self.poster_cache_switch_row)
         theme_row = Adw.ActionRow(title=_("Theme"))
         self.theme_combo = Gtk.ComboBoxText()
         self.theme_combo.append("default", _("System Theme"))
         self.theme_combo.append("force_light", _("Light"))
         self.theme_combo.append("force_dark", _("Dark"))
         saved_theme = database.get_config_value('app_theme')
-        if saved_theme == "force_light":
-            self.theme_combo.set_active_id("force_light")
-        elif saved_theme == "force_dark":
-            self.theme_combo.set_active_id("force_dark")
-        else:
-            self.theme_combo.set_active_id("default")
+        if saved_theme == "force_light": self.theme_combo.set_active_id("force_light")
+        elif saved_theme == "force_dark": self.theme_combo.set_active_id("force_dark")
+        else: self.theme_combo.set_active_id("default")
         self.theme_combo.connect("changed", self._on_theme_combo_changed)
+        self.theme_combo.set_valign(Gtk.Align.CENTER)
         theme_row.add_suffix(self.theme_combo)
-        theme_row.set_activatable_widget(self.theme_combo)
-        popover_box.append(theme_row)
-        video_settings_btn = Gtk.Button(label=_("Video Settings"))
-        video_settings_btn.connect("clicked", self.on_open_video_settings_clicked)
-        popover_box.append(video_settings_btn)
-        accent_color_btn = Gtk.Button(label=_("Accent Color"))
-        accent_color_btn.connect("clicked", self._on_open_color_picker)
-        popover_box.append(accent_color_btn)
-        popover_box.append(Gtk.Separator(margin_top=6, margin_bottom=6))
-        popover_box.append(Gtk.Label(label=_("Notifications"), css_classes=["caption-heading"], xalign=0, margin_start=6))
+        general_list.append(theme_row)
+        buffer_row = Adw.ActionRow(title=_("Stream Buffer"))
+        buffer_row.set_subtitle(_("Playback stability"))
+        buffer_row.set_subtitle_lines(0) 
+        self.buffer_combo = Gtk.ComboBoxText()
+        self.buffer_combo.append("2", _("2s (Low)"))
+        self.buffer_combo.append("4", _("4s (Balanced)"))
+        self.buffer_combo.append("6", _("6s (Stable)"))
+        self.buffer_combo.append("8", _("8s (Max)"))
+        saved_buffer = database.get_config_value('stream_buffer_duration')
+        if not saved_buffer: saved_buffer = "4"       
+        self.buffer_combo.set_active_id(saved_buffer)
+        self.buffer_combo.connect("changed", self._on_buffer_combo_changed)
+        self.buffer_combo.set_valign(Gtk.Align.CENTER)      
+        buffer_row.add_suffix(self.buffer_combo)
+        general_list.append(buffer_row)
+        row = Adw.ActionRow(title=_("Video Settings"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("emblem-system-symbolic"))
+        row.connect("activated", lambda x: self.on_open_video_settings_clicked(None))
+        general_list.append(row)
+        row = Adw.ActionRow(title=_("Accent Color"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("applications-graphics-symbolic"))
+        row.connect("activated", lambda x: self._on_open_color_picker(None))
+        general_list.append(row)
+        row = Adw.ActionRow(title=_("Manage Hidden Categories"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("view-list-bullet-symbolic"))
+        row.connect("activated", lambda x: self.on_open_category_manager(None))
+        general_list.append(row)
+        popover_box.append(Gtk.Label(label=_("Notifications"), css_classes=["caption-heading"], xalign=0, margin_start=6, margin_top=6))
+        notif_list = Gtk.ListBox(); notif_list.add_css_class("boxed-list")
+        popover_box.append(notif_list)
         notif_switch_row = Adw.SwitchRow(title=_("Enable Notifications"))
         notif_switch_row.set_active(database.get_notifications_enabled())
         notif_switch_row.connect("notify::active", self._on_notif_toggle_changed)
-        popover_box.append(notif_switch_row)
+        notif_list.append(notif_switch_row)       
         duration_row = Adw.ActionRow(title=_("Duration (Seconds)"))
         duration_spin = Gtk.SpinButton.new_with_range(1, 10, 1)
         duration_spin.set_value(database.get_notification_timeout())
         duration_spin.connect("value-changed", self._on_notif_duration_changed)
         duration_spin.set_valign(Gtk.Align.CENTER)
         duration_row.add_suffix(duration_spin)
-        popover_box.append(duration_row)
-        recordings_path_button = Gtk.Button(label=_("Change Recordings Folder"))
-        recordings_path_button.connect("clicked", self.on_set_recordings_path_clicked)
-        popover_box.append(recordings_path_button)
-        cache_path_button = Gtk.Button(label=_("Change Cache Folder"))
-        cache_path_button.connect("clicked", self.on_set_cache_path_clicked)
-        popover_box.append(cache_path_button)
-        shortcuts_button = Gtk.Button(label=_("Keyboard Shortcuts"))
-        shortcuts_button.connect("clicked", self.on_show_shortcuts_clicked)
-        popover_box.append(shortcuts_button)
-        clear_cache_button = Gtk.Button(label=_("Clear Cache"))
-        clear_cache_button.add_css_class("destructive-action")
-        clear_cache_button.connect("clicked", self.on_clear_cache_clicked)
-        popover_box.append(clear_cache_button)
-        about_button = Gtk.Button(label=_("About EngPlayer"))
-        about_button.connect("clicked", self.on_show_about_clicked)
-        popover_box.append(about_button)
+        notif_list.append(duration_row)
+        popover_box.append(Gtk.Label(label=_("System"), css_classes=["caption-heading"], xalign=0, margin_start=6, margin_top=6))
+        system_list = Gtk.ListBox(); system_list.add_css_class("boxed-list")
+        popover_box.append(system_list)       
+        row = Adw.ActionRow(title=_("Change Recordings Folder"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("folder-open-symbolic"))
+        row.connect("activated", lambda x: self.on_set_recordings_path_clicked(None))
+        system_list.append(row)
+        row = Adw.ActionRow(title=_("Change Cache Folder"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("folder-download-symbolic"))
+        row.connect("activated", lambda x: self.on_set_cache_path_clicked(None))
+        system_list.append(row)      
+        row = Adw.ActionRow(title=_("Keyboard Shortcuts"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("input-keyboard-symbolic"))
+        row.connect("activated", lambda x: self.on_show_shortcuts_clicked(None))
+        system_list.append(row)
+        row = Adw.ActionRow(title=_("Clear Cache"))
+        row.set_activatable(True)
+        row.add_css_class("destructive-action") 
+        row.add_suffix(Gtk.Image.new_from_icon_name("user-trash-symbolic"))
+        row.connect("activated", lambda x: self.on_clear_cache_clicked(None))
+        system_list.append(row)      
+        row = Adw.ActionRow(title=_("About EngPlayer"))
+        row.set_activatable(True)
+        row.add_suffix(Gtk.Image.new_from_icon_name("help-about-symbolic"))
+        row.connect("activated", lambda x: self.on_show_about_clicked(None))
+        system_list.append(row)
         theme_folder = get_icon_theme_folder()
         settings_icon_path = os.path.join("resources", "icons", theme_folder, "settings.svg")
-        settings_icon = Gtk.Image.new_from_file(settings_icon_path); settings_icon.set_pixel_size(24)
-        settings_button = Gtk.Button(child=settings_icon); settings_button.set_tooltip_text(_("Settings"))
-        settings_button.connect("clicked", lambda btn: self.settings_popover.popup())
-        self.settings_popover.set_parent(settings_button); self.header.pack_start(settings_button)
+        settings_icon = Gtk.Image.new_from_file(settings_icon_path)
+        settings_icon.set_pixel_size(24)
+        settings_button = Gtk.MenuButton()
+        settings_button.set_child(settings_icon)
+        settings_button.set_tooltip_text(_("Settings"))
+        settings_button.set_popover(self.settings_popover)
+        self.settings_popover.set_has_arrow(False)
+        settings_button.set_direction(Gtk.ArrowType.DOWN)       
+        self.header.pack_start(settings_button)
         scheduler_icon_path = os.path.join("resources", "icons", theme_folder, "calendar.svg")
         scheduler_icon = Gtk.Image.new_from_file(scheduler_icon_path); scheduler_icon.set_pixel_size(24)
         scheduler_button = Gtk.Button(child=scheduler_icon); scheduler_button.set_tooltip_text(_("Recording Scheduler"))
@@ -246,7 +307,19 @@ class MainWindow(Adw.ApplicationWindow):
         root_box.append(self.toast_overlay)
         main_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         self.toast_overlay.set_child(main_hbox)
-        self.sidebar = NavigationSidebar(); self.sidebar.set_hexpand(False)
+        self.nav_rail_container = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.nav_rail_container.add_css_class("navigation-rail") 
+        self.nav_rail_container.set_size_request(60, -1) 
+        self.nav_rail = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=25) 
+        self.nav_rail.set_valign(Gtk.Align.CENTER)
+        self.nav_rail.set_halign(Gtk.Align.CENTER)
+        self.nav_rail.set_vexpand(True)        
+        self.nav_rail_container.append(self.nav_rail)
+        main_hbox.append(self.nav_rail_container)
+        self.sidebar = NavigationSidebar()
+        self.sidebar.set_hexpand(False)
+        if hasattr(self.sidebar, 'nav_buttons_box'):
+            self.sidebar.nav_buttons_box.set_visible(False)
         main_hbox.append(self.sidebar)
         self.main_content_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, transition_duration=200, hexpand=True)
         main_hbox.append(self.main_content_stack)
@@ -258,24 +331,68 @@ class MainWindow(Adw.ApplicationWindow):
         self.main_content_stack.set_visible_child_name("loading_view")
         self.loading_spinner.start()
         self.top_buttons = {}
-        button_defs = {
-            "iptv": _("Bouquets"),
-            "favorites": _("Favorites"),
-            "vod": _("VOD"),
-            "series": _("Series"),
-            "media": _("Media")
-        }
-        self.sidebar.nav_buttons_box.add_css_class("nav-box")
-        for name, label in button_defs.items():
-            btn = Gtk.Button(label=label, hexpand=True); btn.connect("clicked", self.on_nav_button_clicked, name)
-            self.top_buttons[name] = btn; self.sidebar.nav_buttons_box.append(btn)
-        self.top_buttons["iptv"].add_css_class("active-nav-button")
+        settings = Gtk.Settings.get_default()
+        is_dark = settings.props.gtk_application_prefer_dark_theme or "dark" in (settings.props.gtk_theme_name or "").lower()
+        target_folder = "dark" if is_dark else "light"      
+        logging.info(f"Theme Mode: {target_folder.upper()} (Loading icons from resources/icons/{target_folder})")      
+        icon_base_path = os.path.join("resources", "icons", target_folder)
+        button_defs = [
+            ("iptv", "iptv.svg", "tv-symbolic", _("Live TV")),
+            ("favorites", "favorites.svg", "starred-symbolic", _("Favorites")),
+            ("vod", "vod.svg", "user-desktop-symbolic", _("VOD")),
+            ("series", "series.svg", "view-list-symbolic", _("Series")),
+            ("media", "media.svg", "folder-videos-symbolic", _("Local Media"))
+        ]
+        for name, filename, fallback_icon, tooltip in button_defs:
+            full_path = os.path.join(icon_base_path, filename)
+            if os.path.exists(full_path):
+                try:
+                    texture = Gdk.Texture.new_from_filename(full_path)
+                    icon = Gtk.Image.new_from_paintable(texture)
+                    icon.set_pixel_size(32)
+                except Exception as e:
+                    logging.error(f"Error loading SVG {filename}: {e}")
+                    icon = Gtk.Image.new_from_icon_name(fallback_icon)
+                    icon.set_pixel_size(32)
+            else:
+                logging.warning(f"Icon not found at: {full_path}")
+                icon = Gtk.Image.new_from_icon_name(fallback_icon)
+                icon.set_pixel_size(32)
+            btn = Gtk.Button(child=icon)
+            btn.set_tooltip_text(tooltip)
+            btn.add_css_class("nav-icon-button") 
+            btn.set_cursor(Gdk.Cursor.new_from_name("pointer", None))           
+            btn.connect("clicked", self.on_nav_button_clicked, name)
+            self.top_buttons[name] = btn
+            self.nav_rail.append(btn)
+        profile_filename = "user-switch.svg"
+        profile_full_path = os.path.join(icon_base_path, profile_filename)       
+        if os.path.exists(profile_full_path):
+            try:
+                texture = Gdk.Texture.new_from_filename(profile_full_path)
+                p_icon = Gtk.Image.new_from_paintable(texture)
+                p_icon.set_pixel_size(32)
+            except Exception as e:
+                logging.error(f"Error loading SVG {profile_filename}: {e}")
+                p_icon = Gtk.Image.new_from_icon_name("system-users-symbolic")
+                p_icon.set_pixel_size(32)
+        else:
+            p_icon = Gtk.Image.new_from_icon_name("system-users-symbolic")
+            p_icon.set_pixel_size(32)
+        profile_btn = Gtk.Button(child=p_icon)
+        profile_btn.set_tooltip_text(_("Switch Profile"))
+        profile_btn.add_css_class("nav-icon-button") 
+        profile_btn.set_cursor(Gdk.Cursor.new_from_name("pointer", None))
+        profile_btn.connect("clicked", self.on_switch_profile_clicked)
+        self.nav_rail.append(profile_btn)
+        self.top_buttons["iptv"].add_css_class("active-nav-icon")
         self.iptv_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=300)
         self.bouquet_list = BouquetList(); self.channel_list = ChannelList()
         self.iptv_stack.add_titled(self.bouquet_list, "bouquets", "Bouquet List")
         self.iptv_stack.add_titled(self.channel_list, "channels", "Channel List")
         self.sidebar.list_stack.add_titled(self.iptv_stack, "iptv", "IPTV")
         self.favorites_view = FavoritesView(self.all_channels_map, self.toast_overlay)
+        self.favorites_view.connect("playlist-selected", self.on_favorites_playlist_selected)
         self.sidebar.list_stack.add_titled(self.favorites_view, "favorites", "Favorites")
         self.vod_category_list = BouquetList()
         self.sidebar.list_stack.add_titled(self.vod_category_list, "vod", "VOD")
@@ -424,6 +541,8 @@ class MainWindow(Adw.ApplicationWindow):
         thread = threading.Thread(target=self._process_data_thread, daemon=True)
         thread.start()
         self.video_view.connect("video-area-clicked", self._on_video_area_clicked)
+        self.video_view.fullscreen_channel_list.connect("back-clicked", self.on_fullscreen_back_clicked)
+        self.video_view.fullscreen_channel_list.channel_listbox.connect("row-activated", self.on_fullscreen_list_item_activated)
         key_controller = Gtk.EventControllerKey()
         key_controller.set_propagation_phase(Gtk.PropagationPhase.CAPTURE)
         key_controller.connect("key-pressed", self._on_key_pressed)
@@ -482,8 +601,8 @@ class MainWindow(Adw.ApplicationWindow):
         if view_name != "iptv":
             self.current_channels_in_view = []
         for btn in self.top_buttons.values():
-            btn.remove_css_class("active-nav-button")
-        button.add_css_class("active-nav-button")
+            btn.remove_css_class("active-nav-icon")
+        button.add_css_class("active-nav-icon")
         self.player.pause()
         self.sidebar.list_stack.set_visible_child_name(view_name)
         try:
@@ -540,11 +659,12 @@ class MainWindow(Adw.ApplicationWindow):
             self.main_content_stack.set_visible_child_name("placeholder_view")
             self.media_grid_view.clear()
             data_shown = False
+            hidden_bouquets = database.get_hidden_bouquets()           
             if self.vod_data:
                 logging.info("VOD data found in cache/memory. Populating from local data...")
-                category_names = list(self.vod_data.keys())
+                category_names = [c for c in self.vod_data.keys() if c not in hidden_bouquets]
                 self.vod_category_list.populate_bouquets_async(category_names)
-                data_shown = True
+                data_shown = True          
             if self.profile_data.get("type") == "xtream":
                 logging.info("Xtream profile detected. Fetching fresh VOD categories from API...")
                 thread = threading.Thread(
@@ -626,6 +746,14 @@ class MainWindow(Adw.ApplicationWindow):
         if next_row:
             listbox.select_row(next_row)
         self._on_track_activated(None, next_track_data)
+        
+    def _on_buffer_combo_changed(self, combo):
+        value = combo.get_active_id()
+        if value:
+            database.set_config_value('stream_buffer_duration', value)
+            logging.info(f"User changed buffer duration to: {value}s")
+            self.show_toast(_("Buffer set to {} seconds. Change takes effect on next channel.").format(value))
+            self.settings_popover.popdown()        
 
     def on_set_recordings_path_clicked(self, button):
         self.settings_popover.popdown()
@@ -734,6 +862,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.is_scrobble_triggered = False
         self.last_slider_position = 0
         self.next_episode_data_to_play = None
+        self.retry_count = 0
         controls = self.video_view.controls
         self.subtitle_delay_ms = 0
         self.current_playing_info = {
@@ -950,13 +1079,17 @@ class MainWindow(Adw.ApplicationWindow):
             controls.set_mode('video')
             controls.set_button_visibility("equalizer", False)
             is_iptv = (media_type == 'iptv')
-            should_show_iptv_panels = is_iptv and not self.is_immersive_fullscreen
-            self.video_view.set_epg_visibility(should_show_iptv_panels)
-            controls.set_channel_icon_visibility(should_show_iptv_panels)
+            should_show_epg_panel = is_iptv and not self.is_immersive_fullscreen
+            self.video_view.set_epg_visibility(should_show_epg_panel)
+            controls.set_channel_icon_visibility(is_iptv)
             controls.set_button_visibility("record", is_iptv)
             controls.set_seek_controls_visibility(not is_iptv)
-            if should_show_iptv_panels and channel_data:
-                logo_to_use = correct_logo_path if correct_logo_path else channel_data.get("logo")
+            if is_iptv and channel_data:
+                logo_to_use = correct_logo_path
+                if not logo_to_use and hasattr(self, 'logo_map') and self.logo_map:
+                    logo_to_use = self.channel_list._find_logo_path(channel_data, self.logo_map)
+                if not logo_to_use:
+                    logo_to_use = channel_data.get("logo")
                 controls.update_channel_icon(logo_to_use)
                 self._update_epg_for_channel(channel_data)
             else:
@@ -991,11 +1124,28 @@ class MainWindow(Adw.ApplicationWindow):
         self.player.play()
 
     def on_playback_finished(self, player):
-        """
-        Runs when media finishes. If it's a TV episode and not cancelled,
-        plays the next episode.
-        """
         logging.debug("on_playback_finished called.")
+        if self.current_media_type == 'iptv':
+            MAX_RETRIES = 12           
+            if self.retry_count < MAX_RETRIES:
+                self.retry_count += 1
+                logging.warning(f"IPTV Stream finished unexpectedly. Retry attempt {self.retry_count}/{MAX_RETRIES}...")               
+                if self.current_playing_channel_data:
+                    url = self.current_playing_channel_data.get('url')
+                    if url:
+                        if self.retry_count == 1:
+                            self.show_toast(_("Connection lost. Reconnecting..."), duration=20)
+                        self.player.play_url(url, media_type='iptv')
+                        self.player.play()
+                        return 
+            else:
+                logging.error("Max retries reached. Stopping playback.")
+                self.show_toast(_("Connection failed. Stream cancelled."))
+                if self.playback_start_timer:
+                     GLib.source_remove(self.playback_start_timer)
+                     self.playback_start_timer = None               
+                self.video_view.controls.set_playing_state(False)
+                return
         if self.current_media_type == 'music':
             logging.info("Music track finished (EOS). Calling play_next_track.")
             path_to_mark = self.current_playing_media_path
@@ -1179,8 +1329,10 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _on_data_processed(self):
         logging.info("Populating UI with pre-loaded data...")
+        hidden_bouquets = database.get_hidden_bouquets()       
         if self.bouquets_data:
-            self.bouquet_list.populate_bouquets_async(self.bouquets_data.keys())
+            visible_bouquets = [b for b in self.bouquets_data.keys() if b not in hidden_bouquets]
+            self.bouquet_list.populate_bouquets_async(visible_bouquets)            
         self.favorites_view.refresh_lists()
         self.loading_spinner.stop()
         self.main_content_stack.set_visible_child_name("placeholder_view")
@@ -1273,17 +1425,53 @@ class MainWindow(Adw.ApplicationWindow):
     def on_favorites_changed(self, widget):
         if self.iptv_stack.get_visible_child() == self.channel_list and self.current_channels_in_view:
             self.channel_list.populate_channels_async(self.current_channels_in_view)
+            
+    def on_favorites_playlist_selected(self, view, channels):
+        self.current_channels_in_view = channels            
 
     def on_playback_error(self, player, error_message):
-        """
-        Triggered when an error signal is received from the player and
-        shows a temporary notification on the screen.
-        """
+        logging.error(f"Playback Error: {error_message}")
+        if self.current_media_type == 'iptv':
+             MAX_RETRIES = 12              
+             if self.retry_count < MAX_RETRIES:
+                 self.retry_count += 1
+                 logging.warning(f"IPTV Error detected. Retry attempt {self.retry_count}/{MAX_RETRIES}...")               
+                 if self.current_playing_channel_data:
+                    url = self.current_playing_channel_data.get('url')
+                    if url:
+                        if self.retry_count == 1:
+                            self.show_toast(_("Connection lost. Reconnecting..."), duration=20)                        
+                        def do_secure_retry():
+                            saved_count = self.retry_count 
+                            self._play_channel(self.current_playing_channel_data)
+                            self.retry_count = saved_count
+                            logging.debug(f"Retry counter restored to {self.retry_count}")
+                            return False 
+                        GLib.timeout_add(1500, do_secure_retry)
+                        return
+             else:
+                 logging.error("Max retries reached. Stopping.")
+                 self.show_toast(_("Connection failed. Stream cancelled."))                
+                 if self.playback_start_timer:
+                     GLib.source_remove(self.playback_start_timer)
+                     self.playback_start_timer = None
+                 self.video_view.controls.set_playing_state(False)
+                 GLib.idle_add(self.player.shutdown)
+                 return 
         display_message = f"{_('Could not open stream')}: {error_message}"
         self.show_toast(display_message)
+        self.video_view.controls.set_playing_state(False)
 
     def on_stream_started(self, player):
         """Runs when the 'stream started successfully' signal is received from GStreamer."""
+        self.retry_count = 0
+        logging.info("Stream started successfully, retry counter reset.")
+        if hasattr(self, "current_active_toast") and self.current_active_toast:
+            try:
+                self.current_active_toast.dismiss()
+                self.current_active_toast = None
+            except:
+                pass
         if self.is_seeking:
             self.is_seeking = False
             logging.debug("Stream started after seek, is_seeking flag cleared.")
@@ -1458,9 +1646,9 @@ class MainWindow(Adw.ApplicationWindow):
         """
         token = database.get_trakt_token()
         if token:
-            self.trakt_login_button.set_label(_("Disconnect from Trakt.tv"))
+            self.trakt_row.set_title(_("Disconnect from Trakt.tv"))
         else:
-            self.trakt_login_button.set_label(_("Connect to Trakt.tv"))
+            self.trakt_row.set_title(_("Connect to Trakt.tv"))
 
     def on_trakt_login_clicked(self, button):
         """Runs when the Trakt.tv Login/Logout button is pressed."""
@@ -1545,8 +1733,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_info_button_clicked(self, button):
         """Opens the technical information dialog for the current stream."""
         if not self.player:
-            return
-            
+            return          
         logging.info("Opening Media Info Dialog.")
         dialog = MediaInfoDialog(self, self.player)
         dialog.present()            
@@ -2377,6 +2564,9 @@ class MainWindow(Adw.ApplicationWindow):
         url = channel_data.get("url")
         if url:
             self._start_playback(url=url, media_type='iptv', channel_data=channel_data, correct_logo_path=correct_logo_path)
+            if self.is_immersive_fullscreen and hasattr(self.video_view, 'fullscreen_channel_list'):
+                self._sync_fullscreen_list_selection(url)
+            self._sync_sidebar_list_selection(url)    
 
     def on_password_prompt_response(self, dialog, response_id, channel_data, correct_logo_path=None):
         if response_id == "ok":
@@ -2410,16 +2600,22 @@ class MainWindow(Adw.ApplicationWindow):
     def _refresh_vod_list(self):
         """
         Checks the current VOD data source (M3U or Xtream) and repopulates
-        the VOD category list based on lock status.
+        the VOD category list based on lock AND hidden status.
         """
-        logging.info("Refreshing VOD list due to lock status change...")
+        logging.info("Refreshing VOD list due to status change...")
+        hidden_bouquets = database.get_hidden_bouquets()    
         profile_type = self.profile_data.get("type")
         if profile_type == "xtream":
-            category_names = [cat.get('category_name', _("Unknown")) for cat in self.vod_categories_data]
+            category_names = [
+                cat.get('category_name', _("Unknown")) 
+                for cat in self.vod_categories_data
+                if cat.get('category_name') not in hidden_bouquets
+            ]
             self.vod_category_list.populate_bouquets_async(category_names)
         else:
             if self.vod_data:
-                 self.vod_category_list.populate_bouquets_async(list(self.vod_data.keys()))
+                 visible_cats = [c for c in self.vod_data.keys() if c not in hidden_bouquets]
+                 self.vod_category_list.populate_bouquets_async(visible_cats)
             else:
                 self.vod_category_list.populate_bouquets_async([])
 
@@ -2731,23 +2927,144 @@ class MainWindow(Adw.ApplicationWindow):
             self.is_immersive_fullscreen = True
             self._set_ui_panels_visibility(False)
             self.fullscreen()
-            self.get_surface().set_cursor(Gdk.Cursor.new_from_name("none"))
-            controls.set_fullscreen_mode(True)
+            self.video_view.enable_fullscreen_overlay_mode()
+            self.get_surface().set_cursor(Gdk.Cursor.new_from_name("none", None))
+            controls.set_fullscreen_mode(True)           
+            if self.current_media_type == 'iptv':
+                active_category_name = _("Channel List")
+                if self.sidebar.list_stack.get_visible_child_name() == "favorites":
+                     active_category_name = _("Favorites")
+                else:
+                    active_category_name = _("Channels")
+                self.video_view.fullscreen_channel_list.set_header(active_category_name, show_back=True)
+                self.video_view.fullscreen_channel_list.search_entry.set_visible(True)                
+                self.video_view.fullscreen_channel_list.populate_channels_async(self.current_channels_in_view)
+                self.video_view.fullscreen_channel_list.set_visible(True)
+                if self.current_playing_channel_data:
+                    url = self.current_playing_channel_data.get('url')
+                    GLib.timeout_add(300, lambda: (self._sync_fullscreen_list_selection(url), False)[1])
+            else:
+                self.video_view.fullscreen_channel_list.set_visible(False)           
         else:
             self.is_immersive_fullscreen = False
             self.unfullscreen()
             self._set_ui_panels_visibility(True)
+            self.video_view.disable_fullscreen_overlay_mode()
+            self.video_view.fullscreen_channel_list.set_visible(False)           
             if self.hide_cursor_timer:
                 GLib.source_remove(self.hide_cursor_timer)
                 self.hide_cursor_timer = None
             self.get_surface().set_cursor(None)
             controls.set_fullscreen_mode(False)
+            controls.set_visible(True)
 
     def _on_fullscreen_finished(self, window, param):
         """This method runs when the window finishes transitioning to fullscreen mode."""
         self._set_ui_panels_visibility(False)
         self.is_immersive_fullscreen = True
         self.disconnect_by_func(self._on_fullscreen_finished)
+        
+    def on_fullscreen_channel_selected(self, listbox, row):
+        if not row: return
+        channel_data = row.channel_data
+        correct_logo = getattr(row, 'correct_logo_path', channel_data.get("logo"))
+        self._play_channel(channel_data, correct_logo) 
+        
+    def _sync_fullscreen_list_selection(self, playing_url):
+        listbox = self.video_view.fullscreen_channel_list.channel_listbox
+        row = listbox.get_first_child()       
+        while row:
+            if hasattr(row, 'channel_data') and row.channel_data.get('url') == playing_url:
+                listbox.select_row(row)
+                row.grab_focus() 
+                break
+            row = row.get_next_sibling() 
+            
+    def _find_bouquet_name_by_url(self, url):
+        if not self.bouquets_data:
+            return None
+        for bouquet_name, channels in self.bouquets_data.items():
+            for channel in channels:
+                if channel.get('url') == url:
+                    return bouquet_name
+        return None            
+            
+    def _sync_sidebar_list_selection(self, playing_url):
+        active_sidebar = self.sidebar.list_stack.get_visible_child_name()      
+        if active_sidebar not in ["iptv", "favorites"]:
+            return
+        target_listbox = None
+        if active_sidebar == "iptv":
+            target_listbox = self.channel_list.channel_listbox
+            if hasattr(self.channel_list, 'search_entry'):
+                self.channel_list.search_entry.set_text("")              
+        elif active_sidebar == "favorites":
+            target_listbox = self.favorites_view.get_favorite_channels_list_widget()
+            if hasattr(self.favorites_view, 'fav_list_search_entry'):
+                self.favorites_view.fav_list_search_entry.set_text("")
+            if hasattr(self.favorites_view, 'favorite_channels_list') and hasattr(self.favorites_view.favorite_channels_list, 'search_entry'):
+                self.favorites_view.favorite_channels_list.search_entry.set_text("")
+        if not target_listbox:
+            return
+        row = target_listbox.get_first_child()
+        while row:
+            if hasattr(row, 'channel_data'):
+                row_url = row.channel_data.get('url')
+                if row_url == playing_url:
+                    target_listbox.select_row(row)
+                    if not self.is_immersive_fullscreen:
+                        row.grab_focus()
+                    return 
+            row = row.get_next_sibling()
+        if active_sidebar == "iptv":
+            found_bouquet = self._find_bouquet_name_by_url(playing_url)
+            if found_bouquet:
+                logging.info(f"Sync: Channel found in bouquet '{found_bouquet}', switching...")
+                self._show_channels_for_bouquet(found_bouquet)
+                GLib.timeout_add(500, lambda: self._sync_sidebar_list_selection_delayed(playing_url, attempt=1))
+        elif active_sidebar == "favorites":
+            all_fav_lists = database.get_all_favorite_lists()
+            found_list_id = None           
+            for lst in all_fav_lists:
+                l_id = lst['list_id']
+                if database.is_channel_in_list(playing_url, l_id):
+                    found_list_id = l_id
+                    break           
+            if found_list_id:
+                fav_lists_box = self.favorites_view.favorite_lists_listbox
+                row = fav_lists_box.get_first_child()              
+                while row:
+                    if hasattr(row, 'list_id') and str(row.list_id) == str(found_list_id):
+                        logging.info(f"Sync: Loading Favorite List (ID: {found_list_id})...")
+                        fav_lists_box.select_row(row)
+                        fav_lists_box.emit("row-activated", row)                        
+                        GLib.timeout_add(500, lambda: self._sync_sidebar_list_selection_delayed(playing_url, attempt=1))
+                        break
+                    row = row.get_next_sibling()
+
+    def _sync_sidebar_list_selection_delayed(self, playing_url, attempt):
+        target_listbox = None
+        active_sidebar = self.sidebar.list_stack.get_visible_child_name()      
+        if active_sidebar == "iptv":
+            target_listbox = self.channel_list.channel_listbox
+        elif active_sidebar == "favorites":
+            target_listbox = self.favorites_view.get_favorite_channels_list_widget()          
+        if not target_listbox:
+            return False
+        row = target_listbox.get_first_child()
+        target_url_clean = playing_url.strip()
+        while row:
+            if hasattr(row, 'channel_data'):
+                raw_url = row.channel_data.get('url', '')
+                if raw_url.strip() == target_url_clean:
+                    target_listbox.select_row(row)
+                    if not self.is_immersive_fullscreen:
+                        row.grab_focus()
+                    return False
+            row = row.get_next_sibling()
+        if attempt < 10:
+            GLib.timeout_add(500, lambda: self._sync_sidebar_list_selection_delayed(playing_url, attempt + 1))          
+        return False                 
 
     def on_volume_changed(self, scale):
         self.player.set_volume(scale.get_value())
@@ -2856,9 +3173,19 @@ class MainWindow(Adw.ApplicationWindow):
         """Shows/hides UI elements like the top bar, side panel, and controls."""
         self.header.set_visible(visible)
         self.sidebar.set_visible(visible)
-        self.video_view.controls.set_visible(visible)
+        if hasattr(self, 'nav_rail_container'):
+            self.nav_rail_container.set_visible(visible)
         if self.current_media_type == 'iptv':
-            self.video_view.set_epg_visibility(visible)
+            should_show_epg = visible and not self.is_immersive_fullscreen
+            self.video_view.set_epg_visibility(should_show_epg)           
+        if self.is_immersive_fullscreen:
+            self.video_view.controls.set_visible(visible)
+            if self.current_media_type == 'iptv' and hasattr(self.video_view, 'fullscreen_channel_list'):
+                self.video_view.fullscreen_channel_list.set_visible(visible)
+        else:
+            self.video_view.controls.set_visible(True)
+            if hasattr(self.video_view, 'fullscreen_channel_list'):
+                self.video_view.fullscreen_channel_list.set_visible(False)
 
     def _on_mouse_motion(self, controller, x, y):
         """Runs when the mouse moves over the video area."""
@@ -2871,9 +3198,16 @@ class MainWindow(Adw.ApplicationWindow):
         self.hide_panels_timer = GLib.timeout_add_seconds(3, self._hide_panels_callback)
 
     def _hide_panels_callback(self):
-        """This function runs after 3 seconds of no mouse movement and hides the panels."""
+        if self.is_immersive_fullscreen and hasattr(self.video_view, 'fullscreen_channel_list'):
+            search_entry = self.video_view.fullscreen_channel_list.search_entry
+            focused_widget = self.get_focus()
+            if focused_widget and (focused_widget == search_entry or focused_widget.is_ancestor(search_entry)):
+                return True 
         if self.is_immersive_fullscreen:
-            self._set_ui_panels_visibility(False)
+            self.video_view.controls.set_visible(False)
+            if hasattr(self.video_view, 'fullscreen_channel_list'):
+                self.video_view.fullscreen_channel_list.set_visible(False)
+            self.get_surface().set_cursor(Gdk.Cursor.new_from_name("none", None))       
         self.hide_panels_timer = None
         return GLib.SOURCE_REMOVE
 
@@ -2922,20 +3256,23 @@ class MainWindow(Adw.ApplicationWindow):
         return False
 
     def _on_mouse_motion_for_cursor(self, controller, x, y):
-        """Shows the cursor and starts the hide timer when the mouse moves."""
         if not self.is_immersive_fullscreen:
             return
+        if abs(x - self.last_mouse_x) < 1 and abs(y - self.last_mouse_y) < 1:
+            return
+        self.last_mouse_x = x
+        self.last_mouse_y = y
         self.get_surface().set_cursor(None)
+        if not self.video_view.controls.get_visible():
+            self.video_view.controls.set_visible(True)
+            if self.current_media_type == 'iptv' and hasattr(self.video_view, 'fullscreen_channel_list'):
+                self.video_view.fullscreen_channel_list.set_visible(True)
         if self.hide_cursor_timer:
             GLib.source_remove(self.hide_cursor_timer)
-        self.hide_cursor_timer = GLib.timeout_add_seconds(5, self._hide_cursor_callback)
-
-    def _hide_cursor_callback(self):
-        """Hides the cursor after 5 seconds of no mouse movement."""
-        if self.is_immersive_fullscreen:
-            self.get_surface().set_cursor(Gdk.Cursor.new_from_name("none"))
-        self.hide_cursor_timer = None
-        return GLib.SOURCE_REMOVE
+            self.hide_cursor_timer = None
+        if hasattr(self, 'hide_panels_timer') and self.hide_panels_timer:
+            GLib.source_remove(self.hide_panels_timer)
+        self.hide_panels_timer = GLib.timeout_add_seconds(4, self._hide_panels_callback)
 
     def _on_recording_stopped(self):
         """Called (on main thread) when the recording stop process (background) is finished."""
@@ -2970,9 +3307,12 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _play_next_channel(self):
         """Plays the next channel in the current list."""
-        active_listbox = self.channel_list.channel_listbox
-        if self.sidebar.list_stack.get_visible_child_name() == "favorites":
-             active_listbox = self.favorites_view.get_favorite_channels_list_widget()
+        if self.is_immersive_fullscreen and hasattr(self.video_view, 'fullscreen_channel_list'):
+            active_listbox = self.video_view.fullscreen_channel_list.channel_listbox
+        else:
+            active_listbox = self.channel_list.channel_listbox
+            if self.sidebar.list_stack.get_visible_child_name() == "favorites":
+                 active_listbox = self.favorites_view.get_favorite_channels_list_widget()
         selected_row = active_listbox.get_selected_row()
         if not selected_row: return
         current_index = selected_row.get_index()
@@ -2994,9 +3334,12 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _play_previous_channel(self):
         """Plays the previous channel in the current list."""
-        active_listbox = self.channel_list.channel_listbox
-        if self.sidebar.list_stack.get_visible_child_name() == "favorites":
-            active_listbox = self.favorites_view.get_favorite_channels_list_widget()
+        if self.is_immersive_fullscreen and hasattr(self.video_view, 'fullscreen_channel_list'):
+            active_listbox = self.video_view.fullscreen_channel_list.channel_listbox
+        else:
+            active_listbox = self.channel_list.channel_listbox
+            if self.sidebar.list_stack.get_visible_child_name() == "favorites":
+                active_listbox = self.favorites_view.get_favorite_channels_list_widget()
         selected_row = active_listbox.get_selected_row()
         if not selected_row: return
         current_index = selected_row.get_index()
@@ -3120,10 +3463,15 @@ class MainWindow(Adw.ApplicationWindow):
         """Called on the main thread after series categories are fetched."""
         if categories:
             self.series_categories_data = categories
-            category_names = [cat.get('category_name', _('Unknown')) for cat in categories]
+            hidden_bouquets = database.get_hidden_bouquets()
+            category_names = [
+                cat.get('category_name', _('Unknown')) 
+                for cat in categories
+                if cat.get('category_name') not in hidden_bouquets
+            ]          
             self.series_sidebar.populate_bouquets_async(category_names)
             self.show_toast(
-                _("{} series categories found!").format(len(categories))
+                _("{} series categories found!").format(len(category_names))
             )
             self.series_view_placeholder.get_first_child().set_text(
                 _("Please select a category from the left.")
@@ -3152,7 +3500,6 @@ class MainWindow(Adw.ApplicationWindow):
              if cat.get('category_name', '').strip() == category_name.strip()),
             None
         )
-
         if category_id:
             logging.info(f"Series category '{category_name}' (ID: {category_id}) selected. Fetching series...")
             self.main_content_stack.set_visible_child_name("loading_view")
@@ -3277,7 +3624,12 @@ class MainWindow(Adw.ApplicationWindow):
         """Called on the main thread after VOD categories are fetched."""
         if categories:
             self.vod_categories_data = categories
-            category_names = [cat.get('category_name', _('Unknown')) for cat in categories]
+            hidden_bouquets = database.get_hidden_bouquets()           
+            category_names = [
+                cat.get('category_name', _('Unknown')) 
+                for cat in categories
+                if cat.get('category_name') not in hidden_bouquets
+            ]           
             self.vod_category_list.populate_bouquets_async(category_names)
             self.show_toast(
                 _("{} VOD categories found!").format(len(categories))
@@ -3490,11 +3842,27 @@ class MainWindow(Adw.ApplicationWindow):
                 'format': 'best[ext=mp4]/best',
                 'quiet': True,
                 'no_warnings': True,
-                'skip_download': True
+                'skip_download': True,
+                'extractor_args': {
+                    'youtube': {
+                        'player_client': ['android', 'ios']
+                    }
+                },
+                'http_headers': {
+                    'User-Agent': 'Mozilla/5.0 (Linux; Android 10; K) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Mobile Safari/537.36',
+                },
+                'geo_bypass': True,
+                'ignoreerrors': True,
             }
             with yt_dlp.YoutubeDL(ydl_opts) as ydl:
                 info = ydl.extract_info(youtube_watch_url, download=False)
-                trailer_stream_url = info.get('url')
+                if info:
+                    if 'url' in info:
+                        trailer_stream_url = info['url']
+                    elif 'entries' in info:
+                        trailer_stream_url = info['entries'][0].get('url')
+                    elif 'formats' in info:
+                        trailer_stream_url = info['formats'][-1].get('url')
                 if trailer_stream_url:
                     logging.info(f"Successfully extracted trailer stream URL: {trailer_stream_url[:50]}...")
                 else:
@@ -3557,9 +3925,11 @@ class MainWindow(Adw.ApplicationWindow):
             try:
                 from ui.pip_window import PipWindow
                 self.pip_window = PipWindow()
-                self.pip_window.set_transient_for(self)
                 logging.info("PipWindow: set_transient_for(self) called.")
-                self.pip_window.connect("close-request", lambda w: self.stop_pip())
+                def on_pip_close_request(win):
+                    self.stop_pip(called_from_destroy=True)
+                    return False              
+                self.pip_window.connect("close-request", on_pip_close_request)
             except Exception as e:
                 logging.exception(f"Error creating PiP window: {e}")
                 self.show_toast(_("Error: Could not create PiP window."))
@@ -3871,12 +4241,15 @@ class MainWindow(Adw.ApplicationWindow):
         logging.info(f"Issuing restart command: {python_executable} {' '.join(script_args)}")
         os.execv(python_executable, [python_executable] + script_args)
 
-    def show_toast(self, message, is_urgent=False):
+    def show_toast(self, message, is_urgent=False, duration=None):
         if not is_urgent and not database.get_notifications_enabled():
             return
-        timeout_sec = database.get_notification_timeout()
+        if duration is not None:
+            timeout_sec = duration
+        else:
+            timeout_sec = database.get_notification_timeout()
         toast = Adw.Toast.new(message)
-        toast.set_timeout(timeout_sec)
+        toast.set_timeout(timeout_sec)       
         current_toast = self.toast_overlay.get_child()
         if hasattr(self, "current_active_toast") and self.current_active_toast:
             try:
@@ -3938,6 +4311,38 @@ class MainWindow(Adw.ApplicationWindow):
         self.video_settings_win.set_transient_for(self)
         self.video_settings_win.connect("close-request", self._on_video_settings_close)       
         self.video_settings_win.present()
+        
+    def on_open_category_manager(self, button):
+        self.settings_popover.popdown()
+        live_cats = list(self.bouquets_data.keys()) if self.bouquets_data else []
+        vod_cats = []
+        if self.profile_data.get("type") == "xtream":
+            vod_cats = [c.get('category_name') for c in self.vod_categories_data if c.get('category_name')]
+        elif self.vod_data:
+            vod_cats = list(self.vod_data.keys())
+        series_cats = []
+        if self.series_categories_data:
+             series_cats = [c.get('category_name') for c in self.series_categories_data if c.get('category_name')]
+        dialog = CategoryManagerDialog(self, live_cats, vod_cats, series_cats)
+        dialog.connect("close-request", self._on_category_manager_closed)
+        dialog.present()
+
+    def _on_category_manager_closed(self, dialog):
+        logging.info("Category manager closed. Refreshing lists...")      
+        hidden_bouquets = database.get_hidden_bouquets()
+        if self.bouquets_data:
+            visible_bouquets = [b for b in self.bouquets_data.keys() if b not in hidden_bouquets]
+            self.bouquet_list.populate_bouquets_async(visible_bouquets)
+        self._refresh_vod_list()
+        if self.series_categories_data:
+             cats = [
+                 c.get('category_name') for c in self.series_categories_data
+                 if c.get('category_name') not in hidden_bouquets
+             ]
+             self.series_sidebar.populate_bouquets_async(cats)
+        if self.is_immersive_fullscreen:
+             self._populate_fullscreen_categories()         
+        return False  
 
     def _on_video_settings_close(self, window):
         self.video_settings_win = None
@@ -4334,7 +4739,155 @@ class MainWindow(Adw.ApplicationWindow):
         self._start_playback(url=url, media_type=media_type, channel_data={'name': name})
 
     def on_temp_playlist_closed(self, view):
-        self.on_nav_button_clicked(self.top_buttons["iptv"], "iptv")                                                                           
+        self.on_nav_button_clicked(self.top_buttons["iptv"], "iptv")
+        
+    def on_fullscreen_back_clicked(self, widget):
+        self._populate_fullscreen_categories()
+
+    def _populate_fullscreen_categories(self):
+        target_list = self.video_view.fullscreen_channel_list
+        target_list.search_entry.set_text("")
+        target_list.search_entry.set_visible(True)        
+        show_locked = database.get_show_locked_bouquets_status()
+        hidden_bouquets = database.get_hidden_bouquets()
+        display_items = []
+        is_favorites_mode = (self.sidebar.list_stack.get_visible_child_name() == "favorites")
+        if is_favorites_mode:
+            target_list.set_header(_("Favorite Groups"), show_back=False)
+            items = database.get_all_favorite_lists()            
+            for item in items:
+                is_locked = database.get_favorite_list_lock_status(item['list_id'])
+                if not show_locked and is_locked:
+                    continue
+                display_items.append({
+                    'name': item['list_name'], 
+                    'type': 'fav_group', 
+                    'id': item['list_id'],
+                    'is_locked': is_locked
+                })
+        else:
+            target_list.set_header(_("Bouquets"), show_back=False)
+            bouquet_names = list(self.bouquets_data.keys())            
+            visible_bouquets = []
+            for name in bouquet_names:
+                if name in hidden_bouquets:
+                    continue
+                is_locked = database.get_bouquet_lock_status(name)
+                if not show_locked and is_locked:
+                    continue
+                visible_bouquets.append({
+                    'name': name, 
+                    'type': 'bouquet', 
+                    'id': name,
+                    'is_locked': is_locked
+                })         
+            display_items = sorted(visible_bouquets, key=lambda x: x['name'])           
+        target_list.populate_channels_async(display_items)
+        target_list.channel_listbox.grab_focus()      
+        if not hasattr(self, 'last_fullscreen_category_id') or not self.last_fullscreen_category_id:           
+            if is_favorites_mode:
+                 if hasattr(self.favorites_view.favorite_channels_list, 'active_list_id'):
+                     self.last_fullscreen_category_id = self.favorites_view.favorite_channels_list.active_list_id
+            else:
+                 if self.current_playing_channel_data:
+                     url = self.current_playing_channel_data.get('url')
+                     if url:
+                         found_bouquet = self._find_bouquet_name_by_url(url)
+                         if found_bouquet:
+                             self.last_fullscreen_category_id = found_bouquet
+        if hasattr(self, 'last_fullscreen_category_id') and self.last_fullscreen_category_id:
+            GLib.timeout_add(200, self._restore_fullscreen_category_selection) 
+            
+    def _restore_fullscreen_category_selection(self):
+        if not hasattr(self, 'last_fullscreen_category_id') or self.last_fullscreen_category_id is None:
+            return False
+        target_list = self.video_view.fullscreen_channel_list.channel_listbox
+        row = target_list.get_first_child()       
+        found = False
+        target_id_str = str(self.last_fullscreen_category_id)
+        while row:
+            if hasattr(row, 'channel_data'):
+                row_id = row.channel_data.get('id')
+                if row_id is not None and str(row_id) == target_id_str:
+                    target_list.select_row(row)
+                    row.grab_focus()
+                    found = True
+                    break
+            row = row.get_next_sibling()
+        if found:
+            self.last_fullscreen_category_id = None           
+        return False
+        
+    def on_fullscreen_list_item_activated(self, listbox, row):
+        if not row: return 
+        self.video_view.fullscreen_channel_list.search_entry.set_text("")      
+        data = row.channel_data
+        if 'type' in data:
+            item_type = data['type']
+            item_id = data['id']
+            item_name = data['name']
+            is_locked = False
+            if item_type == 'bouquet':
+                is_locked = database.get_bouquet_lock_status(item_id)
+            elif item_type == 'fav_group':
+                is_locked = database.get_favorite_list_lock_status(item_id)           
+            password_is_set = database.get_config_value('app_password') is not None
+            if is_locked and password_is_set:
+                prompt = PasswordPromptDialog(self)
+                prompt.connect("response", self._on_fullscreen_category_password_response, item_type, item_id, item_name)
+                prompt.present()
+                return 
+            self._open_fullscreen_category(item_type, item_id, item_name)
+            return
+        correct_logo = getattr(row, 'correct_logo_path', data.get("logo"))
+        channel_url = data.get("url")
+        if channel_url and database.get_channel_lock_status(channel_url) and database.get_config_value('app_password'):
+             prompt = PasswordPromptDialog(self)
+             prompt.connect("response", self.on_password_prompt_response, data, correct_logo)
+             prompt.present()
+        else:
+             self._play_channel(data, correct_logo) 
+             
+    def _on_fullscreen_category_password_response(self, dialog, response_id, item_type, item_id, item_name):
+        if response_id == "ok":
+            if database.check_password(dialog.get_password()):
+                self._open_fullscreen_category(item_type, item_id, item_name)
+            else:
+                self.show_toast(_("Wrong Password!"))
+
+    def _open_fullscreen_category(self, item_type, item_id, item_name):
+        self.last_fullscreen_category_id = item_id
+        channels = []
+        if item_type == 'fav_group':
+            channel_urls = database.get_channels_in_list(item_id)
+            channels = [self.all_channels_map.get(url) for url in channel_urls if self.all_channels_map.get(url)]
+        elif item_type == 'bouquet':
+            channels = self.bouquets_data.get(item_id, [])
+        self.video_view.fullscreen_channel_list.populate_channels_async(channels)
+        self.video_view.fullscreen_channel_list.set_header(item_name, show_back=True) 
+        
+    def on_switch_profile_clicked(self, button):
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Switch Profile"),
+            body=_("Are you sure you want to switch profiles? The application will restart."),
+            modal=True
+        )
+        dialog.add_css_class("switch-profile-dialog")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("switch", _("Switch"))
+        dialog.set_default_response("switch")
+        dialog.set_response_appearance("switch", Adw.ResponseAppearance.SUGGESTED)
+        
+        def _on_response(d, response_id):
+            if response_id == "switch":
+                logging.info("User requested profile switch. Clearing auto-login and restarting.")
+                database.set_config_value('last_active_profile_id', '')
+                self._on_restart_dialog_response(d, "restart")
+            else:
+                d.close()
+        dialog.connect("response", _on_response)
+        dialog.present()                                                                                                     
 
     def on_show_about_clicked(self, button):
         """Shows the 'About' dialog with License and TMDb attribution."""

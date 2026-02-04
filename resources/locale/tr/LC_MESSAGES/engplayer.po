@@ -57,6 +57,12 @@ msgstr "Diziler"
 msgid "Media"
 msgstr "Medya"
 
+msgid "Local Media"
+msgstr "Yerel Medya"
+
+msgid "Live TV"
+msgstr "Canlı TV"
+
 msgid "Video Library"
 msgstr "Video Kütüphanesi"
 
@@ -1337,6 +1343,66 @@ msgstr "Bu bölümü {} süresine kadar dinlediniz. Devam edilsin mi?"
 
 msgid "Added to playlist: {}"
 msgstr "Oynatma listesine eklendi: {}"
+
+# --- New Fullscreen Features ---
+
+msgid "Back to Categories"
+msgstr "Kategorilere Dön"
+
+msgid "Favorite Groups"
+msgstr "Favori Gruplar"
+
+msgid "Unknown"
+msgstr "Bilinmeyen"
+
+msgid "Switch Profile"
+msgstr "Profil Değiştir"
+
+msgid "Are you sure you want to switch profiles? The application will restart."
+msgstr "Profilleri değiştirmek istediğinizden emin misiniz? Uygulama yeniden başlatılacak."
+
+msgid "Starting..."
+msgstr "Başlatılıyor..."
+
+# --- Category Manager (Hidden Categories) ---
+msgid "Manage Hidden Categories"
+msgstr "Gizli Kategorileri Yönet"
+
+msgid "Turn ON the switch to HIDE the category."
+msgstr "Kategoriyi GİZLEMEK için anahtarı AÇIN."
+
+msgid "No categories found."
+msgstr "Kategori bulunamadı."
+
+msgid "System"
+msgstr "Sistem"
+
+msgid "Stream Buffer"
+msgstr "Yayın Tamponu (Buffer)"
+
+msgid "Playback stability"
+msgstr "Oynatma kararlılığı"
+
+msgid "2s (Low)"
+msgstr "2sn (Düşük)"
+
+msgid "4s (Balanced)"
+msgstr "4sn (Dengeli)"
+
+msgid "6s (Stable)"
+msgstr "6sn (Kararlı)"
+
+msgid "8s (Max)"
+msgstr "8sn (Maksimum)"
+
+msgid "Buffer set to {} seconds. Change takes effect on next channel."
+msgstr "Buffer {} saniye yapıldı. Değişiklik sonraki kanalda geçerli olacak."
+
+msgid "Connection lost. Reconnecting..."
+msgstr "Bağlantı koptu. Yeniden bağlanılıyor..."
+
+msgid "Connection failed. Stream cancelled."
+msgstr "Bağlantı başarısız. Yayın iptal edildi."
 
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Bu ürün TMDb API'sini kullanır ancak TMDb tarafından onaylanmamış veya sertifikalandırılmamıştır."

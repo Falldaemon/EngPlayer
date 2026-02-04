@@ -25,44 +25,71 @@ _ = gettext.gettext
 class ProfileWindow(Gtk.ApplicationWindow):
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
-        self.set_title(_("Profile Selection"))
-        self.set_default_size(500, 450)
-        self.add_css_class("profile-window")
-        header = Adw.HeaderBar()
-        self.set_titlebar(header)
+        last_id = database.get_config_value('last_active_profile_id')
+        is_auto_login = bool(last_id)
+        if is_auto_login:
+            self.set_decorated(False)
+            self.set_default_size(340, 240)
+            self.add_css_class("splash-window") 
+        else:
+            self.set_title(_("Profile Selection"))
+            self.set_default_size(500, 450)
+            header = Adw.HeaderBar()
+            self.set_titlebar(header)
+            self.add_css_class("profile-window")
         self.toast_overlay = Adw.ToastOverlay()
         self.set_child(self.toast_overlay)
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)       
+        if is_auto_login:
+            main_box.add_css_class("splash-content")
+            main_box.set_valign(Gtk.Align.CENTER)
+            main_box.set_halign(Gtk.Align.CENTER)
+        else:
+            main_box.set_margin_top(12)
+            main_box.set_margin_bottom(12)
+            main_box.set_margin_start(12)
+            main_box.set_margin_end(12)           
         self.toast_overlay.set_child(main_box)
-        main_box.append(Gtk.Label(label=_("Please select a profile or create a new one."), margin_bottom=10, halign=Gtk.Align.START))
+        if not is_auto_login:
+            main_box.append(Gtk.Label(label=_("Please select a profile or create a new one."), margin_bottom=10, halign=Gtk.Align.START))
         self.list_box = Gtk.ListBox(selection_mode=Gtk.SelectionMode.SINGLE)
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.list_box)
-        scrolled_window.set_vexpand(True)
-        main_box.append(scrolled_window)
-        self.status_box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER)
-        main_box.append(self.status_box)
-        self.spinner = Gtk.Spinner()
-        self.status_label = Gtk.Label(label=_("Loading..."))
-        self.status_box.append(self.spinner)
-        self.status_box.append(self.status_label)
+        scrolled_window.set_vexpand(True)        
         self.button_box = Gtk.Box(spacing=6)
-        main_box.append(self.button_box)
         self.btn_add = Gtk.Button(label=_("Add New"))
         self.btn_edit = Gtk.Button(label=_("Edit"))
         self.btn_delete = Gtk.Button(label=_("Delete"))
-        self.btn_open = Gtk.Button(label=_("Open Selected Profile"), css_classes=["suggested-action"])
+        self.btn_open = Gtk.Button(label=_("Open Selected Profile"), css_classes=["suggested-action"])       
         self.btn_add.connect("clicked", self.on_add_profile_clicked)
         self.btn_edit.connect("clicked", self.on_edit_profile_clicked)
         self.btn_delete.connect("clicked", self.on_delete_profile_clicked)
-        self.btn_open.connect("clicked", self.on_open_profile)
+        self.btn_open.connect("clicked", self.on_open_profile)      
         self.button_box.append(self.btn_add)
         self.button_box.append(self.btn_edit)
         self.button_box.append(self.btn_delete)
         self.button_box.append(Gtk.Box(hexpand=True))
         self.button_box.append(self.btn_open)
-        self.populate_profiles()
-        self.status_box.set_visible(False)
+        self.status_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
+        brand_label = Gtk.Label(label="EngPlayer", css_classes=["splash-title"])
+        self.spinner = Gtk.Spinner()
+        self.spinner.set_size_request(48, 48)
+        self.spinner.set_halign(Gtk.Align.CENTER)
+        self.status_label = Gtk.Label(label=_("Starting..."), css_classes=["splash-status"])      
+        self.status_box.append(brand_label)
+        self.status_box.append(self.spinner)
+        self.status_box.append(self.status_label)
+        if not is_auto_login:
+            main_box.append(scrolled_window)
+            main_box.append(self.status_box) 
+            main_box.append(self.button_box)
+            self.status_box.set_visible(False)
+            self.populate_profiles()
+        else:
+            main_box.append(self.status_box)
+            self.status_box.set_visible(True)
+            self.spinner.start()
+            self.start_auto_login_process()
         saved_color = database.get_config_value("app_accent_color")
         default_color = "#3584e4"
         self.apply_accent_color(saved_color if saved_color else default_color)
@@ -107,6 +134,11 @@ class ProfileWindow(Gtk.ApplicationWindow):
         selected_row = self.list_box.get_selected_row()
         if not selected_row: return
         profile = selected_row.profile_data
+        database.set_config_value('last_active_profile_id', profile['id'])
+        try:
+            database.set_active_profile_db(profile['id'])
+        except Exception as e:
+            logging.error(f"CRITICAL ERROR setting database path: {e}")
         try:
             database.set_active_profile_db(profile['id'])
         except Exception as e:
@@ -304,6 +336,30 @@ class ProfileWindow(Gtk.ApplicationWindow):
             return datetime.fromtimestamp(int(ts)).strftime('%d.%m.%Y')
         except (ValueError, OSError):
             return None
+            
+    def check_auto_login(self):
+        last_id = database.get_config_value('last_active_profile_id')      
+        if not last_id:
+            return False
+        profiles = load_profiles()
+        target_profile = next((p for p in profiles if p['id'] == last_id), None)
+        if target_profile:
+            logging.info(f"Auto-login: Found last profile '{target_profile['name']}'. Loading directly...")           
+            self.set_sensitive(False)
+            self.status_label.set_text(_("Loading profile '{}'...").format(target_profile['name']))
+            self.status_box.set_visible(True)
+            self.spinner.start()           
+            try:
+                database.set_active_profile_db(target_profile['id'])
+                thread = threading.Thread(target=self._master_load_thread, args=(target_profile,), daemon=True)
+                thread.start()
+                return True 
+            except Exception as e:
+                logging.error(f"Auto-login failed: {e}")
+                database.set_config_value('last_active_profile_id', '')
+                self.set_sensitive(True)
+                self.status_box.set_visible(False)               
+        return False       
 
     def populate_profiles(self):
         profiles = load_profiles()
@@ -603,3 +659,20 @@ class ProfileWindow(Gtk.ApplicationWindow):
             )
         except Exception as e:
             logging.error(f"Error applying accent color: {e}")
+            
+    def start_auto_login_process(self):
+        last_id = database.get_config_value('last_active_profile_id')
+        profiles = load_profiles()
+        target_profile = next((p for p in profiles if p['id'] == last_id), None)
+        if target_profile:
+            logging.info(f"Auto-login: Found last profile '{target_profile['name']}'. Loading directly...")
+            try:
+                database.set_active_profile_db(target_profile['id'])
+                thread = threading.Thread(target=self._master_load_thread, args=(target_profile,), daemon=True)
+                thread.start()
+            except Exception as e:
+                logging.error(f"Auto-login failed: {e}")
+        else:
+            logging.warning("Auto-login profile not found. Reverting to normal mode.")
+            database.set_config_value('last_active_profile_id', '')
+           

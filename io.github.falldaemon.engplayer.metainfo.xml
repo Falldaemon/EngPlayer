@@ -85,6 +85,21 @@
   </content_rating>
   
   <releases>
+	  <release version="0.1.5" date="2026-02-04">
+      <description>
+        <p>This release introduces a refreshed UI, full-screen channel management, and buffer control.</p>
+        <ul>
+          <li>New User Interface: A refreshed and cleaner look for a better user experience.</li>
+          <li>Full-Screen Channel List: Access and switch channels directly while in full-screen mode.</li>
+          <li>Category Management: Added ability to hide/show specific Bouquets, VOD, and Series.</li>
+          <li>Stream Buffer Settings: Adjust stream buffer duration for smoother playback.</li>
+          <li>Fix: Resolved trailer playback issues.</li>
+          <li>Fix: Improved menu button responsiveness.</li>
+          <li>Fix: Resolved PiP window disappearing when minimizing.</li>
+        </ul>
+      </description>
+    </release>
+	  
 	<release version="0.1.4" date="2026-01-12">
       <description>
         <p>This release addresses playback synchronization issues and display bugs.</p>

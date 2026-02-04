@@ -56,6 +56,12 @@ msgstr ""
 msgid "Media"
 msgstr ""
 
+msgid "Local Media"
+msgstr ""
+
+msgid "Live TV"
+msgstr ""
+
 msgid "Video Library"
 msgstr ""
 
@@ -1333,6 +1339,67 @@ msgid "You listened to this episode until {}. Resume?"
 msgstr ""
 
 msgid "Added to playlist: {}"
+msgstr ""
+
+# --- New Fullscreen Features (Added Today) ---
+
+msgid "Back to Categories"
+msgstr ""
+
+msgid "Favorite Groups"
+msgstr ""
+
+msgid "Unknown"
+msgstr ""
+
+# --- Profile Switching & Startup ---
+msgid "Switch Profile"
+msgstr ""
+
+msgid "Are you sure you want to switch profiles? The application will restart."
+msgstr ""
+
+msgid "Starting..."
+msgstr ""
+
+# --- Category Manager (Hidden Categories) ---
+msgid "Manage Hidden Categories"
+msgstr ""
+
+msgid "Turn ON the switch to HIDE the category."
+msgstr ""
+
+msgid "No categories found."
+msgstr ""
+
+msgid "System"
+msgstr ""
+
+msgid "Stream Buffer"
+msgstr ""
+
+msgstr "Playback stability"
+msgstr ""
+
+msgid "2s (Low)"
+msgstr ""
+
+msgid "4s (Balanced)"
+msgstr ""
+
+msgid "6s (Stable)"
+msgstr ""
+
+msgid "8s (Max)"
+msgstr ""
+
+msgid "Buffer set to {} seconds. Change takes effect on next channel."
+msgstr ""
+
+msgid "Connection lost. Reconnecting..."
+msgstr ""
+
+msgid "Connection failed. Stream cancelled."
 msgstr ""
 
 # --- License / Legal ---

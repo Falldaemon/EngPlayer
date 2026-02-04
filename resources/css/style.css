@@ -1,27 +1,40 @@
 /* resources/css/style.css */
 
-.nav-box {
-    padding: 4px;
-    margin: 6px;
-    border-radius: 8px;
-    background-color: alpha(@window_bg_color, 0.9);
+.navigation-rail {
+    background-color: transparent; 
+    padding: 0px;
+    margin-top: 20px; 
 }
 
-.nav-box button {
-    background: transparent;
-    border: none;
-    border-radius: 6px;
-    font-weight: bold;
+.nav-icon-button {
+    background-color: transparent; 
+    border: 1px solid transparent;
+    border-radius: 10px;
+    padding: 6px;
+    margin: 0 12px 15px 12px;
+    opacity: 1.0;
+    transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
-.nav-box button.active-nav-button {
-    background-color: @theme_selected_bg_color;
-    color: @theme_selected_fg_color;
+.nav-icon-button:hover {
+    opacity: 1.0;
+    background-color: rgba(255, 255, 255, 0.08);
+    transform: scale(1.15);
+    box-shadow: 4px 4px 5px #616161;
 }
 
-.nav-box button:hover {
-    transform: scale(1.16);
-}    
+.active-nav-icon {
+    opacity: 1.0;
+    background-color: rgba(0, 0, 0, 0.1);
+    border: 1px solid rgba(0, 0, 0, 0.15);
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    color: inherit; 
+    transform: scale(1.1);
+}
+
+.nav-icon-button image {
+    -gtk-icon-transform: scale(1.0);
+}  
        
 .media-grid-item {
     padding: 8px;
@@ -50,18 +63,6 @@
     font-size: 0.8rem;
 }
 
-.placeholder-icon {
-    border-radius: 8px;
-    border: 1px solid alpha(@theme_fg_color, 0.1);
-    background-image: linear-gradient(
-        to bottom,
-        alpha(white, 0.15),
-        alpha(black, 0.3)
-    );
-    box-shadow: 0px 1px 3px alpha(black, 0.4);
-    color: @theme_fg_color;
-}
-
 .black {
     background-color: black;
 }
@@ -77,11 +78,6 @@
     );
     box-shadow: 0px 1px 3px alpha(black, 0.4);
     color: @theme_fg_color;
-}
-
-.flat-button {
-    background: transparent;
-    border: none;
 }
 
 .volume-popover {
@@ -119,6 +115,8 @@
 .tmdb-api-dialog,
 .password-prompt-dialog,
 .delete-confirm-dialog,
+.switch-profile-dialog,
+.category-manager-dialog,
 .epg-detail-dialog, 
 .set-password-warning-dialog,
 .resume-dialog,
@@ -149,6 +147,7 @@
 
 .scheduler-window {
     background-color: alpha(@theme_bg_color, 0.90);
+    border-radius: 12px;
 }
 
 .transparent-button {
@@ -166,16 +165,14 @@
 
 .equalizer-window {
     background-color: alpha(@window_bg_color, 0.90);
+    border-radius: 12px;
 }    
     
 .profile-window {
     background-color: alpha(@window_bg_color, 0.90);
-}    
-
-.resume-dialog {
-    background-color: alpha(@window_bg_color, 0.90);
     border-radius: 12px;
-}
+    border: 2px solid #616161;
+}    
 
 .channel-logo-image {
     filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.99)) 
@@ -213,4 +210,277 @@
 
 .epg-progress-bar progress {
     background-color: @theme_selected_bg_color;
+}
+
+box.fullscreen-controls {
+    background-image: linear-gradient(
+        to bottom,
+        rgba(60, 60, 60, 0.60), 
+        rgba(0, 0, 0, 0.80)
+    );
+    border: 2px solid #616161;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    padding: 15px 25px;
+    margin: 0px 50px 50px 50px;
+    transition: all 0.3s ease;
+}
+
+box.fullscreen-controls label {
+    color: white;
+    text-shadow: 0 1px 2px black;
+}
+
+box.fullscreen-controls button image {
+    filter: brightness(0) invert(1); 
+    -gtk-icon-transform: scale(1.1);
+}
+
+box.fullscreen-controls button {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    margin: 0 5px;
+    border-radius: 10px;
+    transition: background 0.2s;
+}
+
+box.fullscreen-controls button:hover {
+    background-color: rgba(255, 255, 255, 0.15); 
+}
+
+box.fullscreen-controls button:active {
+    background-color: rgba(255, 255, 255, 0.3);
+}
+
+box.fullscreen-controls .channel-icon-box image,
+box.fullscreen-controls .channel-logo-image {
+    filter: none;
+}
+
+.fullscreen-channel-list {
+    background-image: linear-gradient(
+        to bottom,
+        rgba(60, 60, 60, 0.60),
+        rgba(0, 0, 0, 0.80)
+    );
+    border: 2px solid #616161;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    margin-left: 25px;
+    margin-top: 60px;
+    margin-bottom: 200px;
+    padding: 6px;
+    color: white;
+}
+
+.fullscreen-channel-list list,
+.fullscreen-channel-list scrolledwindow,
+.fullscreen-channel-list viewport {
+    background-color: transparent;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+.fullscreen-channel-list label {
+    color: #ffffff;
+    font-weight: 600;
+    text-shadow: 0 1px 2px rgba(0,0,0, 0.8);
+}
+
+.fullscreen-channel-list row {
+    padding: 6px 4px;
+    margin-bottom: 4px;
+    border-radius: 12px;
+    background-color: transparent;
+    transition: all 0.2s ease;
+    border: 1px solid transparent;
+}
+
+.fullscreen-channel-list row:hover {
+    background-color: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.1);
+}
+
+.fullscreen-channel-list row:selected {
+    background-color: alpha(white, 0.2);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+}
+
+.fullscreen-channel-list row:selected label {
+    color: white;
+    font-weight: bold;
+}
+
+.fullscreen-channel-list image {
+    margin-right: 12px;
+    filter: drop-shadow(0 2px 3px rgba(0,0,0,0.5));
+}
+
+.fullscreen-channel-list scrollbar {
+    background-color: transparent;
+}
+
+.splash-window {
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+}
+
+.splash-content {
+    background-image: linear-gradient(
+        to bottom,
+        rgba(0, 0, 0, 0.6),
+        rgba(0, 0, 0, 0.85)
+    );
+    color: #f6f5f4;
+    border-radius: 28px;
+    border: 2px solid #616161;
+    box-shadow: 0 20px 10px rgba(0, 0, 0, 0.7);
+    padding: 40px;
+    margin: 30px;
+    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
+}
+
+.splash-title {
+    font-size: 24pt;
+    font-weight: 900;
+    color: lighter(@accent_color);
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+.splash-status {
+    opacity: 0.9;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: #dedede;
+}
+
+.splash-content spinner {
+    color: #ffffff;
+    min-width: 52px;
+    min-height: 52px;
+    margin-bottom: 10px;
+}
+
+.fullscreen-channel-list row label {
+    color: white;
+    text-shadow: 0 1px 2px rgba(0,0,0, 0.8);
+}
+
+.fullscreen-channel-list button {
+    color: white;
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+    border: none;
+}
+
+.fullscreen-channel-list button:hover {
+    background-color: alpha(white, 0.15);
+    border-radius: 8px;
+}
+
+.fullscreen-channel-list entry {
+    background-color: alpha(white, 0.15);
+    border: 1px solid alpha(white, 0.3);
+    box-shadow: none;
+    color: white;
+}
+
+.fullscreen-channel-list entry text {
+    color: white;
+}
+
+.fullscreen-channel-list entry placeholder {
+    color: alpha(white, 0.6);
+}
+
+.fullscreen-channel-list entry image {
+    color: white;
+}
+
+.subtitle-dialog > contents,
+.password-dialog > contents,
+.switch-profile-dialog > contents,
+.category-manager-dialog > contents,
+.about-window > contents {
+    background-color: transparent;
+}
+
+.category-manager-dialog box,
+.category-manager-dialog stack,
+.category-manager-dialog scrolledwindow,
+.category-manager-dialog viewport {
+    background-color: transparent;
+}
+
+.category-manager-dialog .boxed-list {
+    background-color: alpha(white, 0.03); 
+    border: 1px solid alpha(white, 0.1); 
+}
+
+.category-manager-dialog .boxed-list row {
+    background-color: transparent;
+}
+
+.category-manager-dialog .boxed-list row:hover {
+    background-color: alpha(white, 0.1);
+}
+
+.settings-popover > contents {
+    background-color: @theme_bg_color; 
+    border: 2px solid #616161;
+    box-shadow: none;
+    padding: 12px;
+    border-radius: 20px;
+}
+
+.settings-popover row {
+    min-height: 50px;
+    padding: 0px 12px;
+    margin-bottom: 8px;
+    border-radius: 12px;
+    background-color: alpha(@theme_fg_color, 0.08); 
+    border: 1px solid alpha(@theme_fg_color, 0.1); 
+    transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
+}
+
+.settings-popover row:hover {
+    background-color: alpha(@theme_fg_color, 0.15); 
+    border-color: alpha(@theme_fg_color, 0.3);  
+    transform: scale(1.02);
+    box-shadow: 4px 4px 5px #616161;
+}
+
+.settings-popover row:active {
+    transform: scale(0.96); 
+    background-color: alpha(@theme_fg_color, 0.2);
+}
+
+.settings-popover row switch {
+    margin-top: 13px;
+    margin-bottom: 13px;
+}
+
+.settings-popover row switch slider {
+    min-width: 24px;
+    min-height: 24px;
+    margin: -2px;
+}
+
+.settings-popover list,
+.settings-popover viewport,
+.settings-popover scrolledwindow {
+    background-color: transparent;
+    background-image: none;
+    border: none;
+    box-shadow: none;
+}
+
+.settings-popover list > row {
+    border: none;
 }

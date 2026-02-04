@@ -157,11 +157,21 @@ class Player(GObject.Object):
                 logging.warning(f"Could not set music buffer: {e}")
         else:
             try:
-                self.player.set_property("buffer-duration", 8 * Gst.SECOND)
-                self.player.set_property("ring-buffer-max-size", 50 * 1024 * 1024)
-                logging.info("Stream/Podcast/Video Mode: Buffer set to 8s for stability.")
+                saved_buffer = database.get_config_value('stream_buffer_duration')
+                logging.info(f"[BUFFER] Raw value read from DB: '{saved_buffer}'")
+                if saved_buffer and str(saved_buffer).isdigit():
+                    buffer_seconds = int(saved_buffer)
+                    logging.info(f"[BUFFER] User setting found. Using: {buffer_seconds} seconds.")
+                else:
+                    buffer_seconds = 4 
+                    logging.info(f"[BUFFER] No setting found or invalid. Using default: {buffer_seconds} seconds.")
+                nano_seconds = buffer_seconds * Gst.SECOND
+                self.player.set_property("buffer-duration", nano_seconds)
+                self.player.set_property("ring-buffer-max-size", 100 * 1024 * 1024)               
+                logging.info(f"[BUFFER] SUCCESS: Buffer set to {buffer_seconds}s ({nano_seconds} ns).")
             except Exception as e:
-                logging.warning(f"Could not set video buffer: {e}")
+                logging.error(f"[BUFFER] CRITICAL ERROR: Could not set buffer! Detail: {e}")
+                self.player.set_property("buffer-duration", 4 * Gst.SECOND)
         self.emit("paintable-changed", self.paintable)
         self.current_uri = url
         self.player.set_property("uri", url)

@@ -189,6 +189,11 @@ def _initialize_profile_db():
                 is_locked INTEGER DEFAULT 0
             )
         """)
+        try:
+            cursor.execute("SELECT is_hidden FROM bouquet_properties LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'bouquet_properties': adding 'is_hidden' column.")
+            cursor.execute("ALTER TABLE bouquet_properties ADD COLUMN is_hidden INTEGER DEFAULT 0")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS favorite_list_properties (
                 list_id INTEGER PRIMARY KEY,
@@ -1159,3 +1164,36 @@ def is_content_finished(media_path):
         return False
     finally:
         conn.close()          
+
+def set_bouquet_hidden_status(bouquet_name, is_hidden):
+    """Sets the hidden status of a bouquet category."""
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_locked FROM bouquet_properties WHERE bouquet_name = ?", (bouquet_name,))
+        row = cursor.fetchone()
+        current_lock = row['is_locked'] if row else 0
+        conn.execute("""
+            INSERT INTO bouquet_properties (bouquet_name, is_locked, is_hidden) 
+            VALUES (?, ?, ?)
+            ON CONFLICT(bouquet_name) DO UPDATE SET is_hidden = excluded.is_hidden
+        """, (bouquet_name, current_lock, int(is_hidden)))
+        conn.commit()
+    except sqlite3.Error as e:
+        logging.error(f"Failed to set hidden status for bouquet '{bouquet_name}': {e}")
+    finally:
+        conn.close()
+
+def get_hidden_bouquets():
+    """Returns a set of bouquet names that are marked as hidden."""
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT bouquet_name FROM bouquet_properties WHERE is_hidden = 1")
+        rows = cursor.fetchall()
+        return {row['bouquet_name'] for row in rows}
+    except sqlite3.Error as e:
+        logging.error(f"Failed to get hidden bouquets: {e}")
+        return set()
+    finally:
+        conn.close()

@@ -41,13 +41,29 @@ _ = gettext.gettext
 
 class ChannelList(Gtk.Box):
     __gsignals__ = {
-        'pip-requested': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        'pip-requested': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'back-clicked': (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6, **kwargs)
         self._failed_epg_searches = set()
         self.active_list_id = None
+        self.header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.header_box.set_margin_start(10)
+        self.header_box.set_margin_end(10)
+        self.header_box.set_margin_top(10)
+        self.header_box.set_visible(False)
+        self.back_button = Gtk.Button(icon_name="go-previous-symbolic")
+        self.back_button.add_css_class("flat")
+        self.back_button.set_tooltip_text(_("Back to Categories"))
+        self.back_button.connect("clicked", self._on_back_clicked)
+        self.header_box.append(self.back_button)
+        self.title_label = Gtk.Label(label="", xalign=0)
+        self.title_label.add_css_class("heading")
+        self.title_label.set_hexpand(True)
+        self.header_box.append(self.title_label)      
+        self.append(self.header_box)
         self.search_entry = Gtk.SearchEntry(
             placeholder_text=_("Search channel..."),
             margin_start=6, margin_end=6, margin_top=6, margin_bottom=6
@@ -112,10 +128,17 @@ class ChannelList(Gtk.Box):
         chunk_size = 50
         try:
             for _ in range(chunk_size):
-                channel = next(channel_generator)
-                is_fav = channel["url"] in favorite_urls
-                is_locked = channel["url"] in locked_urls
-                epg_info = self._get_current_program_info(channel, epg_data, epg_clean_map)
+                channel = next(channel_generator)              
+                is_fav = False
+                is_locked = False
+                epg_info = None
+                if 'url' in channel:
+                    is_fav = channel["url"] in favorite_urls
+                    is_locked = channel["url"] in locked_urls
+                    epg_info = self._get_current_program_info(channel, epg_data, epg_clean_map)
+                elif 'is_locked' in channel:
+                    is_locked = channel['is_locked']
+                    epg_info = None
                 self._add_row_to_listbox(channel, logo_map, is_fav, is_locked, epg_info)
             return True
         except StopIteration:
@@ -133,13 +156,16 @@ class ChannelList(Gtk.Box):
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         hbox.set_margin_start(10); hbox.set_margin_end(10)
         row.set_child(hbox)
-        placeholder = PlaceholderIcon()
-        placeholder.set_size_request(36, 36)
-        hbox.append(placeholder)
-        logo_to_load = self._find_logo_path(channel, logo_map)
-        row.correct_logo_path = logo_to_load
-        if logo_to_load and logo_to_load.strip():
-            self._load_logo_and_replace(logo_to_load, placeholder)
+        if 'url' in channel:
+            placeholder = PlaceholderIcon()
+            placeholder.set_size_request(36, 36)
+            hbox.append(placeholder)           
+            logo_to_load = self._find_logo_path(channel, logo_map)
+            row.correct_logo_path = logo_to_load           
+            if logo_to_load and logo_to_load.strip():
+                self._load_logo_and_replace(logo_to_load, placeholder)
+        else:
+            row.correct_logo_path = None
         label_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
         label_vbox.set_hexpand(True)
         label_vbox.set_valign(Gtk.Align.CENTER)
@@ -184,6 +210,8 @@ class ChannelList(Gtk.Box):
 
     def _build_dynamic_menu_for_channel(self, channel_data):
         main_menu = Gio.Menu()
+        if 'url' not in channel_data:
+            return main_menu
         fav_submenu = Gio.Menu()
         all_lists = database.get_all_favorite_lists()
         url = channel_data["url"]
@@ -628,3 +656,11 @@ class ChannelList(Gtk.Box):
                         row.epg_progress = None
             row = row.get_next_sibling()
         return True
+
+    def _on_back_clicked(self, button):
+        self.emit("back-clicked")
+        
+    def set_header(self, title, show_back=False):
+        self.title_label.set_text(title)
+        self.back_button.set_visible(show_back)
+        self.header_box.set_visible(True)

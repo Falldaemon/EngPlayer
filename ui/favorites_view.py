@@ -15,7 +15,8 @@ from .move_list_dialog import MoveListDialog
 _ = gettext.gettext
 class FavoritesView(Gtk.Box):
     __gsignals__ = {
-        "favorites-changed": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "favorites-changed": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "playlist-selected": (GObject.SignalFlags.RUN_FIRST, None, (object,))
     }
 
     def __init__(self, all_channels_map, toast_overlay, **kwargs):
@@ -105,6 +106,7 @@ class FavoritesView(Gtk.Box):
     def _show_channels_for_favorite_list(self, list_id):
         channel_urls = database.get_channels_in_list(list_id)
         channels_to_display = [self.all_channels_map.get(url) for url in channel_urls if self.all_channels_map.get(url)]
+        self.emit("playlist-selected", channels_to_display)
         self.favorite_channels_list.active_list_id = list_id
         self.favorite_channels_list.populate_channels_async(channels_to_display)
         self.favorites_stack.set_visible_child_name("channels")

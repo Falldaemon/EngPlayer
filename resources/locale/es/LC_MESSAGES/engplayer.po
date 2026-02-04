@@ -56,6 +56,12 @@ msgstr "Series"
 msgid "Media"
 msgstr "Medios"
 
+msgid "Local Media"
+msgstr "Medios Locales"
+
+msgid "Live TV"
+msgstr "TV en Vivo"
+
 msgid "Video Library"
 msgstr "Videoteca"
 
@@ -1336,6 +1342,66 @@ msgstr "Escuchaste este episodio hasta {}. ¿Reanudar?"
 
 msgid "Added to playlist: {}"
 msgstr "Añadido a la lista de reproducción: {}"
+
+# --- New Fullscreen Features ---
+
+msgid "Back to Categories"
+msgstr "Volver a Categorías"
+
+msgid "Favorite Groups"
+msgstr "Grupos de Favoritos"
+
+msgid "Unknown"
+msgstr "Desconocido"
+
+msgid "Switch Profile"
+msgstr "Cambiar perfil"
+
+msgid "Are you sure you want to switch profiles? The application will restart."
+msgstr "¿Seguro que quieres cambiar de perfil? La aplicación se reiniciará."
+
+msgid "Starting..."
+msgstr "Iniciando..."
+
+# --- Category Manager (Hidden Categories) ---
+msgid "Manage Hidden Categories"
+msgstr "Gestionar categorías ocultas"
+
+msgid "Turn ON the switch to HIDE the category."
+msgstr "ACTIVE el interruptor para OCULTAR la categoría."
+
+msgid "No categories found."
+msgstr "No se encontraron categorías."
+
+msgid "System"
+msgstr "Sistema"
+
+msgid "Stream Buffer"
+msgstr "Búfer de transmisión"
+
+msgid "Playback stability"
+msgstr "Estabilidad de reproducción"
+
+msgid "2s (Low)"
+msgstr "2s (Baja)"
+
+msgid "4s (Balanced)"
+msgstr "4s (Equilibrado)"
+
+msgid "6s (Stable)"
+msgstr "6s (Estable)"
+
+msgid "8s (Max)"
+msgstr "8s (Máximo)"
+
+msgid "Buffer set to {} seconds. Change takes effect on next channel."
+msgstr "Búfer establecido en {} segundos. El cambio se aplicará en el próximo canal."
+
+msgid "Connection lost. Reconnecting..."
+msgstr "Conexión perdida. Reconectando..."
+
+msgid "Connection failed. Stream cancelled."
+msgstr "Conexión fallida. Transmisión cancelada."
 
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Este producto utiliza la API de TMDb, pero no está respaldado ni certificado por TMDb."
