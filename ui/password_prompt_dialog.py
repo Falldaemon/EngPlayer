@@ -7,10 +7,6 @@ from gi.repository import Gtk, Adw
 import gettext
 _ = gettext.gettext
 class PasswordPromptDialog(Adw.MessageDialog):
-    """
-    A simple dialog to prompt the user for the application password.
-    """
-
     def __init__(self, parent):
         super().__init__()
         self.add_css_class("password-prompt-dialog")
@@ -28,5 +24,4 @@ class PasswordPromptDialog(Adw.MessageDialog):
         self.set_extra_child(self.password_entry)
 
     def get_password(self):
-        """Returns the text entered in the password entry."""
         return self.password_entry.get_text()

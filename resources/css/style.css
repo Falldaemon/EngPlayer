@@ -1,14 +1,14 @@
 /* resources/css/style.css */
 
 .navigation-rail {
-    background-color: transparent; 
+    background-color: @nav_rail_bg;
     padding: 0px;
     margin-top: 20px; 
 }
 
 .nav-icon-button {
-    background-color: transparent; 
-    border: 1px solid transparent;
+    background-color: @nav_button_bg;
+    border: 2px solid @nav_button_border;
     border-radius: 10px;
     padding: 6px;
     margin: 0 12px 15px 12px;
@@ -18,16 +18,17 @@
 
 .nav-icon-button:hover {
     opacity: 1.0;
-    background-color: rgba(255, 255, 255, 0.08);
+    background-color: @nav_button_hover_bg;
     transform: scale(1.15);
-    box-shadow: 4px 4px 5px #616161;
+    box-shadow: 2px 2px 3px @nav_button_hover_box_shadow;
+
 }
 
 .active-nav-icon {
     opacity: 1.0;
-    background-color: rgba(0, 0, 0, 0.1);
-    border: 1px solid rgba(0, 0, 0, 0.15);
-    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    background-color: @nav_button_active_color_bg;
+    border: 2px solid @nav_button_active_border;
+    box-shadow: 2px 2px 3px @nav_button_active_box_shadow;
     color: inherit; 
     transform: scale(1.1);
 }
@@ -47,16 +48,47 @@
     padding: 6px;
     margin: 0 12px 12px 12px;
     border-radius: 8px;
-    background-color: alpha(@window_bg_color, 0.9);
-    border: 0.5px solid alpha(#616161, 0.9);
+    background-color: @player_bg_color;
+    border: 2px solid @player_controls_border_color;
+    box-shadow: 2px 2px 3px @player_box_shadow;
 }
 
 .epg-panel {
     margin: 0px 12px 12px 12px;
     border-radius: 8px;
-    background-color: alpha(@window_bg_color, 0.9);
     padding: 2px;
-    border: 0.5px solid alpha(#616161, 0.9);
+    box-shadow: 2px 2px 3px @epg_box_shadow;
+    background-color: @epg_bg_color; 
+    border: 2px solid @epg_panel_border_color;
+}
+
+.epg-panel list,
+.epg-panel row,
+.epg-panel label,
+.epg-panel viewport,
+.epg-panel scrolledwindow {
+    background-color: transparent;
+    background: none;
+    border: none;
+    box-shadow: none;
+}
+
+.epg-panel row:hover {
+    background-color: alpha(@theme_fg_color, 0.1);
+}
+
+.epg-detail-dialog > contents,
+.epg-detail-dialog box,
+.epg-detail-dialog scrolledwindow,
+.epg-detail-dialog viewport,
+.epg-detail-dialog textview {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+.epg-detail-dialog textview text {
+    background-color: transparent;
 }
 
 .caption {
@@ -73,10 +105,10 @@
     border: 1px solid alpha(@theme_fg_color, 0.1);
     background-image: linear-gradient(
         to bottom,
-        alpha(white, 0.15),
-        alpha(black, 0.3)
+        @osd_btn_grad_top,
+        @osd_btn_grad_bot
     );
-    box-shadow: 0px 1px 3px alpha(black, 0.4);
+    box-shadow: 2px 2px 3px #000000;
     color: @theme_fg_color;
 }
 
@@ -93,6 +125,7 @@
 }
 
 .flat-button {
+    color: @flat-button;
     background: transparent;
     border: none;
     margin: 5px;  
@@ -102,12 +135,8 @@
 
 .flat-button:hover {
     transform: scale(1.15);
-    background-color: alpha(white, 0.15);  
-}
-
-.subtitle-dialog {
-    background-color: alpha(@theme_bg_color, 0.90);
-    border-radius: 12px;
+    background-color: alpha(white, 0.10);  
+    box-shadow: 2px 2px 3px @osd_btn_shadow;
 }
 
 .subtitle-dialog,
@@ -117,6 +146,7 @@
 .delete-confirm-dialog,
 .switch-profile-dialog,
 .category-manager-dialog,
+.font-settings-dialog,
 .epg-detail-dialog, 
 .set-password-warning-dialog,
 .resume-dialog,
@@ -133,9 +163,18 @@
 .video-settings-window,
 .about-window,
 .add-podcast-dialog,
+.restart-dialog,
+.profile-editor-dialog,
+.global-search-dialog,
+.subtitle-settings-dialog,
+.delete-profile-dialog,
+.sleep-warning-dialog,
 .source-selection-dialog {
     background-color: alpha(@theme_bg_color, 0.90); 
+    color: @theme_fg_color;
     border-radius: 12px;
+    border: 2px solid @border_pop_up_color;
+    background-clip: padding-box;
 
 }
 
@@ -148,6 +187,88 @@
 .scheduler-window {
     background-color: alpha(@theme_bg_color, 0.90);
     border-radius: 12px;
+    border: 2px solid @border_pop_up_color;
+}
+
+.scheduler-window > contents,
+.scheduler-window box,
+.scheduler-window scrolledwindow,
+.scheduler-window viewport {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+.scheduler-window calendar {
+    background-color: transparent; 
+    background-image: none;
+}
+
+.scheduler-window calendar > header {
+    background-color: transparent;
+}
+
+.scheduler-window .boxed-list {
+    background-color: alpha(white, 0.05); 
+    border: 1px solid alpha(white, 0.1);
+    box-shadow: none;
+}
+
+.scheduler-window .boxed-list row {
+    background-color: transparent; 
+}
+
+.scheduler-window .boxed-list row:hover {
+    background-color: alpha(white, 0.1); 
+}
+
+.scheduler-window entry,
+.scheduler-window spinbutton,
+.scheduler-window dropdown {
+    background-color: alpha(black, 0.2); 
+    border: 1px solid alpha(white, 0.15);
+}
+
+.scheduler-window entry:focus,
+.scheduler-window spinbutton:focus {
+    background-color: alpha(black, 0.4);
+    border-color: @accent_color; 
+}
+
+.scheduler-selection-dialog {
+    background-color: alpha(@theme_bg_color, 0.90);
+    border-radius: 12px;
+    border: 2px solid @border_pop_up_color;
+    background-clip: padding-box;
+}
+
+.scheduler-selection-dialog > contents {
+    background-color: transparent;
+    box-shadow: none;
+}
+
+.scheduler-selection-dialog listbox {
+    background-color: alpha(white, 0.05);
+    border: 1px solid alpha(white, 0.1);
+    border-radius: 8px;
+}
+
+.scheduler-selection-dialog listbox row {
+    background-color: transparent;
+}
+
+.scheduler-selection-dialog listbox row:hover {
+    background-color: alpha(white, 0.15); 
+}
+
+.scheduler-selection-dialog entry.search {
+    background-color: alpha(black, 0.2);
+    border: 1px solid alpha(white, 0.15);
+}
+
+.scheduler-selection-dialog entry.search:focus {
+    background-color: alpha(black, 0.4);
+    border-color: @accent_color;
 }
 
 .transparent-button {
@@ -166,12 +287,14 @@
 .equalizer-window {
     background-color: alpha(@window_bg_color, 0.90);
     border-radius: 12px;
+    border: 2px solid @border_pop_up_color;
 }    
     
 .profile-window {
     background-color: alpha(@window_bg_color, 0.90);
     border-radius: 12px;
-    border: 2px solid #616161;
+    border: 2px solid @profile_window_border;
+
 }    
 
 .channel-logo-image {
@@ -213,12 +336,14 @@
 }
 
 box.fullscreen-controls {
+    background-color: transparent;
     background-image: linear-gradient(
         to bottom,
-        rgba(60, 60, 60, 0.60), 
-        rgba(0, 0, 0, 0.80)
+        @fullscreen_bg_top,
+        @fullscreen_bg_bot
     );
-    border: 2px solid #616161;
+    background-clip: padding-box;
+    border: 2px solid @fullscreen_border_color;
     border-radius: 24px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     padding: 15px 25px;
@@ -227,22 +352,29 @@ box.fullscreen-controls {
 }
 
 box.fullscreen-controls label {
-    color: white;
-    text-shadow: 0 1px 2px black;
+    color: @fullscreen_fg_color;
+    font-weight: 800;
 }
 
 box.fullscreen-controls button image {
-    filter: brightness(0) invert(1); 
+    color: @fullscreen_fg_color;
     -gtk-icon-transform: scale(1.1);
 }
 
 box.fullscreen-controls button {
-    background: transparent;
+    background-image: linear-gradient(
+        to bottom,
+        @fullscreen_btn_grad_top,
+        @fullscreen_btn_grad_bot
+    );
     border: none;
     box-shadow: none;
     margin: 0 5px;
     border-radius: 10px;
     transition: background 0.2s;
+    min-width: 46px; 
+    min-height: 46px;
+    padding: 0px;
 }
 
 box.fullscreen-controls button:hover {
@@ -258,20 +390,33 @@ box.fullscreen-controls .channel-logo-image {
     filter: none;
 }
 
+box.fullscreen-controls scale highlight {
+    background-color: @fullscreen_slider_highlight;
+}
+
+box.fullscreen-controls scale slider {
+    background-color: @fullscreen_slider_color;
+}    
+    
+box.fullscreen-controls scale trough {
+    background-color: @fullscreen_slider_fill; 
+
+}
+
 .fullscreen-channel-list {
-    background-image: linear-gradient(
+        background-clip: padding-box; 
+        background-image: linear-gradient(
         to bottom,
-        rgba(60, 60, 60, 0.60),
-        rgba(0, 0, 0, 0.80)
+        @fullscreen_ch_list_grad_top,
+        @fullscreen_ch_list_grad_bot
     );
-    border: 2px solid #616161;
+    border: 2px solid @fullscreen_ch_border_color;
     border-radius: 24px;
     box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
     margin-left: 25px;
     margin-top: 60px;
     margin-bottom: 200px;
     padding: 6px;
-    color: white;
 }
 
 .fullscreen-channel-list list,
@@ -283,35 +428,59 @@ box.fullscreen-controls .channel-logo-image {
     box-shadow: none;
 }
 
+.fullscreen-channel-list popover > contents,
+.fullscreen-channel-list popover.menu > contents {
+    background-color: transparent;
+    background-image: linear-gradient(
+        to bottom,
+        @fullscreen_ch_list_grad_top,
+        @fullscreen_ch_list_grad_bot
+    );
+    border: 2px solid @fullscreen_ch_border_color;
+}
+
+box.fullscreen-controls popover.menu arrow,
+.fullscreen-channel-list popover.menu arrow {
+    color: @fullscreen_fg_color;
+    opacity: 0.85;
+}
+
+box.fullscreen-controls popover.menu modelbutton:hover arrow,
+.fullscreen-channel-list popover.menu modelbutton:hover arrow {
+    color: @fullscreen_fg_color;
+    opacity: 1.0;
+}
+
 .fullscreen-channel-list label {
-    color: #ffffff;
-    font-weight: 600;
-    text-shadow: 0 1px 2px rgba(0,0,0, 0.8);
+    color: @fullscreen_ch_list_label;
+    font-weight: 800;
+
 }
 
 .fullscreen-channel-list row {
     padding: 6px 4px;
     margin-bottom: 4px;
-    border-radius: 12px;
-    background-color: transparent;
+    border-radius: 24px;
+    background-color: @fullscreen_ch_list_row_bg;
     transition: all 0.2s ease;
-    border: 1px solid transparent;
+    border: 1.5px solid transparent;
 }
 
 .fullscreen-channel-list row:hover {
-    background-color: rgba(255, 255, 255, 0.15);
-    border-color: rgba(255, 255, 255, 0.1);
+    background-color: @fullscreen_ch_hover;
+    border-color: @fullscreen_ch_bg;
 }
 
 .fullscreen-channel-list row:selected {
-    background-color: alpha(white, 0.2);
-    color: white;
+    background-color: @fullscreen_ch_list_row;
     box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+
 }
 
 .fullscreen-channel-list row:selected label {
-    color: white;
+    color: @fullscreen_ch_list_row_sel_label;
     font-weight: bold;
+    font-weight: 800;
 }
 
 .fullscreen-channel-list image {
@@ -323,56 +492,24 @@ box.fullscreen-controls .channel-logo-image {
     background-color: transparent;
 }
 
-.splash-window {
-    background-color: transparent;
-    box-shadow: none;
-    border: none;
+.fullscreen-channel-list .epg-progress-bar progress {
+    background-color: @fullscreen_epg_bar_fill;
+    box-shadow: 0 0 2px rgba(0,0,0,0.5); 
+    border-radius: 2px;
 }
 
-.splash-content {
-    background-image: linear-gradient(
-        to bottom,
-        rgba(0, 0, 0, 0.6),
-        rgba(0, 0, 0, 0.85)
-    );
-    color: #f6f5f4;
-    border-radius: 28px;
-    border: 2px solid #616161;
-    box-shadow: 0 20px 10px rgba(0, 0, 0, 0.7);
-    padding: 40px;
-    margin: 30px;
-    text-shadow: 0 2px 4px rgba(0,0,0,0.6);
-}
-
-.splash-title {
-    font-size: 24pt;
-    font-weight: 900;
-    color: lighter(@accent_color);
-    margin-bottom: 15px;
-    letter-spacing: 1px;
-}
-
-.splash-status {
-    opacity: 0.9;
-    font-size: 1.3rem;
-    font-weight: 500;
-    color: #dedede;
-}
-
-.splash-content spinner {
-    color: #ffffff;
-    min-width: 52px;
-    min-height: 52px;
-    margin-bottom: 10px;
+.fullscreen-channel-list .epg-progress-bar trough {
+    background-color: @fullscreen_epg_bar_bg;
+    border-radius: 2px;
 }
 
 .fullscreen-channel-list row label {
-    color: white;
-    text-shadow: 0 1px 2px rgba(0,0,0, 0.8);
+    color: @fullscreen_ch_list_row_label;
+    font-weight: 800;
 }
 
 .fullscreen-channel-list button {
-    color: white;
+    color: @fullscreen_ch_list_button;
     background-color: transparent;
     background-image: none;
     box-shadow: none;
@@ -385,22 +522,63 @@ box.fullscreen-controls .channel-logo-image {
 }
 
 .fullscreen-channel-list entry {
-    background-color: alpha(white, 0.15);
-    border: 1px solid alpha(white, 0.3);
+    background-color: @fullscreen_ch_entry;
+    border: 1px solid @fullscreen_ch_entry_border;
     box-shadow: none;
-    color: white;
 }
 
 .fullscreen-channel-list entry text {
-    color: white;
+    color: @fullscreen_ch_list_entry_text;
 }
 
 .fullscreen-channel-list entry placeholder {
-    color: alpha(white, 0.6);
+    color: @fullscreen_ch_list_entry_placeholder;
 }
 
 .fullscreen-channel-list entry image {
-    color: white;
+    color: @fullscreen_ch_list_entry_image;
+}
+
+.splash-window {
+    background-color: transparent;
+    box-shadow: none;
+    border: none;
+}
+
+.splash-content {
+    background-image: linear-gradient(
+        to bottom,
+        @splash_content_grad_top,
+        @splash_content_grad_bot
+    );
+    border-radius: 28px;
+    border: 2px solid @splash_content_border;
+    box-shadow: 0 20px 10px rgba(0, 0, 0, 0.7);
+    padding: 40px;
+    margin: 30px;
+
+}
+
+.splash-title {
+    font-size: 24pt;
+    font-weight: 900;
+    color: @splash-title;
+    margin-bottom: 15px;
+    letter-spacing: 1px;
+}
+
+.splash-status {
+    opacity: 0.9;
+    font-size: 1.3rem;
+    font-weight: 500;
+    color: @splash-status;
+}
+
+.splash-content spinner {
+    color: @splash_content_spinner;
+    min-width: 52px;
+    min-height: 52px;
+    margin-bottom: 10px;
 }
 
 .subtitle-dialog > contents,
@@ -433,10 +611,11 @@ box.fullscreen-controls .channel-logo-image {
 
 .settings-popover > contents {
     background-color: @theme_bg_color; 
-    border: 2px solid #616161;
+    border: 2px solid @border_color;
     box-shadow: none;
     padding: 12px;
     border-radius: 20px;
+    background-clip: padding-box; 
 }
 
 .settings-popover row {
@@ -444,32 +623,41 @@ box.fullscreen-controls .channel-logo-image {
     padding: 0px 12px;
     margin-bottom: 8px;
     border-radius: 12px;
-    background-color: alpha(@theme_fg_color, 0.08); 
+    background-color: @settings_popover_row_bg;
     border: 1px solid alpha(@theme_fg_color, 0.1); 
     transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1);
 }
 
 .settings-popover row:hover {
-    background-color: alpha(@theme_fg_color, 0.15); 
-    border-color: alpha(@theme_fg_color, 0.3);  
+    background-color: @settings_popover_row_hover_bg;
     transform: scale(1.02);
-    box-shadow: 4px 4px 5px #616161;
+    box-shadow: 3px 3px 4px @settings-popover_hover_box_shadow;
 }
 
 .settings-popover row:active {
     transform: scale(0.96); 
-    background-color: alpha(@theme_fg_color, 0.2);
+    background-color: alpha(@theme_fg_color, 0.10);
 }
 
 .settings-popover row switch {
     margin-top: 13px;
     margin-bottom: 13px;
+    background-color: @settings_popover_row_switch_bg; 
 }
 
 .settings-popover row switch slider {
     min-width: 24px;
     min-height: 24px;
     margin: -2px;
+    background-color: @settings_popover_row_switch_slider_bg; 
+}
+
+.settings-popover row switch:checked {
+    background-color: @settings_popover_row_switch_checked_bg; 
+}
+
+.settings-popover row switch:checked slider {
+    background-color: @settings_popover_row_switch_checked_slider_bg;
 }
 
 .settings-popover list,
@@ -483,4 +671,250 @@ box.fullscreen-controls .channel-logo-image {
 
 .settings-popover list > row {
     border: none;
+}
+
+filechooser .view,
+filechooser .sidebar {
+    background-color: @window_bg_color; 
+    color: @window_fg_color;  
+}
+
+filechooser .view row:hover,
+filechooser .sidebar row:hover {
+    background-color: alpha(black, 0.10);
+}
+
+filechooser .view:selected,
+filechooser .sidebar row:selected {
+    background-color: @accent_color;  
+    color: @accent_fg_color;
+}
+
+filechooser entry {
+    background-color: alpha(white, 0.2);
+    color: @window_fg_color;
+}
+
+.floating-clock {
+    background: transparent;
+    border: none;
+    box-shadow: none;
+    padding: 0;
+}
+
+.floating-clock label {
+    color: #ffffff;
+    font-size: 26pt;
+    font-weight: 900;
+    letter-spacing: 2px;
+    text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 
+                 0px 0px 4px rgba(0, 0, 0, 0.7);   
+    transition: opacity 0.3s ease-in-out;
+}
+
+window.global-search-dialog box,
+window.global-search-dialog scrolledwindow,
+window.global-search-dialog viewport {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+window.global-search-dialog .boxed-list {
+    background-color: alpha(white, 0.05);
+    border: 1px solid alpha(white, 0.1); 
+    box-shadow: none;
+}
+
+window.global-search-dialog .boxed-list row {
+    background-color: transparent;
+}
+
+window.global-search-dialog .boxed-list row:hover {
+    background-color: alpha(white, 0.15);
+}
+
+popover > contents,
+popover.menu > contents {
+    background-color: alpha(@theme_bg_color, 0.90);
+    border: 2px solid @border_pop_up_color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.4);
+    border-radius: 10px;
+}
+
+popover.menu arrow {
+    color: @theme_fg_color;
+    opacity: 0.85;
+}
+
+popover.menu modelbutton:hover arrow {
+    color: @theme_fg_color;
+    opacity: 1.0;
+}
+
+popover.menu > contents modelbutton:hover {
+    background-color: @fullscreen_ch_hover;
+    border-radius: 6px;
+}
+
+box.fullscreen-controls popover > contents,
+box.fullscreen-controls popover.menu > contents {
+    background-color: transparent;
+    background-image: linear-gradient(
+        to bottom,
+        @box_fullscreen_controls_popover_grad_top,
+        @box_fullscreen_controls_popover_grad_bot
+    );
+    border: 2px solid @fullscreen_border_color;
+    background-clip: padding-box; 
+}
+
+window.media-info-dialog box,
+window.media-info-dialog scrolledwindow,
+window.media-info-dialog viewport {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+window.media-info-dialog .boxed-list row {
+    background-color: transparent;
+} 
+   
+window.media-info-dialog .boxed-list {
+    background-color: alpha(@theme_fg_color, 0.05);
+    box-shadow: none;       
+}
+
+.custom-timer-dialog {
+    background-color: alpha(@theme_bg_color, 0.90); 
+    color: @theme_fg_color;
+    border-radius: 12px;
+    border: 2px solid @border_pop_up_color;
+    background-clip: padding-box;
+}
+
+.custom-timer-dialog > contents {
+    background-color: transparent;
+}
+
+.custom-timer-dialog box,
+.custom-timer-dialog label {
+    background-color: transparent;
+}
+
+.custom-timer-dialog scale highlight {
+    background-color: @accent_color;
+}
+
+window.timeshift-settings-dialog,
+.timeshift-settings-dialog {
+    background-color: alpha(@theme_bg_color, 0.90);
+    color: @theme_fg_color;
+    border-radius: 12px;
+    border: 2px solid @border_pop_up_color;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
+}
+
+window.timeshift-settings-dialog .boxed-list {
+    background-color: alpha(@theme_fg_color, 0.05);
+    border-radius: 8px;
+}
+
+window.timeshift-settings-dialog .boxed-list row {
+    background-color: transparent;
+}
+
+.view-bg {
+    background-color: @view_bg_color;
+    color: @view_fg_color;
+}
+
+.view-bg .card {
+    background-color: @card_bg_color;
+    color: @card_fg_color;
+    border: 1.5px solid @border_color;
+    border-radius: 6px;
+    transition: all 0.2s ease;
+}
+
+.view-bg .card:hover {
+    background-color: alpha(@accent_color, 0.55);
+    border-color: @accent_color;
+}
+
+.view-bg .suggested-action {
+    background-color: @accent_color;
+    color: @accent_fg_color;
+    border: 1px solid alpha(@accent_fg_color, 0.3);
+    font-weight: bold;
+    border-radius: 6px;
+}
+
+.accent-label {
+    color: @accent_color;
+    font-weight: 800;
+    font-size: 1.1rem;
+}
+
+.dim-label {
+    color: alpha(@view_fg_color, 0.9);
+    font-size: 0.9rem;
+}
+
+.caption-heading {
+    font-weight: bold;
+    margin-bottom: 5px;
+    color: @card_fg_color;
+}
+
+.view-bg .caption {
+    color: alpha(@view_fg_color, 0.6);
+    font-weight: bold;
+}
+
+.now-indicator-line {
+    background-color: alpha(@view_fg_color, 0.4);
+    min-width: 4px;
+
+}
+
+.view-bg progressbar trough {
+    background-color: alpha(@view_fg_color, 0.1);
+    border-radius: 4px;
+    min-height: 8px;
+}
+
+.view-bg progressbar progress {
+    background-color: @accent_color;
+    border-radius: 4px;
+}
+
+.view-bg .epg-grid-box {
+    background-color: @card_bg_color;
+    border: 1.5px solid @border_color;
+    border-radius: 6px;
+}
+
+.view-bg .channel-col-header {
+    background-color: alpha(@view_fg_color, 0.12);
+    border: none;
+    padding: 6px 20px;
+    border-radius: 24px;
+}
+.view-bg .channel-col-header label {
+    color: @view_fg_color;
+    font-weight: 800;
+}
+
+.view-bg .current-prog-card {
+    background-color: alpha(@accent_color, 0.15);
+    border: 2px solid @accent_color;
+}
+
+.view-bg .current-prog-card label {
+    color: @view_fg_color; 
+}
+.view-bg .current-prog-card label.dim-label {
+    color: @view_fg_color;
 }

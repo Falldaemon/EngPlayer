@@ -5,20 +5,23 @@ from gi.repository import GLib, Gst, Gdk, Pango
 import database
 import gettext
 _ = gettext.gettext
+import charset_normalizer
 
 def parse_srt(srt_content):
     subs = []
     try:
         try:
             decoded_content = srt_content.decode('utf-8')
+            logging.debug("parse_srt: Subtitle decoded successfully using standard UTF-8.")
         except UnicodeDecodeError:
             try:
-                decoded_content = srt_content.decode('cp1254')
-            except UnicodeDecodeError:
-                decoded_content = srt_content.decode('iso-8859-9', errors='ignore')
+                prediction = charset_normalizer.detect(srt_content)
+                correct_encoding = prediction['encoding'] if prediction and prediction.get('encoding') else 'utf-8'
+                decoded_content = srt_content.decode(correct_encoding, errors='replace')
+                logging.info(f"parse_srt: [UPDATE WORKED] Subtitle encoding auto-detected and resolved as: {correct_encoding}")
             except Exception as decode_err_inner:
-                 logging.error(f"SRT decode error (inner): {decode_err_inner}")
-                 decoded_content = srt_content.decode('utf-8', errors='ignore')
+                 logging.error(f"parse_srt: SRT decode error (charset_normalizer): {decode_err_inner}")
+                 decoded_content = srt_content.decode('utf-8', errors='replace')               
         lines = re.split(r'\r?\n\r?\n', decoded_content.strip())
         logging.debug(f"parse_srt: Found {len(lines)} blocks to parse.")
         for block in lines:
@@ -157,7 +160,6 @@ class SubtitleManager:
         return True
 
     def set_delay(self, delay_ms):
-        """Called by MainWindow to set the delay."""
         logging.debug(f"SubtitleManager: Delay set -> {delay_ms} ms")
         self.delay_ms = delay_ms
         self.last_markup = None

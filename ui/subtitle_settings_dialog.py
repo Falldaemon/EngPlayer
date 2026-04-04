@@ -56,7 +56,6 @@ class SubtitleSettingsDialog(Adw.PreferencesWindow):
         bg_group.add(opacity_row)
 
     def _load_settings(self):
-        """Loads settings from the database."""
         self.font_setting_str = database.get_config_value("subtitle_font") or "Sans 12"
         color_setting_str = database.get_config_value("subtitle_color") or "rgba(255,255,255,1.0)"
         self.font_color = Gdk.RGBA()
@@ -75,7 +74,6 @@ class SubtitleSettingsDialog(Adw.PreferencesWindow):
         font_dialog.present()
 
     def _on_font_dialog_response(self, dialog, response_id):
-        """Handles the response from the font chooser dialog."""
         if response_id == Gtk.ResponseType.OK:
             new_font_name = dialog.get_font()
             database.set_config_value("subtitle_font", new_font_name)
@@ -88,19 +86,16 @@ class SubtitleSettingsDialog(Adw.PreferencesWindow):
         dialog.destroy()
 
     def _on_color_setting_changed(self, color_button):
-        """Saves the color setting to the database when changed."""
         color = color_button.get_rgba()
         database.set_config_value("subtitle_color", color.to_string())
         self._show_toast(_("Subtitle color saved!"))
 
     def _on_bg_color_changed(self, color_button):
-        """Saves the background color to the database when changed."""
         color = color_button.get_rgba()
         database.set_config_value("subtitle_bgcolor", color.to_string())
         self._show_toast(_("Background color saved!"))
 
     def _on_opacity_changed(self, scale):
-        """Saves the background opacity to the database when changed."""
         opacity = scale.get_value() / 100.0
         database.set_config_value("subtitle_bgopacity", str(opacity))
         color = self.bg_color_button.get_rgba()

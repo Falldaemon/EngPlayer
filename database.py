@@ -7,6 +7,7 @@ import hashlib
 import secrets
 import time
 from gi.repository import GLib
+from datetime import datetime, timezone
 import json
 _MEMORY_CACHE_PATH = None
 
@@ -18,20 +19,17 @@ LIBRARY_DB_FILE = os.path.join(APP_CONFIG_DIR, "library.db")
 CURRENT_PROFILE_DB_FILE = None
 
 def get_config_db_connection():
-    """Connects to the global CONFIG database ('config.db')."""
     conn = sqlite3.connect(CONFIG_DB_FILE, timeout=10)
     conn.row_factory = sqlite3.Row
     return conn
 
 def get_library_db_connection():
-    """Connects to the global LIBRARY database ('library.db')."""
     conn = sqlite3.connect(LIBRARY_DB_FILE, timeout=10)
     conn.row_factory = sqlite3.Row
     conn.execute("PRAGMA foreign_keys = ON")
     return conn
 
 def get_profile_db_connection():
-    """Connects to the active PROFILE's database ('profile_HASH.db')."""
     if CURRENT_PROFILE_DB_FILE is None:
         logging.error("CRITICAL ERROR: Profile database path is not set. set_active_profile_db must be called first.")
         raise Exception("Database path not set. Call set_active_profile_db first.")
@@ -41,7 +39,6 @@ def get_profile_db_connection():
     return conn
 
 def _initialize_config_db():
-    """Creates the global 'config.db' file and its tables."""
     try:
         conn = get_config_db_connection()
         cursor = conn.cursor()
@@ -58,7 +55,6 @@ def _initialize_config_db():
         logging.error(f"Error initializing global config database: {e}")
 
 def _initialize_library_db():
-    """Creates the global 'library.db' file and its tables."""
     try:
         conn = get_library_db_connection()
         cursor = conn.cursor()
@@ -148,7 +144,6 @@ def _initialize_library_db():
         logging.error(f"Error initializing global library database: {e}")
 
 def _initialize_profile_db():
-    """Creates the active profile's 'profile_HASH.db' file and its tables."""
     if CURRENT_PROFILE_DB_FILE is None:
         logging.error("Failed to initialize profile database (path not set).")
         return
@@ -234,6 +229,13 @@ def _initialize_profile_db():
             expires_in INTEGER NOT NULL
         )
         """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS channel_history (
+                channel_url TEXT PRIMARY KEY,
+                channel_data_json TEXT NOT NULL,
+                last_watched INTEGER NOT NULL
+            )
+        """)
         conn.commit()
         conn.close()
         logging.info(f"Profile database ('{CURRENT_PROFILE_DB_FILE}') initialized successfully.")
@@ -241,18 +243,10 @@ def _initialize_profile_db():
         logging.error(f"Error initializing profile database: {e}")
 
 def initialize_database():
-    """
-    Called when the application starts.
-    Initializes only the GLOBAL databases (config.db and library.db).
-    """
     _initialize_config_db()
     _initialize_library_db()
 
 def set_active_profile_db(profile_id):
-    """
-    Sets which profile is active, determines the database path for that profile,
-    and initializes/verifies that profile's database.
-    """
     global CURRENT_PROFILE_DB_FILE
     safe_id = hashlib.md5(profile_id.encode()).hexdigest()
     new_db_path = os.path.join(APP_CONFIG_DIR, f"profile_{safe_id}.db")
@@ -851,10 +845,6 @@ def delete_playback_position(media_path):
         conn.close()
 
 def get_watched_status_batch(media_paths):
-    """
-    Returns a set of media paths from the given list that are marked as
-    'watched' (is_finished = 1).
-    """
     if not media_paths:
         return set()
     conn = get_profile_db_connection()
@@ -902,10 +892,6 @@ def swap_favorite_channel_order(list_id, channel_url_1, channel_url_2):
         conn.close()
 
 def save_trakt_token(token_data):
-    """
-    Saves the new Trakt.tv token to the database (deletes the old one).
-    token_data is the full dictionary from the Trakt API.
-    """
     conn = get_profile_db_connection()
     try:
         with conn:
@@ -930,9 +916,6 @@ def save_trakt_token(token_data):
         conn.close()
 
 def get_trakt_token():
-    """
-    Gets the saved Trakt.tv token and its expiration date.
-    """
     conn = get_profile_db_connection()
     try:
         cursor = conn.cursor()
@@ -954,7 +937,6 @@ def get_trakt_token():
     return None
 
 def clear_trakt_token():
-    """Deletes the Trakt.tv token from the database (Log Out)."""
     conn = get_profile_db_connection()
     try:
         with conn:
@@ -966,7 +948,6 @@ def clear_trakt_token():
         conn.close()
 
 def get_paths_for_tmdb_ids(tmdb_id_list):
-    """Returns the file paths corresponding to the given list of TMDb IDs."""
     if not tmdb_id_list:
         return []
     conn = get_library_db_connection()
@@ -984,10 +965,6 @@ def get_paths_for_tmdb_ids(tmdb_id_list):
         conn.close()
 
 def set_batch_watched_status_by_path(path_list):
-    """
-    Marks the given list of file paths as 'watched' (is_finished=1).
-    Creates a record if it doesn't exist, updates if it does.
-    """
     if not path_list:
         return 0
     conn = get_profile_db_connection()
@@ -1013,21 +990,16 @@ def set_batch_watched_status_by_path(path_list):
         conn.close()
 
 def get_notifications_enabled():
-    """Returns True if notifications are enabled (default: True)."""
     val = get_config_value('notifications_enabled')
     return val != '0'
 
 def get_notification_timeout():
-    """Returns notification timeout in seconds (default: 3)."""
     val = get_config_value('notification_timeout')
     if val and val.isdigit():
         return int(val)
     return 3
 
 def swap_favorite_list_order(list_id_1, list_id_2):
-    """
-    Swaps the sort_order of two favorite lists.
-    """
     conn = get_profile_db_connection()
     try:
         with conn:
@@ -1055,10 +1027,6 @@ def swap_favorite_list_order(list_id_1, list_id_2):
         conn.close()
 
 def update_season_data(media_path, seasons_json_str):
-    """
-    Updates ONLY the seasons_json column for a specific media item.
-    Does not touch other metadata like title or poster.
-    """
     conn = get_library_db_connection()
     try:
         with conn:
@@ -1166,7 +1134,6 @@ def is_content_finished(media_path):
         conn.close()          
 
 def set_bouquet_hidden_status(bouquet_name, is_hidden):
-    """Sets the hidden status of a bouquet category."""
     conn = get_profile_db_connection()
     try:
         cursor = conn.cursor()
@@ -1185,7 +1152,6 @@ def set_bouquet_hidden_status(bouquet_name, is_hidden):
         conn.close()
 
 def get_hidden_bouquets():
-    """Returns a set of bouquet names that are marked as hidden."""
     conn = get_profile_db_connection()
     try:
         cursor = conn.cursor()
@@ -1197,3 +1163,174 @@ def get_hidden_bouquets():
         return set()
     finally:
         conn.close()
+        
+def add_channel_to_history(channel_url, channel_data):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            now = int(time.time())
+            data_str = json.dumps(channel_data)
+            conn.execute("""
+                INSERT INTO channel_history (channel_url, channel_data_json, last_watched)
+                VALUES (?, ?, ?)
+                ON CONFLICT(channel_url) DO UPDATE SET
+                    channel_data_json=excluded.channel_data_json,
+                    last_watched=excluded.last_watched
+            """, (channel_url, data_str, now))
+            conn.execute("""
+                DELETE FROM channel_history 
+                WHERE channel_url NOT IN (
+                    SELECT channel_url FROM channel_history 
+                    ORDER BY last_watched DESC 
+                    LIMIT 30
+                )
+            """)
+    except sqlite3.Error as e:
+        logging.error(f"Error adding channel to history: {e}")
+    finally:
+        conn.close()
+
+def get_channel_history():
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT channel_data_json FROM channel_history ORDER BY last_watched DESC")
+    rows = cursor.fetchall()
+    conn.close()  
+    history_list = []
+    for row in rows:
+        try:
+            history_list.append(json.loads(row['channel_data_json']))
+        except json.JSONDecodeError:
+            continue
+    return history_list
+
+def clear_channel_history():
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM channel_history")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Error clearing channel history: {e}")
+        return False
+    finally:
+        conn.close()      
+EPG_DB_FILE = None
+_cached_epg_channel_ids = None  
+
+def get_epg_db_connection():
+    global EPG_DB_FILE
+    if not EPG_DB_FILE:
+        EPG_DB_FILE = os.path.join(get_cache_path(), "epg_data.db")
+    conn = sqlite3.connect(EPG_DB_FILE, timeout=15)
+    conn.row_factory = sqlite3.Row
+    return conn
+
+def init_epg_db():
+    try:
+        conn = get_epg_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("PRAGMA journal_mode = WAL")
+        cursor.execute("PRAGMA synchronous = NORMAL")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS epg_programs (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                channel_id TEXT NOT NULL,
+                title TEXT NOT NULL,
+                desc TEXT,
+                start_time INTEGER NOT NULL,
+                stop_time INTEGER NOT NULL
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_channel_time ON epg_programs (channel_id, start_time, stop_time)")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS epg_key_mappings (
+                raw_key TEXT PRIMARY KEY,
+                mapped_key TEXT NOT NULL
+            )
+        """)      
+        conn.commit()
+        conn.close()
+        logging.info("EPG SQLite database initialized.")
+    except sqlite3.Error as e:
+        logging.error(f"Error initializing EPG database: {e}")
+
+def clear_epg_db():
+    global _cached_epg_channel_ids
+    try:
+        conn = get_epg_db_connection()
+        with conn:
+            conn.execute("DELETE FROM epg_programs")            
+        conn.close()
+        _cached_epg_channel_ids = None
+        logging.info("Old EPG data cleared, but smart mappings preserved in SQLite.")
+    except sqlite3.Error as e:
+        logging.error(f"Error clearing EPG database: {e}")
+
+def insert_epg_batch(programs_batch):
+    global _cached_epg_channel_ids
+    try:
+        conn = get_epg_db_connection()
+        with conn:
+            conn.executemany("""
+                INSERT INTO epg_programs (channel_id, title, desc, start_time, stop_time)
+                VALUES (?, ?, ?, ?, ?)
+            """, programs_batch)
+        conn.close()
+        _cached_epg_channel_ids = None
+    except sqlite3.Error as e:
+        logging.error(f"Error inserting EPG batch: {e}")
+
+def get_epg_programs(channel_id, start_ts=None, end_ts=None):
+    conn = get_epg_db_connection()
+    cursor = conn.cursor()
+    query = "SELECT title, desc, start_time, stop_time FROM epg_programs WHERE channel_id = ?"
+    params = [channel_id]
+    if start_ts and end_ts:
+        query += " AND stop_time > ? AND start_time < ?"
+        params.extend([start_ts, end_ts])       
+    query += " ORDER BY start_time ASC"   
+    cursor.execute(query, params)
+    rows = cursor.fetchall()
+    conn.close()   
+    programs = []
+    for r in rows:
+        programs.append({
+            "title": r["title"],
+            "desc": r["desc"],
+            "start": datetime.fromtimestamp(r["start_time"], timezone.utc).astimezone(),
+            "stop": datetime.fromtimestamp(r["stop_time"], timezone.utc).astimezone()
+        })
+    return programs
+
+def get_all_epg_channel_ids():
+    global _cached_epg_channel_ids
+    if _cached_epg_channel_ids is not None:
+        return _cached_epg_channel_ids       
+    conn = get_epg_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT DISTINCT channel_id FROM epg_programs")
+    rows = cursor.fetchall()
+    conn.close()   
+    _cached_epg_channel_ids = [r["channel_id"] for r in rows]
+    return _cached_epg_channel_ids
+
+def get_epg_mapping(raw_key):
+    try:
+        conn = get_epg_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT mapped_key FROM epg_key_mappings WHERE raw_key = ?", (raw_key,))
+        row = cursor.fetchone()
+        conn.close()
+        return row["mapped_key"] if row else None
+    except sqlite3.Error:
+        return None
+
+def save_epg_mapping(raw_key, mapped_key):
+    try:
+        conn = get_epg_db_connection()
+        with conn:
+            conn.execute("INSERT OR REPLACE INTO epg_key_mappings (raw_key, mapped_key) VALUES (?, ?)", (raw_key, mapped_key))
+        conn.close()
+    except sqlite3.Error as e:
+        logging.error(f"Error saving EPG mapping: {e}")        

@@ -7,9 +7,6 @@ import os
 import logging
 
 class CollectionItem(GObject.Object):
-    """
-    Data object representing a single library collection.
-    """
     __gtype_name__ = "CollectionItem"
     db_id = GObject.Property(type=int)
     name = GObject.Property(type=str)
@@ -22,10 +19,6 @@ class CollectionItem(GObject.Object):
         self.props.type = type
 
 class CollectionGridView(Gtk.ScrolledWindow):
-    """
-    UI component that displays libraries (collections) from the database
-    in a grid view.
-    """
     __gsignals__ = {
         "collection-activated": (GObject.SignalFlags.RUN_FIRST, None, (CollectionItem,)),
         "collection-right-clicked": (GObject.SignalFlags.RUN_FIRST, None, (CollectionItem, Gtk.Widget,)),
@@ -51,7 +44,6 @@ class CollectionGridView(Gtk.ScrolledWindow):
         self.grid_view.set_model(selection_model)
 
     def populate_collections(self, libraries_data):
-        """Populates the grid with the list of libraries from the database."""
         self.model.remove_all()
         for lib in libraries_data:
             item = CollectionItem(
@@ -62,7 +54,6 @@ class CollectionGridView(Gtk.ScrolledWindow):
             self.model.append(item)
 
     def _on_factory_setup(self, factory, list_item):
-        """Sets up the visual structure for each item in the GridView once."""
         overlay = Gtk.Overlay()
         overlay.set_halign(Gtk.Align.CENTER)
         overlay.set_valign(Gtk.Align.CENTER)
@@ -98,7 +89,6 @@ class CollectionGridView(Gtk.ScrolledWindow):
         box.append(label)
 
     def _on_factory_bind(self, factory, list_item):
-        """Binds the data to the visual structure when an item comes into view."""
         overlay = list_item.get_child()
         box = overlay.get_child()
         item_data = list_item.get_item()
@@ -135,14 +125,12 @@ class CollectionGridView(Gtk.ScrolledWindow):
         label.set_text(item_data.props.name)
 
     def _on_item_pressed(self, gesture, n_press, x, y, list_item):
-        """Emits the signal when a collection item is clicked."""
         if gesture.get_current_button() == 1:
             item_data = list_item.get_item()
             if item_data:
                 self.emit("collection-activated", item_data)
 
     def _on_item_right_clicked(self, gesture, n_press, x, y, list_item):
-        """Emits the signal when a collection item is right-clicked."""
         item_data = list_item.get_item()
         if item_data:
             overlay = list_item.get_child()

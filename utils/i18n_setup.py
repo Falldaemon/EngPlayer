@@ -5,7 +5,6 @@ import logging
 from core.config import LOCALE_DIR
 
 def setup_translation():
-    """Initializes the gettext translation system."""
     try:
         gettext.bindtextdomain('engplayer', LOCALE_DIR)
         gettext.textdomain('engplayer')

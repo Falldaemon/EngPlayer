@@ -1404,6 +1404,573 @@ msgstr "Bağlantı koptu. Yeniden bağlanılıyor..."
 msgid "Connection failed. Stream cancelled."
 msgstr "Bağlantı başarısız. Yayın iptal edildi."
 
+msgid "Change font family and size"
+msgstr "Yazı tipini ve boyutunu değiştir"
+
+msgid "Adjust text style, weight and size."
+msgstr "Metin stilini, kalınlığını ve boyutunu ayarla."
+
+msgid "Select Font Style:"
+msgstr "Yazı Tipi Stili Seç:"
+
+msgid "Choose Font"
+msgstr "Yazı Tipi Seç"
+
+msgid "Reset to Default"
+msgstr "Varsayılana Sıfırla"
+
+msgid "System Default"
+msgstr "Sistem Varsayılanı"
+
+msgid "Font settings restored to system default."
+msgstr "Yazı tipi ayarları sistem varsayılanına döndürüldü."
+
+msgid "Font settings applied successfully!"
+msgstr "Yazı tipi ayarları başarıyla uygulandı!"
+
+msgid "No program information found for this channel."
+msgstr "Bu kanal için program bilgisi bulunamadı."
+
+msgid "Password"
+msgstr "Şifre"
+
+msgid "Switch"
+msgstr "Değiştir"
+
+msgid "Podcast Library"
+msgstr "Podcast Kütüphanesi"
+
+msgid "History"
+msgstr "Geçmiş"
+
+msgid "Search History..."
+msgstr "Geçmişte Ara..."
+
+msgid "Clear History"
+msgstr "Geçmişi Temizle"
+
+msgid "No history found."
+msgstr "Geçmiş bulunamadı."
+
+msgid "Are you sure you want to clear your watched channel history?"
+msgstr "İzlenen kanallar geçmişinizi temizlemek istediğinize emin misiniz?"
+
+msgid "Clear"
+msgstr "Temizle"
+
+msgid "History cleared."
+msgstr "Geçmiş temizlendi."
+
+msgid "Error clearing history."
+msgstr "Geçmiş temizlenirken hata oluştu."
+
+msgid "Unknown Channel"
+msgstr "Bilinmeyen Kanal"
+
+msgid "Channel List"
+msgstr "Kanal Listesi"
+
+msgid "Global Search"
+msgstr "Global Arama"
+
+msgid "Search in movies, series, and channels..."
+msgstr "Filmlerde, dizilerde ve kanallarda ara..."
+
+msgid "No results found..."
+msgstr "Sonuç bulunamadı..."
+
+msgid "Show All"
+msgstr "Tümünü Göster"
+
+msgid "Hide All"
+msgstr "Tümünü Gizle"
+
+msgid "Default Order"
+msgstr "Varsayılan Sıralama"
+
+msgid "A-Z (Ascending)"
+msgstr "A-Z (Artan)"
+
+msgid "Z-A (Descending)"
+msgstr "Z-A (Azalan)"
+
+msgid "Sort Items"
+msgstr "Öğeleri Sırala"
+
+msgid "More Options"
+msgstr "Daha Fazla Seçenek"
+
+msgid "Sleep Timer"
+msgstr "Uyku Zamanlayıcısı"
+
+msgid "Off"
+msgstr "Kapalı"
+
+msgid "15 Minutes"
+msgstr "15 Dakika"
+
+msgid "30 Minutes"
+msgstr "30 Dakika"
+
+msgid "60 Minutes"
+msgstr "60 Dakika"
+
+msgid "90 Minutes"
+msgstr "90 Dakika"
+
+msgid "120 Minutes"
+msgstr "120 Dakika"
+
+msgid "Custom Time..."
+msgstr "Özel Zaman..."
+
+msgid "End of Media"
+msgstr "Bölüm Bitince"
+
+msgid "Timer set to close at the End of Media."
+msgstr "Zamanlayıcı bölüm bitince kapanacak şekilde ayarlandı."
+
+msgid "Custom Sleep Timer"
+msgstr "Özel Uyku Zamanlayıcısı"
+
+msgid "Please select the sleep timer duration:"
+msgstr "Lütfen uyku zamanlayıcı süresini seçin:"
+
+msgid "Minutes"
+msgstr "Dakika"
+
+msgid "Start Timer"
+msgstr "Zamanlayıcıyı Başlat"
+
+msgid "Sleep timer set for {} minutes."
+msgstr "Uyku zamanlayıcısı {} dakikaya ayarlandı."
+
+msgid "Sleep Timer Finishing"
+msgstr "Uyku Zamanlayıcısı Bitiyor"
+
+msgid "seconds before playback stops."
+msgstr "saniye sonra oynatma durdurulacak."
+
+msgid "Cancel Timer"
+msgstr "Zamanlayıcıyı İptal Et"
+
+msgid "Min"
+msgstr "Dk"
+
+msgid "Added {} minutes to sleep timer."
+msgstr "Uyku zamanlayıcısına {} dakika eklendi."
+
+msgid "Playback stopped by Sleep Timer."
+msgstr "Oynatma Uyku Zamanlayıcısı tarafından durduruldu."
+
+msgid "Media Info"
+msgstr "Medya Bilgisi"
+
+msgid "Playback Speed"
+msgstr "Oynatma Hızı"
+
+msgid "Normal (1.0x)"
+msgstr "Normal (1.0x)"
+
+msgid "Playback speed restored to Normal"
+msgstr "Oynatma hızı Normal'e döndürüldü"
+
+msgid "Playback speed set to {}x"
+msgstr "Oynatma hızı {}x olarak ayarlandı"
+
+msgid "Aspect Ratio"
+msgstr "Görüntü Oranı"
+
+msgid "Original (Fit)"
+msgstr "Orijinal (Sığdır)"
+
+msgid "Stretch (Fill Screen)"
+msgstr "Genişlet (Ekranı Doldur)"
+
+msgid "Zoom (Crop Edges)"
+msgstr "Yakınlaştır (Kırp)"
+
+msgid "Aspect Ratio: Original (Fit)"
+msgstr "Görüntü Oranı: Orijinal (Sığdır)"
+
+msgid "Aspect Ratio: Stretch to Fill"
+msgstr "Görüntü Oranı: Ekranı Doldur"
+
+msgid "Aspect Ratio: Zoom to Fit"
+msgstr "Görüntü Oranı: Yakınlaştır (Kırp)"
+
+msgid "Seconds"
+msgstr "Saniye"
+
+# --- Timeshift Settings ---
+msgid "Timeshift Settings (BETA)"
+msgstr "Timeshift Ayarları (BETA)"
+
+msgid "Pause Live TV"
+msgstr "Canlı Yayını Duraklat"
+
+msgid ""
+"Timeshift allows you to pause live TV and resume from where you left off. "
+"The broadcast is temporarily recorded to your selected folder.\n\n"
+"<b>📊 Estimated Storage Usage (Per Hour):</b>\n"
+"  • <b>HD (720p):</b> ~1.2 GB\n"
+"  • <b>Full HD (1080p):</b> ~2.5 GB\n"
+"  • <b>4K (UHD):</b> ~6.0 GB+\n\n"
+"💡 <b>Tip:</b> To save internal disk space and prevent wear on your system's SSD, "
+"it is highly recommended to select an external USB drive or HDD as your Timeshift folder.\n\n"
+"⚠️ <b>Note:</b> Recording stops automatically if the quota is reached. "
+"The temporary buffer is safely cleared when you change channels or return to live TV."
+msgstr ""
+"Timeshift (Zaman Kaydırma), canlı TV yayınını duraklatmanıza ve kaldığınız yerden devam etmenize olanak tanır. "
+"Yayın, geçici olarak seçtiğiniz klasöre kaydedilir.\n\n"
+"<b>📊 Tahmini Depolama Alanı Kullanımı (Saatlik):</b>\n"
+"  • <b>HD (720p):</b> ~1.2 GB\n"
+"  • <b>Full HD (1080p):</b> ~2.5 GB\n"
+"  • <b>4K (UHD):</b> ~6.0 GB+\n\n"
+"💡 <b>İpucu:</b> Dahili disk alanından tasarruf etmek ve sisteminizin SSD ömrünü korumak için, "
+"Timeshift klasörü olarak harici bir USB bellek veya HDD seçmeniz şiddetle tavsiye edilir.\n\n"
+"⚠️ <b>Not:</b> Belirlenen kotaya ulaşıldığında kayıt otomatik olarak durur. "
+"Kanal değiştirdiğinizde veya canlı yayına döndüğünüzde geçici önbellek güvenli bir şekilde silinir."
+
+msgid "Enable Timeshift"
+msgstr "Timeshift'i Etkinleştir"
+
+msgid "Timeshift Folder"
+msgstr "Timeshift Klasörü"
+
+msgid "Default (Cache Folder)"
+msgstr "Varsayılan (Önbellek Klasörü)"
+
+msgid "Storage Quota"
+msgstr "Depolama Kotası"
+
+msgid "Custom..."
+msgstr "Özel..."
+
+msgid "Custom Quota (MB)"
+msgstr "Özel Kota (MB)"
+
+msgid "Enter value in Megabytes (e.g. 1500)"
+msgstr "Megabayt cinsinden değer girin (örn. 1500)"
+
+msgid "Select Timeshift Folder"
+msgstr "Timeshift Klasörünü Seçin"
+
+msgid "Timeshift settings saved!"
+msgstr "Timeshift ayarları kaydedildi!"
+
+msgid "Timeshift storage limit reached."
+msgstr "Timeshift depolama sınırına ulaşıldı."
+
+msgid "Back to Live Stream"
+msgstr "Canlı Yayına Dön"
+
+msgid "Audio Visualizer"
+msgstr "Ses Görselleştirici"
+
+msgid "Select animation for music playback"
+msgstr "Müzik çalma için animasyon seçin"
+
+msgid "Premium"
+msgstr "Premium"
+
+msgid "Visualizer applied!"
+msgstr "Görselleştirici uygulandı!"
+
+msgid "Advanced EPG"
+msgstr "Gelişmiş TV Rehberi"
+
+msgid "Close and Return"
+msgstr "Kapat ve Yayına Dön"
+
+msgid "Channel Name"
+msgstr "Kanal Adı"
+
+msgid "Select a Program"
+msgstr "Program Seçin"
+
+msgid "Program details will appear here."
+msgstr "Program detayları burada görünecektir."
+
+msgid "Watch Now"
+msgstr "Şimdi İzle"
+
+msgid "Timeline"
+msgstr "Zaman Çizelgesi"
+
+msgid "No details available for this program."
+msgstr "Bu program için detaylı açıklama bulunmuyor."
+
+msgid "Switching to: "
+msgstr "Kanal değiştiriliyor: "
+
+msgid "Previewing: "
+msgstr "Önizleniyor: "
+
+msgid "Font Settings"
+msgstr "Yazı Tipi Ayarları"
+
+msgid "Select Recordings Folder"
+msgstr "Kayıt Klasörünü Seç"
+
+msgid "Select"
+msgstr "Seç"
+
+msgid "API Key (v3 Auth)"
+msgstr "API Anahtarı (v3 Kimlik Doğrulaması)"
+
+msgid "Subtitles"
+msgstr "Altyazılar"
+
+msgid "Error: Channel URL is missing."
+msgstr "Hata: Kanal URL'si eksik."
+
+msgid "Error: Could not schedule recording."
+msgstr "Hata: Kayıt zamanlanamadı."
+
+msgid "Unknown Program"
+msgstr "Bilinmeyen Program"
+
+msgid "Error: Channel ID could not be retrieved."
+msgstr "Hata: Kanal ID'si alınamadı."
+
+msgid "Error: Profile information missing."
+msgstr "Hata: Profil bilgisi eksik."
+
+msgid "Error: Video file could not be deleted!"
+msgstr "Hata: Video dosyası silinemedi!"
+
+msgid "Error: Could not display results."
+msgstr "Hata: Sonuçlar gösterilemedi."
+
+msgid "Error: Could not retrieve file ID for selected subtitle."
+msgstr "Hata: Seçilen altyazı için dosya kimliği alınamadı."
+
+msgid "Error: API key not found for download."
+msgstr "Hata: İndirme işlemi için API anahtarı bulunamadı."
+
+msgid "Error: Downloaded subtitle file could not be loaded."
+msgstr "Hata: İndirilen altyazı dosyası yüklenemedi."
+
+msgid "Error: Downloaded subtitle file not found."
+msgstr "Hata: İndirilen altyazı dosyası bulunamadı."
+
+msgid "Select External Subtitle File"
+msgstr "Harici Altyazı Dosyası Seç"
+
+msgid "Subtitle Files"
+msgstr "Altyazı Dosyaları"
+
+msgid "All Files"
+msgstr "Tüm Dosyalar"
+
+msgid "External subtitle loaded."
+msgstr "Harici altyazı yüklendi."
+
+msgid "Could not load subtitle file."
+msgstr "Altyazı dosyası yüklenemedi."
+
+msgid "Add"
+msgstr "Ekle"
+
+msgid "Picture"
+msgstr "Resim"
+
+msgid "Music"
+msgstr "Müzik"
+
+msgid "Error: Could not retrieve movie info."
+msgstr "Hata: Film bilgisi alınamadı."
+
+msgid "Next Episode"
+msgstr "Sonraki Bölüm"
+
+msgid "Error: Could not create PiP window."
+msgstr "Hata: PiP penceresi oluşturulamadı."
+
+msgid "Error: An issue occurred while removing the library."
+msgstr "Hata: Kütüphane kaldırılırken bir sorun oluştu."
+
+msgid "Media record removed."
+msgstr "Medya kaydı silindi."
+
+msgid "Error: An issue occurred while removing the media record."
+msgstr "Hata: Medya kaydı silinirken bir sorun oluştu."
+
+msgid "Track record removed."
+msgstr "Parça kaydı silindi."
+
+msgid "Error: An issue occurred while removing the track record."
+msgstr "Hata: Parça kaydı silinirken bir sorun oluştu."
+
+msgid "Error: Recording not found in list."
+msgstr "Hata: Kayıt listede bulunamadı."
+
+msgid "Error: Recording was not removed from list."
+msgstr "Hata: Kayıt listeden kaldırılamadı."
+
+msgid "Select Accent Color"
+msgstr "Vurgu Rengini Seç"
+
+msgid "Accent color updated!"
+msgstr "Vurgu rengi güncellendi!"
+
+msgid "Apply"
+msgstr "Uygula"
+
+msgid "Play"
+msgstr "Oynat"
+
+msgid "Error: Episode ID/Format not found."
+msgstr "Hata: Bölüm ID'si/Formatı bulunamadı."
+
+msgid "Grid View"
+msgstr "Izgara Görünümü"
+
+msgid "List View"
+msgstr "Liste Görünümü"
+
+msgid "Change View"
+msgstr "Görünümü Değiştir"
+
+msgid "Add to Record List"
+msgstr "Kayıt Listesine Ekle"
+
+msgid "Check the details below and adjust recording offsets if necessary."
+msgstr "Aşağıdaki detayları kontrol edin ve gerekirse kayıt zamanı sapmalarını ayarlayın."
+
+msgid "Channel / Time"
+msgstr "Kanal / Zaman"
+
+msgid "Start Offset"
+msgstr "Başlangıç Sapması"
+
+msgid "Start early if broadcast begins early"
+msgstr "Yayın erken başlarsa kayda erken başla"
+
+msgid "Exact Time"
+msgstr "Tam Zamanında"
+
+msgid "5 Minutes Before"
+msgstr "5 Dakika Önce"
+
+msgid "10 Minutes Before"
+msgstr "10 Dakika Önce"
+
+msgid "15 Minutes Before"
+msgstr "15 Dakika Önce"
+
+msgid "20 Minutes Before"
+msgstr "20 Dakika Önce"
+
+msgid "Custom (Manual)"
+msgstr "Özel (Manuel)"
+
+msgid "End Offset"
+msgstr "Bitiş Sapması"
+
+msgid "Extend if broadcast runs late"
+msgstr "Yayın uzarsa kaydı geç bitir"
+
+msgid "5 Minutes After"
+msgstr "5 Dakika Sonra"
+
+msgid "10 Minutes After"
+msgstr "10 Dakika Sonra"
+
+msgid "15 Minutes After"
+msgstr "15 Dakika Sonra"
+
+msgid "20 Minutes After"
+msgstr "20 Dakika Sonra"
+
+msgid "Known For"
+msgstr "Bilinen Yapımları"
+
+msgid "Loading biography..."
+msgstr "Biyografi yükleniyor..."
+
+msgid "Biography information could not be loaded."
+msgstr "Biyografi bilgileri yüklenemedi."
+
+msgid "No biography found."
+msgstr "Biyografi bulunamadı."
+
+msgid "No biography available for this person."
+msgstr "Bu kişi için biyografi bilgisi mevcut değil."
+
+msgid "Click for biography"
+msgstr "Biyografi için tıkla"
+
+msgid "Translate"
+msgstr "Çevir"
+
+msgid "Translating..."
+msgstr "Çevriliyor..."
+
+msgid "Important Notice"
+msgstr "Önemli Bilgilendirme"
+
+msgid "For the scheduled recording to complete successfully, please ensure your computer does not go to sleep during the recording time and that the sleep mode feature is disabled."
+msgstr "Zamanlanan kaydın başarıyla tamamlanması için, lütfen kayıt süresince bilgisayarınızın uyku moduna geçmediğinden ve uyku modu özelliğinin kapalı olduğundan emin olun."
+
+msgid "Sleep timer cancelled."
+msgstr "Uyku zamanlayıcısı iptal edildi."
+
+msgid "Not enough information to perform a search."
+msgstr "Arama yapmak için yeterli bilgi yok."
+
+msgid "Search timed out."
+msgstr "Arama zaman aşımına uğradı."
+
+msgid "API Key is invalid or authorization failed."
+msgstr "API Anahtarı geçersiz veya yetkilendirme başarısız."
+
+msgid "API usage limit exceeded. Please try again later."
+msgstr "API kullanım sınırı aşıldı. Lütfen daha sonra tekrar deneyin."
+
+msgid "Could not communicate with API (Error: {})."
+msgstr "API ile iletişim kurulamadı (Hata: {})."
+
+msgid "Network error or API unreachable."
+msgstr "Ağ hatası veya API'ye ulaşılamıyor."
+
+msgid "An unknown error occurred."
+msgstr "Bilinmeyen bir hata oluştu."
+
+msgid "Could not retrieve subtitle download link."
+msgstr "Altyazı indirme bağlantısı alınamadı."
+
+msgid "No subtitle file found inside the downloaded ZIP."
+msgstr "İndirilen ZIP dosyasının içinde altyazı dosyası bulunamadı."
+
+msgid "The downloaded ZIP file is corrupt."
+msgstr "İndirilen ZIP dosyası bozuk."
+
+msgid "Could not read subtitle file (encoding error)."
+msgstr "Altyazı dosyası okunamadı (kodlama hatası)."
+
+msgid "Download timed out."
+msgstr "İndirme zaman aşımına uğradı."
+
+msgid "API usage limit exceeded."
+msgstr "API kullanım sınırı aşıldı."
+
+msgid "Subtitle file not found on server."
+msgstr "Altyazı dosyası sunucuda bulunamadı."
+
+msgid "API error during download ({})."
+msgstr "İndirme sırasında API hatası ({})."
+
+msgid "Network error during download."
+msgstr "İndirme sırasında ağ hatası."
+
+msgid "Could not download subtitle (unknown error)."
+msgstr "Altyazı indirilemedi (bilinmeyen hata)."
+
+msgid "Could not retrieve subtitle content."
+msgstr "Altyazı içeriği alınamadı."
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Bu ürün TMDb API'sini kullanır ancak TMDb tarafından onaylanmamış veya sertifikalandırılmamıştır."
 

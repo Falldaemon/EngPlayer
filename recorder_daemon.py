@@ -37,7 +37,6 @@ logging.basicConfig(level=logging.INFO, format=log_format)
 active_recordings = {}
 
 def find_profile_databases():
-    """Finds all profile_*.db files and returns their paths as a list."""
     search_path = os.path.join(APP_CONFIG_DIR, "profile_*.db")
     profile_dbs = glob.glob(search_path)
     if not profile_dbs:
@@ -45,7 +44,6 @@ def find_profile_databases():
     return profile_dbs
 
 def _connect_to_profile_db(db_path):
-    """Connects to a specific profile database file."""
     try:
         conn = sqlite3.connect(db_path, timeout=10)
         conn.row_factory = sqlite3.Row
@@ -56,7 +54,6 @@ def _connect_to_profile_db(db_path):
         return None
 
 def check_for_due_recordings():
-    """Checks ALL profile databases and starts recordings that are due."""
     logging.info("Checking for due recordings across all profiles...")
     profile_dbs = find_profile_databases()
     now = int(time.time())
@@ -93,11 +90,17 @@ def check_for_due_recordings():
                     file_name = f"{safe_channel_name}_{timestamp}.mkv"
                 output_path = os.path.join(recordings_dir, file_name)
                 try:
-                    recorder = Recorder(channel_url, output_path)
-                    recorder.start()
+                    start_ts = job['start_time']
+                    end_ts = job['end_time']
+                    duration_sec = end_ts - start_ts                  
+                    if duration_sec <= 0:
+                        logging.warning(f"Invalid duration calculated ({duration_sec}s). Defaulting to 3600s.")
+                        duration_sec = 3600 
+                    recorder = Recorder(channel_url, output_path, duration_sec=duration_sec)
+                    recorder.start()                   
                     active_recordings[job_id] = recorder
                     cursor.execute("UPDATE scheduled_recordings SET status = ? WHERE id = ?", ('recording', job_id))
-                    logging.info(f"Recording for '{channel_name}' started successfully. File: {file_name}")
+                    logging.info(f"Recording for '{channel_name}' started successfully. Duration: {duration_sec}s. File: {file_name}")
                 except Exception as e:
                     logging.error(f"ERROR starting recording for '{channel_name}': {e}")
                     cursor.execute("UPDATE scheduled_recordings SET status = ? WHERE id = ?", ('failed', job_id))
@@ -108,7 +111,6 @@ def check_for_due_recordings():
             conn.close()
 
 def check_for_finished_recordings():
-    """Checks active recordings in ALL profile databases and stops those whose end time has come."""
     now = int(time.time())
     logging.info("Checking for finished recordings across all profiles...")
     profile_dbs = find_profile_databases()
@@ -151,7 +153,6 @@ def check_for_finished_recordings():
             conn.close()
 
 def main_loop():
-    """The main working loop of the daemon."""
     logging.info("Background Recording Service (Daemon) started.")
     try:
         while True:

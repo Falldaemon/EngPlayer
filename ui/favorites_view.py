@@ -39,6 +39,7 @@ class FavoritesView(Gtk.Box):
         fav_list_scrolled.set_child(self.favorite_lists_listbox)
         self.favorites_stack.add_titled(fav_list_scrolled, "lists", "Favorite Lists")
         self.favorite_channels_list = ChannelList()
+        self.favorite_channels_list.connect("back-clicked", self._on_channels_back_clicked)
         self.favorites_stack.add_titled(self.favorite_channels_list, "channels", "Favorite Channels")
         self.favorites_stack.set_visible_child_name("lists")
 
@@ -46,7 +47,6 @@ class FavoritesView(Gtk.Box):
         return self.favorite_channels_list.channel_listbox
 
     def reset_view(self):
-        """Resets the view to the initial state showing the favorite lists."""
         self.favorites_stack.set_visible_child_name("lists")
         self.fav_list_search_entry.set_visible(True)
         if hasattr(self.favorite_channels_list, 'search_entry'):
@@ -94,20 +94,22 @@ class FavoritesView(Gtk.Box):
         if not row: return
         self.fav_list_search_entry.set_text("")
         list_id = row.list_id
+        list_name = row.list_name 
         password_is_set = database.get_config_value('app_password') is not None
         list_is_locked = database.get_favorite_list_lock_status(list_id)
         if password_is_set and list_is_locked:
             prompt = PasswordPromptDialog(self.get_root())
-            prompt.connect("response", self._on_password_prompt_response_fav_list, list_id)
+            prompt.connect("response", self._on_password_prompt_response_fav_list, list_id, list_name)
             prompt.present()
         else:
-            self._show_channels_for_favorite_list(list_id)
+            self._show_channels_for_favorite_list(list_id, list_name)
 
-    def _show_channels_for_favorite_list(self, list_id):
+    def _show_channels_for_favorite_list(self, list_id, list_name="Favorites"): 
         channel_urls = database.get_channels_in_list(list_id)
         channels_to_display = [self.all_channels_map.get(url) for url in channel_urls if self.all_channels_map.get(url)]
         self.emit("playlist-selected", channels_to_display)
         self.favorite_channels_list.active_list_id = list_id
+        self.favorite_channels_list.set_header(list_name, show_back=True)       
         self.favorite_channels_list.populate_channels_async(channels_to_display)
         self.favorites_stack.set_visible_child_name("channels")
         self.fav_list_search_entry.set_visible(False)
@@ -115,10 +117,10 @@ class FavoritesView(Gtk.Box):
              self.favorite_channels_list.search_entry.set_visible(True)
              self.favorite_channels_list.search_entry.set_text("")
 
-    def _on_password_prompt_response_fav_list(self, dialog, response_id, list_id):
+    def _on_password_prompt_response_fav_list(self, dialog, response_id, list_id, list_name):
         if response_id == "ok":
             if database.check_password(dialog.get_password()):
-                self._show_channels_for_favorite_list(list_id)
+                self._show_channels_for_favorite_list(list_id, list_name)
             else:
                 self.get_root().show_toast(_("Wrong Password!"))
 
@@ -195,7 +197,6 @@ class FavoritesView(Gtk.Box):
             self.emit("favorites-changed")
 
     def show_set_password_dialog(self):
-        """Dialog that shows the 'password not set' warning."""
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(),
             heading=_("Password Not Set"),
@@ -210,13 +211,11 @@ class FavoritesView(Gtk.Box):
         dialog.present()
 
     def _on_set_password_dialog_response(self, dialog, response_id):
-        """Runs when the 'Set Password' button in the warning dialog is pressed."""
         if response_id == "set-password":
             password_dialog = PasswordDialog(self.get_root(), self.get_root().toast_overlay)
             password_dialog.present()
 
     def _on_fav_list_search_changed(self, entry):
-        """Filters the favorite list as the search bar changes."""
         search_text = entry.get_text().lower().strip()
         current_row = self.favorite_lists_listbox.get_first_child()
         while current_row:
@@ -230,14 +229,12 @@ class FavoritesView(Gtk.Box):
             current_row = current_row.get_next_sibling()
 
     def _on_move_list_activated(self, action, value):
-        """Opens the MoveListDialog when the menu item is clicked."""
         if not self.active_fav_list_row:
             return
         dialog = MoveListDialog(self.get_root(), self.active_fav_list_row, self)
         dialog.present()
 
     def move_list_up(self, row_to_move):
-        """Moves the favorite list row UP."""
         if not row_to_move:
             return False
         current_index = row_to_move.get_index()
@@ -259,7 +256,6 @@ class FavoritesView(Gtk.Box):
         return False
 
     def move_list_down(self, row_to_move):
-        """Moves the favorite list row DOWN."""
         if not row_to_move:
             return False
         current_index = row_to_move.get_index()
@@ -277,3 +273,6 @@ class FavoritesView(Gtk.Box):
             self.favorite_lists_listbox.select_row(row_to_move)
             return True
         return False
+        
+    def _on_channels_back_clicked(self, widget):
+        self.reset_view()        

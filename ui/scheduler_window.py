@@ -103,7 +103,6 @@ class SchedulerWindow(Adw.PreferencesWindow):
             self.tasks_listbox.append(row)
 
     def on_delete_clicked(self, button, task_id):
-        """Emits a signal to delete the corresponding task when the delete button is pressed."""
         self.emit("schedule-deleted", task_id)
 
     def on_save_clicked(self, button):
@@ -124,10 +123,11 @@ class SchedulerWindow(Adw.PreferencesWindow):
         start_timestamp = int(start_datetime.timestamp())
         end_timestamp = int(end_datetime.timestamp())
         self.emit("schedule-saved", self.get_transient_for().profile_data['id'], channel_name, channel_url, start_timestamp, end_timestamp, program_name)
+        self._show_sleep_warning()
 
     def _create_selection_dialog(self, title, placeholder_text):
-        """Creates a basic selection dialog with a search bar and a list."""
         dialog = Adw.MessageDialog(transient_for=self, heading=title)
+        dialog.add_css_class("scheduler-selection-dialog")
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, margin_top=12)
         search_entry = Gtk.SearchEntry(placeholder_text=placeholder_text)
         list_box = Gtk.ListBox()
@@ -142,7 +142,6 @@ class SchedulerWindow(Adw.PreferencesWindow):
         return dialog, search_entry, list_box
 
     def _on_generic_search_changed(self, entry, list_box):
-        """Common search filter function for Bouquet and Channel lists."""
         search_text = entry.get_text().lower().strip()
         current_row = list_box.get_first_child()
         while current_row:
@@ -151,7 +150,6 @@ class SchedulerWindow(Adw.PreferencesWindow):
             current_row = current_row.get_next_sibling()
 
     def on_select_bouquet_clicked(self, row):
-        """Opens the bouquet selection window when the 'Bouquet' row is clicked."""
         dialog, search_entry, list_box = self._create_selection_dialog(
             title=_("Select Bouquet"),
             placeholder_text=_("Search bouquet...")
@@ -167,7 +165,6 @@ class SchedulerWindow(Adw.PreferencesWindow):
         dialog.present()
 
     def on_bouquet_selected_from_dialog(self, list_box, row, dialog):
-        """Runs when a bouquet is selected from the bouquet selection window."""
         selected_name = row.item_name
         if self.selected_bouquet_name != selected_name:
             self.selected_bouquet_name = selected_name
@@ -178,7 +175,6 @@ class SchedulerWindow(Adw.PreferencesWindow):
         dialog.close()
 
     def on_select_channel_clicked(self, row):
-        """Opens the channel selection window when the 'Channel' row is clicked."""
         if not self.selected_bouquet_name:
             return
         channels_in_bouquet = self.bouquets_data.get(self.selected_bouquet_name, [])
@@ -197,7 +193,19 @@ class SchedulerWindow(Adw.PreferencesWindow):
         dialog.present()
 
     def on_channel_selected_from_dialog(self, list_box, row, dialog):
-        """Runs when a channel is selected from the channel selection window."""
         self.selected_channel_data = row.item_data
         self.channel_label.set_text(self.selected_channel_data['name'])
         dialog.close()
+        
+    def _show_sleep_warning(self):
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Important Notice"),
+            body=_("For the scheduled recording to complete successfully, please ensure your computer does not go to sleep during the recording time and that the sleep mode feature is disabled.")
+        )
+        dialog.add_css_class("sleep-warning-dialog")
+        dialog.add_response("close", _("Close"))
+        dialog.set_default_response("close")
+        dialog.set_close_response("close")
+        dialog.connect("response", lambda dlg, resp: dlg.close())
+        dialog.present()        

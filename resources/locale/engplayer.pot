@@ -1378,7 +1378,7 @@ msgstr ""
 msgid "Stream Buffer"
 msgstr ""
 
-msgstr "Playback stability"
+msgid "Playback stability"
 msgstr ""
 
 msgid "2s (Low)"
@@ -1400,6 +1400,569 @@ msgid "Connection lost. Reconnecting..."
 msgstr ""
 
 msgid "Connection failed. Stream cancelled."
+msgstr ""
+
+# --- Font Settings ---
+msgid "Change font family and size"
+msgstr ""
+
+msgid "Adjust text style, weight and size."
+msgstr ""
+
+msgid "Select Font Style:"
+msgstr ""
+
+msgid "Choose Font"
+msgstr ""
+
+msgid "Reset to Default"
+msgstr ""
+
+msgid "System Default"
+msgstr ""
+
+msgid "Font settings restored to system default."
+msgstr ""
+
+msgid "Font settings applied successfully!"
+msgstr ""
+
+msgid "No program information found for this channel."
+msgstr ""
+
+msgid "Password"
+msgstr ""
+
+msgid "Switch"
+msgstr ""
+
+msgid "Podcast Library"
+msgstr ""
+
+msgid "History"
+msgstr ""
+
+msgid "Search History..."
+msgstr ""
+
+msgid "Clear History"
+msgstr ""
+
+msgid "No history found."
+msgstr ""
+
+msgid "Are you sure you want to clear your watched channel history?"
+msgstr ""
+
+msgid "Clear"
+msgstr ""
+
+msgid "History cleared."
+msgstr ""
+
+msgid "Error clearing history."
+msgstr ""
+
+msgid "Unknown Channel"
+msgstr ""
+
+msgid "Channel List"
+msgstr ""
+
+msgid "Global Search"
+msgstr ""
+
+msgid "Search in movies, series, and channels..."
+msgstr ""
+
+msgid "No results found..."
+msgstr ""
+
+msgid "Show All"
+msgstr ""
+
+msgid "Hide All"
+msgstr ""
+
+msgid "Default Order"
+msgstr ""
+
+msgid "A-Z (Ascending)"
+msgstr ""
+
+msgid "Z-A (Descending)"
+msgstr ""
+
+msgid "Sort Items"
+msgstr ""
+
+msgid "More Options"
+msgstr ""
+
+msgid "Sleep Timer"
+msgstr ""
+
+msgid "Off"
+msgstr ""
+
+msgid "15 Minutes"
+msgstr ""
+
+msgid "30 Minutes"
+msgstr ""
+
+msgid "60 Minutes"
+msgstr ""
+
+msgid "90 Minutes"
+msgstr ""
+
+msgid "120 Minutes"
+msgstr ""
+
+msgid "Custom Time..."
+msgstr ""
+
+msgid "End of Media"
+msgstr ""
+
+msgid "Timer set to close at the End of Media."
+msgstr ""
+
+msgid "Custom Sleep Timer"
+msgstr ""
+
+msgid "Please select the sleep timer duration:"
+msgstr ""
+
+msgid "Minutes"
+msgstr ""
+
+msgid "Start Timer"
+msgstr ""
+
+msgid "Sleep timer set for {} minutes."
+msgstr ""
+
+msgid "Sleep Timer Finishing"
+msgstr ""
+
+msgid "seconds before playback stops."
+msgstr ""
+
+msgid "Cancel Timer"
+msgstr ""
+
+msgid "Min"
+msgstr ""
+
+msgid "Added {} minutes to sleep timer."
+msgstr ""
+
+msgid "Playback stopped by Sleep Timer."
+msgstr ""
+
+msgid "Media Info"
+msgstr ""
+
+# --- Playback Speed ---
+msgid "Playback Speed"
+msgstr ""
+
+msgid "Normal (1.0x)"
+msgstr ""
+
+msgid "Playback speed restored to Normal"
+msgstr ""
+
+msgid "Playback speed set to {}x"
+msgstr ""
+
+# --- Aspect Ratio ---
+msgid "Aspect Ratio"
+msgstr ""
+
+msgid "Original (Fit)"
+msgstr ""
+
+msgid "Stretch (Fill Screen)"
+msgstr ""
+
+msgid "Zoom (Crop Edges)"
+msgstr ""
+
+msgid "Aspect Ratio: Original (Fit)"
+msgstr ""
+
+msgid "Aspect Ratio: Stretch to Fill"
+msgstr ""
+
+msgid "Aspect Ratio: Zoom to Fit"
+msgstr ""
+
+msgid "Seconds"
+msgstr ""
+
+# --- Timeshift Settings ---
+msgid "Timeshift Settings (BETA)"
+msgstr ""
+
+msgid "Pause Live TV"
+msgstr ""
+
+msgid ""
+"Timeshift allows you to pause live TV and resume from where you left off. "
+"The broadcast is temporarily recorded to your selected folder.\n\n"
+"<b>📊 Estimated Storage Usage (Per Hour):</b>\n"
+"  • <b>HD (720p):</b> ~1.2 GB\n"
+"  • <b>Full HD (1080p):</b> ~2.5 GB\n"
+"  • <b>4K (UHD):</b> ~6.0 GB+\n\n"
+"💡 <b>Tip:</b> To save internal disk space and prevent wear on your system's SSD, "
+"it is highly recommended to select an external USB drive or HDD as your Timeshift folder.\n\n"
+"⚠️ <b>Note:</b> Recording stops automatically if the quota is reached. "
+"The temporary buffer is safely cleared when you change channels or return to live TV."
+msgstr ""
+
+msgid "Enable Timeshift"
+msgstr ""
+
+msgid "Timeshift Folder"
+msgstr ""
+
+msgid "Default (Cache Folder)"
+msgstr ""
+
+msgid "Storage Quota"
+msgstr ""
+
+msgid "Custom..."
+msgstr ""
+
+msgid "Custom Quota (MB)"
+msgstr ""
+
+msgid "Enter value in Megabytes (e.g. 1500)"
+msgstr ""
+
+msgid "Select Timeshift Folder"
+msgstr ""
+
+msgid "Timeshift settings saved!"
+msgstr ""
+
+msgid "Timeshift storage limit reached."
+msgstr ""
+
+msgid "Back to Live Stream"
+msgstr ""
+
+msgid "Audio Visualizer"
+msgstr ""
+
+msgid "Select animation for music playback"
+msgstr ""
+
+msgid "Premium"
+msgstr ""
+
+msgid "Visualizer applied!"
+msgstr ""
+
+# --- Advanced EPG (New Strings) ---
+msgid "Advanced EPG"
+msgstr ""
+
+msgid "Close and Return"
+msgstr ""
+
+msgid "Channel Name"
+msgstr ""
+
+msgid "Select a Program"
+msgstr ""
+
+msgid "Program details will appear here."
+msgstr ""
+
+msgid "Watch Now"
+msgstr ""
+
+msgid "Timeline"
+msgstr ""
+
+msgid "No details available for this program."
+msgstr ""
+
+msgid "Switching to: "
+msgstr ""
+
+msgid "Previewing: "
+msgstr ""
+
+msgid "Font Settings"
+msgstr ""
+
+msgid "Select Recordings Folder"
+msgstr ""
+
+msgid "Select"
+msgstr ""
+
+msgid "API Key (v3 Auth)"
+msgstr ""
+
+msgid "Subtitles"
+msgstr ""
+
+msgid "Error: Channel URL is missing."
+msgstr ""
+
+msgid "Error: Could not schedule recording."
+msgstr ""
+
+msgid "Unknown Program"
+msgstr ""
+
+msgid "Error: Channel ID could not be retrieved."
+msgstr ""
+
+msgid "Error: Profile information missing."
+msgstr ""
+
+msgid "Error: Video file could not be deleted!"
+msgstr ""
+
+msgid "Error: Could not display results."
+msgstr ""
+
+msgid "Error: Could not retrieve file ID for selected subtitle."
+msgstr ""
+
+msgid "Error: API key not found for download."
+msgstr ""
+
+msgid "Error: Downloaded subtitle file could not be loaded."
+msgstr ""
+
+msgid "Error: Downloaded subtitle file not found."
+msgstr ""
+
+msgid "Select External Subtitle File"
+msgstr ""
+
+msgid "Subtitle Files"
+msgstr ""
+
+msgid "All Files"
+msgstr ""
+
+msgid "External subtitle loaded."
+msgstr ""
+
+msgid "Could not load subtitle file."
+msgstr ""
+
+msgid "Add"
+msgstr ""
+
+msgid "Picture"
+msgstr ""
+
+msgid "Music"
+msgstr ""
+
+msgid "Error: Could not retrieve movie info."
+msgstr ""
+
+msgid "Next Episode"
+msgstr ""
+
+msgid "Error: Could not create PiP window."
+msgstr ""
+
+msgid "Error: An issue occurred while removing the library."
+msgstr ""
+
+msgid "Media record removed."
+msgstr ""
+
+msgid "Error: An issue occurred while removing the media record."
+msgstr ""
+
+msgid "Track record removed."
+msgstr ""
+
+msgid "Error: An issue occurred while removing the track record."
+msgstr ""
+
+msgid "Error: Recording not found in list."
+msgstr ""
+
+msgid "Error: Recording was not removed from list."
+msgstr ""
+
+msgid "Select Accent Color"
+msgstr ""
+
+msgid "Accent color updated!"
+msgstr ""
+
+msgid "Apply"
+msgstr ""
+
+msgid "Play"
+msgstr ""
+
+msgid "Error: Episode ID/Format not found."
+msgstr ""
+
+
+# --- Missing Translations from epg_grid_view.py ---
+msgid "Grid View"
+msgstr ""
+
+msgid "List View"
+msgstr ""
+
+msgid "Change View"
+msgstr ""
+
+msgid "Add to Record List"
+msgstr ""
+
+msgid "Check the details below and adjust recording offsets if necessary."
+msgstr ""
+
+msgid "Channel / Time"
+msgstr ""
+
+msgid "Start Offset"
+msgstr ""
+
+msgid "Start early if broadcast begins early"
+msgstr ""
+
+msgid "Exact Time"
+msgstr ""
+
+msgid "5 Minutes Before"
+msgstr ""
+
+msgid "10 Minutes Before"
+msgstr ""
+
+msgid "15 Minutes Before"
+msgstr ""
+
+msgid "20 Minutes Before"
+msgstr ""
+
+msgid "Custom (Manual)"
+msgstr ""
+
+msgid "End Offset"
+msgstr ""
+
+msgid "Extend if broadcast runs late"
+msgstr ""
+
+msgid "5 Minutes After"
+msgstr ""
+
+msgid "10 Minutes After"
+msgstr ""
+
+msgid "15 Minutes After"
+msgstr ""
+
+msgid "20 Minutes After"
+msgstr ""
+
+msgid "Known For"
+msgstr ""
+
+msgid "Loading biography..."
+msgstr ""
+
+msgid "Biography information could not be loaded."
+msgstr ""
+
+msgid "No biography found."
+msgstr ""
+
+msgid "No biography available for this person."
+msgstr ""
+
+msgid "Click for biography"
+msgstr ""
+
+msgid "Translate"
+msgstr ""
+
+msgid "Translating..."
+msgstr ""
+
+msgid "Important Notice"
+msgstr ""
+
+msgid "For the scheduled recording to complete successfully, please ensure your computer does not go to sleep during the recording time and that the sleep mode feature is disabled."
+msgstr ""
+
+msgid "Sleep timer cancelled."
+msgstr ""
+
+msgid "Not enough information to perform a search."
+msgstr ""
+
+msgid "Search timed out."
+msgstr ""
+
+msgid "API Key is invalid or authorization failed."
+msgstr ""
+
+msgid "API usage limit exceeded. Please try again later."
+msgstr ""
+
+msgid "Could not communicate with API (Error: {})."
+msgstr ""
+
+msgid "Network error or API unreachable."
+msgstr ""
+
+msgid "An unknown error occurred."
+msgstr ""
+
+msgid "Could not retrieve subtitle download link."
+msgstr ""
+
+msgid "No subtitle file found inside the downloaded ZIP."
+msgstr ""
+
+msgid "The downloaded ZIP file is corrupt."
+msgstr ""
+
+msgid "Could not read subtitle file (encoding error)."
+msgstr ""
+
+msgid "Download timed out."
+msgstr ""
+
+msgid "API usage limit exceeded."
+msgstr ""
+
+msgid "Subtitle file not found on server."
+msgstr ""
+
+msgid "API error during download ({})."
+msgstr ""
+
+msgid "Network error during download."
+msgstr ""
+
+msgid "Could not download subtitle (unknown error)."
+msgstr ""
+
+msgid "Could not retrieve subtitle content."
 msgstr ""
 
 # --- License / Legal ---

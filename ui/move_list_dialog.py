@@ -8,11 +8,6 @@ import gettext
 _ = gettext.gettext
 
 class MoveListDialog(Adw.MessageDialog):
-    """
-    A small, modal window that allows the user to
-    move a selected favorite list up/down.
-    """
-
     def __init__(self, parent, row_to_move, favorites_view_widget):
         super().__init__(transient_for=parent)
         self.row_to_move = row_to_move
@@ -39,19 +34,16 @@ class MoveListDialog(Adw.MessageDialog):
         self.update_button_sensitivity()
 
     def on_move_up_clicked(self, button):
-        """Calls the method in FavoritesView when the 'Up' button is clicked."""
         success = self.favorites_view_widget.move_list_up(self.row_to_move)
         if success:
             self.update_button_sensitivity()
 
     def on_move_down_clicked(self, button):
-        """Calls the method in FavoritesView when the 'Down' button is clicked."""
         success = self.favorites_view_widget.move_list_down(self.row_to_move)
         if success:
             self.update_button_sensitivity()
 
     def update_button_sensitivity(self):
-        """Enables/disables buttons based on the row's current position."""
         current_index = self.row_to_move.get_index()
         is_last_row = self.row_to_move.get_next_sibling() is None
         self.up_button.set_sensitive(current_index > 0)

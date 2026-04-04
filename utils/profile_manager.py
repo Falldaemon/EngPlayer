@@ -6,7 +6,6 @@ import logging
 from core.config import PROFILES_PATH
 
 def load_profiles():
-    """Loads the profile list from the JSON file."""
     if os.path.exists(PROFILES_PATH):
         try:
             with open(PROFILES_PATH, 'r', encoding='utf-8') as f:
@@ -16,17 +15,11 @@ def load_profiles():
     return []
 
 def save_profiles(profiles):
-    """Saves the profile list to the JSON file."""
     os.makedirs(os.path.dirname(PROFILES_PATH), exist_ok=True)
     with open(PROFILES_PATH, 'w', encoding='utf-8') as f:
         json.dump(profiles, f, indent=4, ensure_ascii=False)
 
 def update_profile_dates(profile_id, start_date_ts, exp_date_ts):
-    """
-    Reads and writes profiles.json just to update the date fields
-    (created and expiration).
-    Does not touch other cache timestamps.
-    """
     if not start_date_ts and not exp_date_ts:
         return
     profiles = load_profiles()

@@ -7,4 +7,5 @@ thefuzz
 fuzzywuzzy
 python-Levenshtein
 wheel
+deep-translator
 

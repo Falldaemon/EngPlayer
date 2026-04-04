@@ -6,7 +6,7 @@ import logging
 import database
 import gettext
 gi.require_version("Gst", "1.0")
-from gi.repository import Gst, GObject
+from gi.repository import Gst, GObject, GLib
 Gst.init(None)
 _ = gettext.gettext
 class Player(GObject.Object):
@@ -16,7 +16,9 @@ class Player(GObject.Object):
         "about-to-finish": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "playback-error": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         "paintable-changed": (GObject.SignalFlags.RUN_FIRST, None, (GObject.Object,)),
-        "playback-finished": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "playback-finished": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "seek-accumulated": (GObject.SignalFlags.RUN_FIRST, None, (int,)),
+        "spectrum-update": (GObject.SignalFlags.RUN_FIRST, None, (object,))
     }
 
     def __init__(self):
@@ -31,9 +33,12 @@ class Player(GObject.Object):
         self.total_bytes = 0
         self.last_bitrate = 0
         self.last_time = time.time()
+        self.current_rate = 1.0
+        self.seek_accumulator_ns = 0
+        self.seek_timer_id = None
+        self.base_seek_pos_ns = None
 
     def _setup_player(self):
-        """Creates a clean player and linked elements each time."""
         if self.player:
             self.player.set_state(Gst.State.NULL)
             self.player = None
@@ -48,25 +53,48 @@ class Player(GObject.Object):
         flags &= ~TEXT_FLAG
         self.player.set_property("flags", flags)
         self.player.set_property("current-text", -1)
-        try:
-            self.equalizer = Gst.ElementFactory.make("equalizer-10bands", "equalizer")
-            if self.equalizer:
-                logging.info("10-band equalizer successfully linked to player.")
-                for i in range(10):
-                    band_value = database.get_config_value(f"eq_band_{i}")
-                    if band_value is not None:
-                        self.set_equalizer_band(i, float(band_value))
-            else:
-                logging.warning("GStreamer 'equalizer-10band' plugin not found. Equalizer disabled.")
+        self.audio_filter_bin = None
+        saved_vis = database.get_config_value('visualizer_type') or "custom"
+        if saved_vis == "custom":
+            try:
+                bin_desc = "equalizer-10bands name=eq ! spectrum bands=64 threshold=-60 post-messages=true interval=30000000 name=spec"
+                self.audio_filter_bin = Gst.parse_bin_from_description(bin_desc, True)
+                self.equalizer = self.audio_filter_bin.get_by_name("eq")
+                logging.info("Custom Visualizer (Spectrum + Equalizer) loaded.")
+            except Exception as e:
+                logging.error(f"Error creating custom visualizer bin: {e}")
                 self.equalizer = None
-        except Exception as e:
-            logging.error(f"Error creating equalizer: {e}")
-            self.equalizer = None
-        visualizer = Gst.ElementFactory.make("goom", "visualizer")
-        if visualizer:
-            self.player.set_property("vis-plugin", visualizer)
+                self.audio_filter_bin = None
         else:
-            logging.warning("GStreamer 'goom' plugin not found. Visualizer disabled.")
+            try:
+                self.audio_filter_bin = Gst.ElementFactory.make("equalizer-10bands", "equalizer")
+                self.equalizer = self.audio_filter_bin
+            except Exception as e:
+                logging.error(f"Error creating equalizer: {e}")
+                self.equalizer = None
+                self.audio_filter_bin = None
+            if saved_vis != "none":
+                visualizer = Gst.ElementFactory.make(saved_vis, "visualizer")
+                if visualizer:
+                    self.player.set_property("vis-plugin", visualizer)
+                    logging.info(f"Built-in Visualizer '{saved_vis}' loaded.")
+                else:
+                    logging.warning(f"GStreamer '{saved_vis}' plugin not found.")
+        if self.equalizer:
+            for i in range(10):
+                band_value = database.get_config_value(f"eq_band_{i}")
+                if band_value is not None:
+                    self.set_equalizer_band(i, float(band_value))
+        scaletempo = Gst.ElementFactory.make("scaletempo", None)
+        if scaletempo:
+            try:
+                audio_sink_bin = Gst.parse_bin_from_description("scaletempo ! autoaudiosink", True)
+                self.player.set_property("audio-sink", audio_sink_bin)
+                logging.info("Scaletempo enabled for pitch correction during speed changes.")
+            except Exception as e:
+                logging.error(f"Error setting up scaletempo audio sink: {e}")
+        else:
+            logging.warning("GStreamer 'scaletempo' plugin not found. Pitch correction disabled.")    
         c = float(database.get_config_value("video_contrast") or 1.0)
         b = float(database.get_config_value("video_brightness") or 0.0)
         s = float(database.get_config_value("video_saturation") or 1.0)
@@ -98,8 +126,7 @@ class Player(GObject.Object):
                 filter_bin = Gst.parse_bin_from_description(
                     "videoconvert ! videobalance name=video_correction ! videoconvert", True
                 )
-                self.video_balance = filter_bin.get_by_name("video_correction")
-                
+                self.video_balance = filter_bin.get_by_name("video_correction")               
                 if self.video_balance:
                     self.video_balance.set_property("contrast", c)
                     self.video_balance.set_property("brightness", b)
@@ -116,6 +143,7 @@ class Player(GObject.Object):
         bus.connect("message::eos", self.on_eos)
         bus.connect("message::state-changed", self.on_bus_state_changed)
         bus.connect("message::application", self.on_application_message)
+        bus.connect("message::element", self.on_element_message)
         
     def set_video_correction(self, setting_type, value):
         if self.video_balance:
@@ -145,7 +173,6 @@ class Player(GObject.Object):
         return Gst.PadProbeReturn.OK        
 
     def play_url(self, url, media_type="video"):
-        """Destroys the old player, sets up a new one, and puts playback in the PAUSED state."""
         self._setup_player()
         is_remote = url.startswith("http") or url.startswith("https")
         if media_type == "music" and not is_remote:
@@ -275,10 +302,38 @@ class Player(GObject.Object):
 
     def _seek_relative(self, amount_ns):
         if not self.player: return
-        ok, pos_ns = self.player.query_position(Gst.Format.TIME)
-        if ok:
-            new_pos = pos_ns + amount_ns
-            self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, new_pos if new_pos > 0 else 0)
+        if self.base_seek_pos_ns is None:
+            ok, pos_ns = self.player.query_position(Gst.Format.TIME)
+            if ok:
+                self.base_seek_pos_ns = pos_ns
+            else:
+                return 
+        self.seek_accumulator_ns += amount_ns
+        seconds = int(self.seek_accumulator_ns / Gst.SECOND)
+        self.emit("seek-accumulated", seconds)
+        if self.seek_timer_id:
+            GLib.source_remove(self.seek_timer_id)
+        self.seek_timer_id = GLib.timeout_add(400, self._execute_accumulated_seek)
+                
+    def _execute_accumulated_seek(self):
+        if not self.player or self.base_seek_pos_ns is None:
+            self.seek_timer_id = None
+            return GLib.SOURCE_REMOVE
+        target_ns = self.base_seek_pos_ns + self.seek_accumulator_ns
+        target_ns = max(0, target_ns) 
+        rate = getattr(self, 'current_rate', 1.0)
+        if rate == 1.0:
+            self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, target_ns)
+        else:
+            self.player.seek(
+                rate, Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
+                Gst.SeekType.SET, target_ns, Gst.SeekType.SET, -1
+            )
+        self.seek_accumulator_ns = 0
+        self.seek_timer_id = None
+        self.base_seek_pos_ns = None
+        self.emit("seek-accumulated", 0)
+        return GLib.SOURCE_REMOVE                
 
     def shutdown(self):
         if self.player:
@@ -306,7 +361,40 @@ class Player(GObject.Object):
     def seek_to_seconds(self, seconds):
         if not self.player or seconds is None: return
         target_ns = int(seconds * Gst.SECOND)
-        self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, target_ns)
+        rate = getattr(self, 'current_rate', 1.0)
+        if rate == 1.0:
+            self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, target_ns)
+        else:
+            self.player.seek(
+                rate,
+                Gst.Format.TIME,
+                Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
+                Gst.SeekType.SET,
+                target_ns,
+                Gst.SeekType.SET,
+                -1
+            )
+        
+    def set_playback_rate(self, rate=1.0):
+        if not self.player:
+            return
+        self.current_rate = rate    
+        ok, position_ns = self.player.query_position(Gst.Format.TIME)
+        if not ok:
+            position_ns = 0
+        try:
+            self.player.seek(
+                rate,                      
+                Gst.Format.TIME,           
+                Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
+                Gst.SeekType.SET,          
+                position_ns,               
+                Gst.SeekType.SET,          
+                -1                         
+            )
+            logging.info(f"Playback rate changed to: {rate}x")
+        except Exception as e:
+            logging.error(f"Error changing playback rate: {e}")      
 
     def get_stream_info(self):
         if not self.player: return "-", "-"
@@ -386,20 +474,17 @@ class Player(GObject.Object):
         return stats
 
     def on_eos(self, bus, message):
-        """Runs when the end of the video is reached and emits a signal."""
         logging.info("Playback finished (EOS).")
         self.player.set_state(Gst.State.PAUSED)
         self.emit("playback-finished")
 
     def set_equalizer_band(self, band_index, value):
-        """Sets the value of a specific equalizer band."""
         if self.equalizer:
             prop_name = f"band{band_index}"
             clamped_value = max(-24.0, min(value, 12.0))
             self.equalizer.set_property(prop_name, clamped_value)
 
     def get_equalizer_band_labels(self):
-        """Returns the standard frequency labels for the equalizer bands."""
         labels = [
             "31\nHz",
             "62\nHz",
@@ -415,19 +500,29 @@ class Player(GObject.Object):
         return labels
 
     def enable_equalizer(self):
-        """Sets the equalizer as the audio filter."""
-        if self.player and self.equalizer:
-            logging.info("Equalizer ENABLED.")
-            self.player.set_property("audio-filter", self.equalizer)
+        if self.player and self.audio_filter_bin:
+            logging.info("Audio Filter (EQ/Spectrum) ENABLED.")
+            self.player.set_property("audio-filter", self.audio_filter_bin)
 
     def disable_equalizer(self):
-        """Disables the equalizer by removing the audio filter."""
         if self.player:
-            logging.info("Equalizer DISABLED.")
+            logging.info("Audio Filter DISABLED.")
             self.player.set_property("audio-filter", None)
 
     def on_player_about_to_finish(self, playbin):
-        """Emits our own signal when the 'about-to-finish' signal is received from GStreamer."""
         logging.debug("Player: 'about-to-finish' signal received from GStreamer.")
         self.emit("about-to-finish")
       
+    def on_element_message(self, bus, message):
+        if message.get_structure() and message.get_structure().get_name() == "spectrum":
+            struct_str = message.get_structure().to_string()
+            start_marker = "magnitude=(float){"
+            start_idx = struct_str.find(start_marker)
+            if start_idx != -1:
+                start_idx += len(start_marker)
+                end_idx = struct_str.find("}", start_idx)
+                if end_idx != -1:
+                    mags_raw = struct_str[start_idx:end_idx]
+                    mags = [float(x.strip()) for x in mags_raw.split(',') if x.strip()]
+                    if mags:
+                        self.emit("spectrum-update", mags)

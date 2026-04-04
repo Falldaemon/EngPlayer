@@ -24,9 +24,6 @@ from database import initialize_database
 from utils.cache_cleaner import clean_all_caches
 
 def ensure_daemon_started():
-    """
-    Manually starts the daemon service for the current session.
-    """
     try:
         subprocess.Popen(['/app/bin/engplayer-daemon'],
                          start_new_session=True,
@@ -36,9 +33,6 @@ def ensure_daemon_started():
         logging.warning(f"Failed to start daemon: {e}")
 
 def request_background_permission_via_shell():
-    """
-    Requests permission using the 'gdbus' command, including the 'commandline' parameter.
-    """
     try:
         logging.info("Setting up portal permission and command line...")
         cmd = [
@@ -78,7 +72,6 @@ def main():
         threading.Thread(target=request_background_permission_via_shell, daemon=True).start()
     else:
         threading.Thread(target=install_host_service_if_needed, daemon=True).start()
-
     threading.Thread(target=clean_all_caches, args=(30,), daemon=True).start()
     try:
         display = Gdk.Display.get_default()
@@ -90,7 +83,6 @@ def main():
                 icon_theme.add_search_path(icons_dir)
     except Exception as e:
         logging.error(f"Icon path error: {e}")
-
     from core.app import MediaCenterApplication
     arguments = [arg for arg in sys.argv if arg != '--debug']
     app = MediaCenterApplication(application_id=APP_ID)

@@ -8,12 +8,14 @@ import threading
 from gi.repository import GLib
 
 class Recorder:
-    def __init__(self, stream_url, output_filepath):
+    def __init__(self, stream_url, output_filepath, duration_sec=None):
         self.stream_url = stream_url
         self.output_filepath = output_filepath
+        self.duration_sec = duration_sec
         self.process = None
         self.log_thread = None
-        logging.info(f"Recorder (FFmpeg Mode) initialized. URL: {self.stream_url}")
+        self.watchdog_timer = None
+        logging.info(f"Recorder (FFmpeg Mode) initialized. URL: {self.stream_url}, Duration: {self.duration_sec}s")
 
     def _log_reader_thread(self):
         try:
@@ -28,19 +30,24 @@ class Recorder:
     def start(self):
         if self.process:
             logging.warning("Attempted to start recording, but a process is already running.")
-            return
+            return           
         command = [
             'ffmpeg', '-y',
             '-user_agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+            '-rw_timeout', '15000000',
             '-reconnect_on_network_error', '1',
             '-reconnect_on_http_error', '4xx,5xx',
             '-reconnect', '1',
             '-reconnect_streamed', '1',
             '-reconnect_delay_max', '5',
-            '-i', self.stream_url,
-            '-c', 'copy',
-            self.output_filepath
-        ]
+            '-fflags', '+genpts+discardcorrupt', 
+            '-ignore_unknown', 
+            '-i', self.stream_url
+        ]       
+        if self.duration_sec:
+            safe_duration = int(self.duration_sec) + 60
+            command.extend(['-t', str(safe_duration)])
+        command.extend(['-c', 'copy', self.output_filepath])             
         try:
             logging.info(f"(FFmpeg) Starting recording. Command: {' '.join(command)}")
             self.process = subprocess.Popen(
@@ -53,7 +60,13 @@ class Recorder:
             self.log_thread = threading.Thread(target=self._log_reader_thread)
             self.log_thread.daemon = True
             self.log_thread.start()
-            logging.info(f"FFmpeg process started. PID: {self.process.pid}")
+            logging.info(f"FFmpeg process started. PID: {self.process.pid}")          
+            if self.duration_sec:
+                watchdog_timeout = int(self.duration_sec) + 120
+                self.watchdog_timer = threading.Timer(watchdog_timeout, self._watchdog_trigger)
+                self.watchdog_timer.daemon = True
+                self.watchdog_timer.start()
+                logging.info(f"Watchdog timer set for {watchdog_timeout} seconds.")
         except FileNotFoundError:
             logging.error("CRITICAL ERROR: 'ffmpeg' command not found. Please install FFmpeg on your system.")
             raise
@@ -61,10 +74,14 @@ class Recorder:
             logging.error(f"An error occurred while starting the FFmpeg process: {e}")
             raise
 
+    def _watchdog_trigger(self):
+        logging.error(f"WATCHDOG TRIGGERED! Recording exceeded max safe duration: {self.output_filepath}. Force stopping.")
+        self.stop()
+
     def stop(self, on_finished_callback=None):
-        """
-        Stops the FFmpeg process, checks the file, and returns the result.
-        """
+        if self.watchdog_timer:
+            self.watchdog_timer.cancel()
+            self.watchdog_timer = None
         was_successful = False
         final_return_code = None
         def _notify_main_thread():

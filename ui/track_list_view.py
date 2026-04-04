@@ -4,16 +4,30 @@ import gi
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GObject, Pango, GLib
 import logging
+import gettext
+_ = gettext.gettext
 
 class TrackListView(Gtk.Box):
     __gsignals__ = {
         'track-activated': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         'track-right-clicked': (GObject.SignalFlags.RUN_FIRST, None, (object, Gtk.Widget,)),
+        'back-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
         self.current_tracks = []
+        self.back_button = Gtk.Button()
+        self.back_button.set_halign(Gtk.Align.START) 
+        self.back_button.set_margin_top(12)  
+        self.back_button.set_margin_start(12) 
+        self.back_button.set_has_frame(False) 
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        btn_box.append(Gtk.Image.new_from_icon_name("go-previous-symbolic"))
+        btn_box.append(Gtk.Label(label=_("Back")))
+        self.back_button.set_child(btn_box)
+        self.back_button.connect("clicked", self._on_back_clicked)
+        self.append(self.back_button)         
         self.album_art_image = Gtk.Image(icon_name="audio-x-generic-symbolic", pixel_size=256, margin_bottom=12)
         self.album_title_label = Gtk.Label(wrap=True, justify=Gtk.Justification.CENTER)
         header_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6, margin_top=12, margin_bottom=12)
@@ -28,7 +42,6 @@ class TrackListView(Gtk.Box):
         self.append(scrolled_window)
 
     def populate_tracks(self, album_data, tracks):
-        """Displays the track list and album info in the UI."""
         self.current_tracks = tracks
         self.album_title_label.set_markup(f"<big><b>{GLib.markup_escape_text(album_data['album_name'])}</b></big>\n{GLib.markup_escape_text(album_data['artist_name'])}")
         if album_data['album_art_path']:
@@ -53,8 +66,10 @@ class TrackListView(Gtk.Box):
             self.emit('track-activated', row.track_data)
 
     def _on_row_right_clicked(self, gesture, n_press, x, y, row):
-        """Emits the signal when a track row is right-clicked."""
         if hasattr(row, 'track_data'):
             self.emit('track-right-clicked', row.track_data, row)
         else:
             logging.warning("TrackListView: Right-click detected but 'track_data' not found on the row.")
+
+    def _on_back_clicked(self, button):
+        self.emit('back-clicked')

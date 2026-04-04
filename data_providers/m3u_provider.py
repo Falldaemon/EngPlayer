@@ -8,9 +8,6 @@ import gettext
 _ = gettext.gettext
 
 def parse_m3u_content(lines):
-    """
-    Parses a list of M3U lines and returns channels/VODs.
-    """
     bouquets = defaultdict(list)
     vods = defaultdict(list)
     VOD_EXTENSIONS = {'.mkv', '.mp4', '.avi', '.mov'}
@@ -65,9 +62,6 @@ def parse_m3u_content(lines):
         return {}, {}
 
 def load_from_file(filepath):
-    """
-    Loads an M3U file from a path and parses its content.
-    """
     try:
         with open(filepath, 'r', encoding='utf-8', errors='ignore') as f:
             lines = f.readlines()

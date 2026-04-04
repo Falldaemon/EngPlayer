@@ -8,7 +8,8 @@ import threading
 import urllib.request
 from gi.repository import Gtk, GLib, GdkPixbuf, Gdk, GObject, Gio
 from .placeholder_icon import PlaceholderIcon
-from utils.theme_utils import get_icon_theme_folder
+import database
+from ui.theme_manager import ThemeManager
 gi.require_version("Gtk", "4.0")
 _ = gettext.gettext
 class PlayerControls(Gtk.Box):
@@ -18,7 +19,9 @@ class PlayerControls(Gtk.Box):
         "record-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "catch-up-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "seek-value-changed": (GObject.SignalFlags.RUN_FIRST, None, (float,)),
-        "stop-trailer-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "stop-trailer-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "go-live-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "epg-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, **kwargs):
@@ -64,7 +67,8 @@ class PlayerControls(Gtk.Box):
             "play-pause": "media-playback-start.svg",
             "seek-forward": "media-seek-forward.svg",
             "record": "media-record.svg",
-            "catch-up": "folder-recent.svg"
+            "catch-up": "folder-recent.svg",
+            "go-live": "live-return-symbolic.svg"
         }
         tooltips = {
             "seek-backward": _("Seek Backward (or Previous Track)"),
@@ -72,7 +76,9 @@ class PlayerControls(Gtk.Box):
             "seek-forward": _("Seek Forward (or Next Track)"),
             "record": _("Record"),
             "catch-up": _("Past Broadcasts (Archive)"),
-            "stop_trailer": _("Stop Trailer and Go Back")
+            "stop_trailer": _("Stop Trailer and Go Back"),
+            "go-live": _("Back to Live Stream")
+            
         }
         for key, icon_name in media_icons.items():
             btn = self._create_icon_button(icon_name)
@@ -84,15 +90,18 @@ class PlayerControls(Gtk.Box):
         self.buttons["record"].connect("clicked", self.on_record_clicked)
         self.buttons["catch-up"].connect("clicked", lambda b: self.emit("catch-up-button-clicked"))
         self.buttons["catch-up"].set_visible(False)
+        self.buttons["go-live"].connect("clicked", lambda b: self.emit("go-live-clicked"))
+        self.buttons["go-live"].set_visible(False) 
         right_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         right_box.set_valign(Gtk.Align.CENTER)
         controls_center_box.set_end_widget(right_box)
         right_icons = {
             "equalizer": "equalizer.svg",
             "audio-track": "language.svg",
+            "epg": "epg-list.svg",
             "subtitles": "media-show-subtitles.svg",
             "volume": "audio-speakers.svg",
-            "info": "info.svg",
+            "more-menu": "menu.svg",
             "fullscreen": "view-fullscreen.svg"
         }
         for key, icon_name in right_icons.items():
@@ -101,9 +110,10 @@ class PlayerControls(Gtk.Box):
             right_box.append(btn)
         self.buttons["equalizer"].set_tooltip_text(_("Audio Equalizer"))
         self.buttons["audio-track"].set_tooltip_text(_("Select Audio Track"))
+        self.buttons["epg"].set_tooltip_text(_("Advanced EPG"))
         self.buttons["subtitles"].set_tooltip_text(_("Subtitle Options"))
         self.buttons["volume"].set_tooltip_text(_("Volume Control"))
-        self.buttons["info"].set_tooltip_text(_("Stream Information"))
+        self.buttons["more-menu"].set_tooltip_text(_("More Options"))
         self.buttons["fullscreen"].set_tooltip_text(_("Toggle Fullscreen"))    
         self.audio_popover = Gtk.PopoverMenu()
         self.buttons["audio-track"].connect("clicked", lambda btn: self.audio_popover.popup())
@@ -121,9 +131,16 @@ class PlayerControls(Gtk.Box):
         self.volume_scale.connect("value-changed", self._start_volume_popover_timer)
         self.volume_popover.connect("closed", self._on_volume_popover_closed)
         self.buttons["subtitles"].connect("clicked", lambda btn: self.emit("subtitle-button-clicked"))
+        self.buttons["epg"].connect("clicked", lambda btn: self.emit("epg-button-clicked"))
+        self.more_popover = Gtk.PopoverMenu()
+        self.more_popover.set_parent(self.buttons["more-menu"])
+        self.buttons["more-menu"].connect("clicked", lambda btn: self.more_popover.popup())
+        
+    def _get_current_icon_folder(self):
+        saved_theme = database.get_config_value('app_theme')
+        return ThemeManager.get_icon_folder(saved_theme)        
 
     def set_catchup_button_visibility(self, visible):
-        """Shows or hides the Catch-up button."""
         self.set_button_visibility("catch-up", visible)
 
     def update_info_labels(self, video_text, audio_text):
@@ -181,7 +198,6 @@ class PlayerControls(Gtk.Box):
         self._start_volume_popover_timer()
 
     def on_record_clicked(self, button):
-        """Emits the 'record-button-clicked' signal when the record button is clicked."""
         self.emit("record-button-clicked")
 
     def set_button_visibility(self, key, visible):
@@ -191,10 +207,11 @@ class PlayerControls(Gtk.Box):
     def _create_icon_button(self, icon_name):
         btn = Gtk.Button()
         btn.add_css_class("flat-button")
+        btn.set_size_request(46, 46)
         box = Gtk.CenterBox()
         box.add_css_class("control-button-box")
         box.set_size_request(32, 32)
-        theme_folder = get_icon_theme_folder()
+        theme_folder = self._get_current_icon_folder()
         image_path = os.path.join("resources", "icons", theme_folder, icon_name)
         if os.path.exists(image_path):
             icon = Gtk.Image.new_from_file(image_path)
@@ -208,11 +225,9 @@ class PlayerControls(Gtk.Box):
         return btn
 
     def set_channel_icon_visibility(self, visible):
-        """Shows or hides the channel icon box on the left."""
         self.channel_icon_box.set_visible(visible)
 
     def update_audio_tracks_menu(self, tracks):
-        """Populates the audio track selection menu with the given tracks."""
         audio_button = self.buttons.get("audio-track")
         if not audio_button:
             return
@@ -241,12 +256,11 @@ class PlayerControls(Gtk.Box):
                  logging.error(f"insert_action_group failed even on retry: {inner_e}")
 
     def set_recording_state(self, is_recording):
-        """Updates the visual state (icon, style, tooltip) of the record button."""
         record_button = self.buttons.get("record")
         if not record_button:
             return
         center_box = record_button.get_child()
-        theme_folder = get_icon_theme_folder()
+        theme_folder = self._get_current_icon_folder()
         icon_path = ""
         if is_recording:
             icon_path = os.path.join("resources", "icons", theme_folder, "record-stop.svg")
@@ -264,48 +278,41 @@ class PlayerControls(Gtk.Box):
             logging.warning(f"Recording icon not found: {icon_path}")
 
     def on_slider_value_changed(self, scale, scroll_type, value):
-        """Runs when the user moves the slider."""
         if scale.get_property("has-focus"):
             self.emit("seek-value-changed", value)
 
     def set_seek_controls_visibility(self, visible):
-        """Shows or hides the slider and time labels."""
         self.seek_box.set_visible(visible)
         self.set_button_visibility("seek-forward", visible)
         self.set_button_visibility("seek-backward", visible)
 
     def set_mode(self, mode):
-        """Switches the interface to 'video' or 'audio' mode."""
         is_video_mode = (mode == 'video')
         self.set_button_visibility("subtitles", is_video_mode)
         self.set_button_visibility("fullscreen", is_video_mode)
         self.video_info_label.set_visible(is_video_mode)
 
     def _start_volume_popover_timer(self, *args):
-        """Cancels the existing timer and starts a new one."""
         if self.volume_popover_timer:
             GLib.source_remove(self.volume_popover_timer)
         self.volume_popover_timer = GLib.timeout_add_seconds(3, self._close_volume_popover_timeout)
 
     def _close_volume_popover_timeout(self):
-        """Closes the volume popover when the timer expires."""
         self.volume_popover.popdown()
         self.volume_popover_timer = None
         return GLib.SOURCE_REMOVE
 
     def _on_volume_popover_closed(self, popover):
-        """Clears the timer when the popover is manually closed."""
         if self.volume_popover_timer:
             GLib.source_remove(self.volume_popover_timer)
             self.volume_popover_timer = None
 
     def set_playing_state(self, is_playing):
-        """Updates the Play/Pause button icon based on the playback state."""
         play_pause_button = self.buttons.get("play-pause")
         if not play_pause_button:
             return
         center_box = play_pause_button.get_child()
-        theme_folder = get_icon_theme_folder()
+        theme_folder = self._get_current_icon_folder()
         icon_name = "media-playback-pause.svg" if is_playing else "media-playback-start.svg"
         icon_path = os.path.join("resources", "icons", theme_folder, icon_name)
         if os.path.exists(icon_path):
@@ -318,7 +325,6 @@ class PlayerControls(Gtk.Box):
             center_box.set_center_widget(label)
 
     def show_volume_popover_transiently(self):
-        """Shows the volume popover and starts/resets the auto-hide timer."""
         if self.is_fullscreen:
             return
         if not self.volume_popover.is_visible():
@@ -326,9 +332,10 @@ class PlayerControls(Gtk.Box):
         self._start_volume_popover_timer()
 
     def set_fullscreen_mode(self, is_fullscreen):
-        """Sets the fullscreen state from the main window."""
         self.is_fullscreen = is_fullscreen
 
     def set_stop_trailer_button_visibility(self, visible):
-        """Shows or hides the 'Stop Trailer' button."""
         self.set_button_visibility("stop_trailer", visible)
+
+    def set_go_live_button_visibility(self, visible):
+        self.set_button_visibility("go-live", visible)

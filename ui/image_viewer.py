@@ -71,10 +71,6 @@ class ImageViewer(Gtk.Overlay):
         self._show_current_image()
 
     def _show_current_image(self):
-        """
-        Loads the next image in the background and displays it
-        on the main thread when loaded. (TO PREVENT AUDIO STUTTERING)
-        """
         if not self.image_list:
             return
         image_path = self.image_list[self.current_index].props.path_or_url
@@ -134,10 +130,6 @@ class ImageViewer(Gtk.Overlay):
         return True
 
     def _on_music_button_clicked(self, widget):
-        """
-        Opens a GTK FileChooserDialog to select background music.
-        Updated to match the consistent style (Portal Bypass) and prevent segfaults.
-        """
         chooser = Gtk.FileChooserDialog(
             title=_("Select Background Music"),
             transient_for=self.get_root(),

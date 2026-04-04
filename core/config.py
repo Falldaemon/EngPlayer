@@ -5,7 +5,7 @@ import base64
 from gi.repository import GLib
 
 APP_ID = "io.github.falldaemon.engplayer"
-VERSION = "0.1.5"
+VERSION = "0.1.6"
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = os.path.dirname(current_dir)
@@ -29,7 +29,6 @@ def get_fallback_tmdb_key():
 _OBFUSCATED_TRAKT_ID = "==AN2ATOxQDNzAzNhNTZ1ATNhhjNwATZihTOiVTO3Y2YxITO3cDO4cTY3AjYkZGZ0EjZkN2YkRDZxkzN3cjM1cTN"
 
 def get_trakt_client_id():
-    """Decodes the obfuscated Trakt Client ID."""
     try:
         if not _OBFUSCATED_TRAKT_ID or _OBFUSCATED_TRAKT_ID == "PASTE_YOUR_OBFUSCATED_TRAKT_CODE_HERE":
             return None

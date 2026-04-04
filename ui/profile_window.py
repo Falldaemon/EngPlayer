@@ -20,6 +20,7 @@ from utils.profile_manager import load_profiles, save_profiles, update_profile_d
 from data_providers.m3u_provider import load_from_file, parse_m3u_content
 from core.window import MainWindow
 from data_providers import epg_provider, xtream_client
+from ui.theme_manager import ThemeManager
 _ = gettext.gettext
 
 class ProfileWindow(Gtk.ApplicationWindow):
@@ -93,6 +94,11 @@ class ProfileWindow(Gtk.ApplicationWindow):
         saved_color = database.get_config_value("app_accent_color")
         default_color = "#3584e4"
         self.apply_accent_color(saved_color if saved_color else default_color)
+        saved_theme = database.get_config_value('app_theme')
+        if saved_theme:
+            ThemeManager.apply_theme(saved_theme)
+        else:
+            ThemeManager.apply_theme("default")
 
     def show_toast(self, message):
         timeout_sec = 3
@@ -157,7 +163,6 @@ class ProfileWindow(Gtk.ApplicationWindow):
         thread.start()
 
     def _master_load_thread(self, profile):
-        """Loads data from the selected profile, including EPG."""
 
         def _transform_streams_to_bouquets(streams, categories, stream_type='live'):
             category_map = {cat['category_id']: cat['category_name'] for cat in categories}
@@ -192,10 +197,12 @@ class ProfileWindow(Gtk.ApplicationWindow):
             profile_type = profile.get("type")
             channels = {}
             vod = {}
+            series = {}
             epg_data = {}
             if profile_type == "xtream":
                 logging.info("Profile type is Xtream. Checking cache...")
                 channels_cache_path = self._get_xtream_cache_path(profile['id'], 'channels')
+                series_cache_path = self._get_xtream_cache_path(profile['id'], 'series')
                 vod_cache_path = self._get_xtream_cache_path(profile['id'], 'vod')
                 xtream_ttl = 86400
                 last_xtream_update = profile.get('last_xtream_update', 0)
@@ -209,11 +216,13 @@ class ProfileWindow(Gtk.ApplicationWindow):
                         exp_ts = user_info.get("exp_date")
                         if (start_ts and str(start_ts).isdigit()) or (exp_ts and str(exp_ts).isdigit()):
                             update_profile_dates(profile['id'], start_ts, exp_ts)
-                if os.path.exists(channels_cache_path) and os.path.exists(vod_cache_path) and not xtream_is_stale:
+                if os.path.exists(channels_cache_path) and os.path.exists(vod_cache_path) and os.path.exists(series_cache_path) and not xtream_is_stale:
                     logging.info("Fresh Xtream cache found. Reading from disk.")
                     try:
                         with open(channels_cache_path, 'r', encoding='utf-8') as f:
                             channels = json.load(f)
+                        with open(series_cache_path, 'r', encoding='utf-8') as f:
+                            series = json.load(f)    
                         with open(vod_cache_path, 'r', encoding='utf-8') as f:
                             vod = json.load(f)
                     except (json.JSONDecodeError, IOError):
@@ -227,6 +236,10 @@ class ProfileWindow(Gtk.ApplicationWindow):
                     vod_streams = xtream_client.get_vod_streams(profile)
                     if vod_streams is not None and vod_categories is not None:
                          vod = _transform_streams_to_bouquets(vod_streams, vod_categories, 'movie')
+                    series_categories = xtream_client.get_series_categories(profile)
+                    series_streams = xtream_client.get_series_streams(profile, "all")
+                    if series_streams is not None and series_categories is not None:
+                         series = _transform_streams_to_bouquets(series_streams, series_categories, 'series')     
                     if channels or vod:
                         try:
                             if channels:
@@ -235,6 +248,9 @@ class ProfileWindow(Gtk.ApplicationWindow):
                             if vod:
                                 with open(vod_cache_path, 'w', encoding='utf-8') as f:
                                     json.dump(vod, f, ensure_ascii=False)
+                            if series:
+                                with open(series_cache_path, 'w', encoding='utf-8') as f:
+                                    json.dump(series, f, ensure_ascii=False)        
                             if channels or vod:
                                  self._update_profile_timestamp(profile['id'], 'last_xtream_update')
                         except IOError as e:
@@ -304,13 +320,13 @@ class ProfileWindow(Gtk.ApplicationWindow):
                              pass
                 if epg_content:
                     epg_data = epg_provider.parse_epg_data(epg_content)
-            GLib.idle_add(self._on_loading_complete, profile, channels, vod, epg_data, None)
+            GLib.idle_add(self._on_loading_complete, profile, channels, vod, series, epg_data, None)
         except Exception as e:
             error_message = _("An unexpected error occurred while loading profile '{}'.\n\nReason: {}").format(profile['name'], e)
             logging.exception(f"Critical error while loading profile: {profile['name']}")
-            GLib.idle_add(self._on_loading_complete, profile, {}, {}, {}, error_message)
+            GLib.idle_add(self._on_loading_complete, profile, {}, {}, {}, {}, error_message)
 
-    def _on_loading_complete(self, profile, channels, vod, epg_data, error):
+    def _on_loading_complete(self, profile, channels, vod, series, epg_data, error):
         self.spinner.stop()
         self.status_box.set_visible(False)
         self.set_sensitive(True)
@@ -325,7 +341,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
         else:
             logging.info("Loading complete. Creating player window...")
             app = self.get_application()
-            player_window = MainWindow(application=app, profile=profile, channels=channels, vod=vod, epg_data=epg_data)
+            player_window = MainWindow(application=app, profile=profile, channels=channels, vod=vod, series=series, epg_data=epg_data)
             player_window.present()
             self.close()
 
@@ -409,15 +425,12 @@ class ProfileWindow(Gtk.ApplicationWindow):
         if not selected_row: self.show_toast(_("Please select a profile to delete.")); return
         profile_to_delete = selected_row.profile_data
         dialog = Adw.MessageDialog(transient_for=self, heading=_("Delete profile '{}'?").format(profile_to_delete['name']), body=_("This action cannot be undone."), modal=True)
+        dialog.add_css_class("delete-profile-dialog")
         dialog.add_response("cancel", _("Cancel")); dialog.add_response("delete", _("Delete"))
         dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
         dialog.connect("response", self._on_delete_confirm_response, profile_to_delete.get("id")); dialog.present()
 
     def _on_delete_confirm_response(self, dialog, response_id, profile_id):
-        """
-        Runs when profile deletion is confirmed.
-        Deletes the profile from JSON, removes all cache files AND the profile database.
-        """
         if response_id == "delete":
             profile_name = _("Unknown Profile")
             profiles = load_profiles()
@@ -457,6 +470,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
             else:
                  logging.warning(f"Profile to be deleted (ID: {profile_id}) not found in profiles.json.")
                  self.show_toast(_("Error: Profile not found or already deleted."))
+                 
     def _on_add_dialog_response(self, dialog, response_id):
         if response_id == "save":
             name = dialog.name_entry.get_text().strip()
@@ -512,6 +526,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
 
     def create_profile_dialog(self, title, profile_data):
         dialog = Adw.MessageDialog(transient_for=self, heading=title)
+        dialog.add_css_class("profile-editor-dialog")
         content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=12)
         dialog.set_extra_child(content)
         name_entry = Gtk.Entry(placeholder_text=_("Profile Name (e.g., Family IPTV)"))
@@ -648,7 +663,6 @@ class ProfileWindow(Gtk.ApplicationWindow):
         css_data = f"""
         @define-color accent_color {color_str}; 
         @define-color accent_bg_color {color_str}; 
-        @define-color accent_fg_color #ffffff; 
         """      
         try:
             css_provider.load_from_data(css_data.encode())

@@ -1403,6 +1403,573 @@ msgstr "Connessione persa. Riconnessione in corso..."
 msgid "Connection failed. Stream cancelled."
 msgstr "Connessione fallita. Flusso annullato."
 
+msgid "Change font family and size"
+msgstr "Modifica famiglia e dimensione carattere"
+
+msgid "Adjust text style, weight and size."
+msgstr "Regola stile, peso e dimensione del testo."
+
+msgid "Select Font Style:"
+msgstr "Seleziona stile carattere:"
+
+msgid "Choose Font"
+msgstr "Scegli carattere"
+
+msgid "Reset to Default"
+msgstr "Ripristina predefiniti"
+
+msgid "System Default"
+msgstr "Predefinito di sistema"
+
+msgid "Font settings restored to system default."
+msgstr "Impostazioni carattere ripristinate al predefinito di sistema."
+
+msgid "Font settings applied successfully!"
+msgstr "Impostazioni carattere applicate con successo!"
+
+msgid "No program information found for this channel."
+msgstr "Nessuna informazione sul programma trovata per questo canale."
+
+msgid "Password"
+msgstr "Password"
+
+msgid "Switch"
+msgstr "Cambia"
+
+msgid "Podcast Library"
+msgstr "Libreria podcast"
+
+msgid "History"
+msgstr "Cronologia"
+
+msgid "Search History..."
+msgstr "Cerca nella cronologia..."
+
+msgid "Clear History"
+msgstr "Cancella cronologia"
+
+msgid "No history found."
+msgstr "Nessuna cronologia trovata."
+
+msgid "Are you sure you want to clear your watched channel history?"
+msgstr "Sei sicuro di voler cancellare la cronologia dei canali guardati?"
+
+msgid "Clear"
+msgstr "Cancella"
+
+msgid "History cleared."
+msgstr "Cronologia cancellata."
+
+msgid "Error clearing history."
+msgstr "Errore durante la cancellazione della cronologia."
+
+msgid "Unknown Channel"
+msgstr "Canale sconosciuto"
+
+msgid "Channel List"
+msgstr "Lista canali"
+
+msgid "Global Search"
+msgstr "Ricerca globale"
+
+msgid "Search in movies, series, and channels..."
+msgstr "Cerca in film, serie e canali..."
+
+msgid "No results found..."
+msgstr "Nessun risultato trovato..."
+
+msgid "Show All"
+msgstr "Mostra tutto"
+
+msgid "Hide All"
+msgstr "Nascondi tutto"
+
+msgid "Default Order"
+msgstr "Ordine predefinito"
+
+msgid "A-Z (Ascending)"
+msgstr "A-Z (Crescente)"
+
+msgid "Z-A (Descending)"
+msgstr "Z-A (Decrescente)"
+
+msgid "Sort Items"
+msgstr "Ordina elementi"
+
+msgid "More Options"
+msgstr "Altre opzioni"
+
+msgid "Sleep Timer"
+msgstr "Timer di spegnimento"
+
+msgid "Off"
+msgstr "Disattivato"
+
+msgid "15 Minutes"
+msgstr "15 minuti"
+
+msgid "30 Minutes"
+msgstr "30 minuti"
+
+msgid "60 Minutes"
+msgstr "60 minuti"
+
+msgid "90 Minutes"
+msgstr "90 minuti"
+
+msgid "120 Minutes"
+msgstr "120 minuti"
+
+msgid "Custom Time..."
+msgstr "Tempo personalizzato..."
+
+msgid "End of Media"
+msgstr "Fine del contenuto"
+
+msgid "Timer set to close at the End of Media."
+msgstr "Timer impostato per la chiusura al termine del contenuto."
+
+msgid "Custom Sleep Timer"
+msgstr "Timer di spegnimento personalizzato"
+
+msgid "Please select the sleep timer duration:"
+msgstr "Seleziona la durata del timer di spegnimento:"
+
+msgid "Minutes"
+msgstr "Minuti"
+
+msgid "Start Timer"
+msgstr "Avvia timer"
+
+msgid "Sleep timer set for {} minutes."
+msgstr "Timer di spegnimento impostato su {} minuti."
+
+msgid "Sleep Timer Finishing"
+msgstr "Il timer di spegnimento sta terminando"
+
+msgid "seconds before playback stops."
+msgstr "secondi prima dell'arresto della riproduzione."
+
+msgid "Cancel Timer"
+msgstr "Annulla timer"
+
+msgid "Min"
+msgstr "min"
+
+msgid "Added {} minutes to sleep timer."
+msgstr "{} minuti aggiunti al timer di spegnimento."
+
+msgid "Playback stopped by Sleep Timer."
+msgstr "Riproduzione interrotta dal timer di spegnimento."
+
+msgid "Media Info"
+msgstr "Info media"
+
+msgid "Playback Speed"
+msgstr "Velocità di riproduzione"
+
+msgid "Normal (1.0x)"
+msgstr "Normale (1.0x)"
+
+msgid "Playback speed restored to Normal"
+msgstr "Velocità di riproduzione ripristinata a Normale"
+
+msgid "Playback speed set to {}x"
+msgstr "Velocità di riproduzione impostata a {}x"
+
+msgid "Aspect Ratio"
+msgstr "Proporzioni"
+
+msgid "Original (Fit)"
+msgstr "Originale (Adatta)"
+
+msgid "Stretch (Fill Screen)"
+msgstr "Allunga (Riempi schermo)"
+
+msgid "Zoom (Crop Edges)"
+msgstr "Zoom (Ritaglia bordi)"
+
+msgid "Aspect Ratio: Original (Fit)"
+msgstr "Proporzioni: Originale (Adatta)"
+
+msgid "Aspect Ratio: Stretch to Fill"
+msgstr "Proporzioni: Allunga per riempire"
+
+msgid "Aspect Ratio: Zoom to Fit"
+msgstr "Proporzioni: Zoom per adattare"
+
+msgid "Seconds"
+msgstr "Secondi"
+
+# --- Timeshift Settings ---
+msgid "Timeshift Settings (BETA)"
+msgstr "Impostazioni Timeshift (BETA)"
+
+msgid "Pause Live TV"
+msgstr "Metti in pausa la TV in diretta"
+
+msgid ""
+"Timeshift allows you to pause live TV and resume from where you left off. "
+"The broadcast is temporarily recorded to your selected folder.\n\n"
+"<b>📊 Estimated Storage Usage (Per Hour):</b>\n"
+"  • <b>HD (720p):</b> ~1.2 GB\n"
+"  • <b>Full HD (1080p):</b> ~2.5 GB\n"
+"  • <b>4K (UHD):</b> ~6.0 GB+\n\n"
+"💡 <b>Tip:</b> To save internal disk space and prevent wear on your system's SSD, "
+"it is highly recommended to select an external USB drive or HDD as your Timeshift folder.\n\n"
+"⚠️ <b>Note:</b> Recording stops automatically if the quota is reached. "
+"The temporary buffer is safely cleared when you change channels or return to live TV."
+msgstr ""
+"Il Timeshift ti consente di mettere in pausa la TV in diretta e riprendere da dove avevi interrotto. "
+"La trasmissione viene temporaneamente registrata nella cartella selezionata.\n\n"
+"<b>📊 Utilizzo stimato dello spazio di archiviazione (All'ora):</b>\n"
+"  • <b>HD (720p):</b> ~1,2 GB\n"
+"  • <b>Full HD (1080p):</b> ~2,5 GB\n"
+"  • <b>4K (UHD):</b> ~6,0 GB+\n\n"
+"💡 <b>Suggerimento:</b> Per risparmiare spazio sul disco interno e prevenire l'usura dell'SSD del sistema, "
+"si consiglia vivamente di selezionare un'unità USB esterna o un HDD come cartella Timeshift.\n\n"
+"⚠️ <b>Nota:</b> La registrazione si interrompe automaticamente se viene raggiunta la quota. "
+"Il buffer temporaneo viene cancellato in modo sicuro quando cambi canale o torni alla TV in diretta."
+
+msgid "Enable Timeshift"
+msgstr "Abilita Timeshift"
+
+msgid "Timeshift Folder"
+msgstr "Cartella Timeshift"
+
+msgid "Default (Cache Folder)"
+msgstr "Predefinito (Cartella cache)"
+
+msgid "Storage Quota"
+msgstr "Quota di archiviazione"
+
+msgid "Custom..."
+msgstr "Personalizzato..."
+
+msgid "Custom Quota (MB)"
+msgstr "Quota personalizzata (MB)"
+
+msgid "Enter value in Megabytes (e.g. 1500)"
+msgstr "Inserire il valore in megabyte (es. 1500)"
+
+msgid "Select Timeshift Folder"
+msgstr "Seleziona la cartella Timeshift"
+
+msgid "Timeshift settings saved!"
+msgstr "Impostazioni Timeshift salvate!"
+
+msgid "Timeshift storage limit reached."
+msgstr "Limite di archiviazione Timeshift raggiunto."
+
+msgid "Back to Live Stream"
+msgstr "Torna alla diretta"
+
+msgid "Audio Visualizer"
+msgstr "Visualizzatore audio"
+
+msgid "Select animation for music playback"
+msgstr "Seleziona l'animazione per la riproduzione musicale"
+
+msgid "Premium"
+msgstr "Premium"
+
+msgid "Visualizer applied!"
+msgstr "Visualizzatore applicato!"
+
+msgid "Advanced EPG"
+msgstr "EPG Avanzata"
+
+msgid "Close and Return"
+msgstr "Chiudi e Torna"
+
+msgid "Channel Name"
+msgstr "Nome del canale"
+
+msgid "Select a Program"
+msgstr "Seleziona un programma"
+
+msgid "Program details will appear here."
+msgstr "I dettagli del programma appariranno qui."
+
+msgid "Watch Now"
+msgstr "Guarda ora"
+
+msgid "Timeline"
+msgstr "Cronologia"
+
+msgid "No details available for this program."
+msgstr "Nessun dettaglio disponibile per questo programma."
+
+msgid "Switching to: "
+msgstr "Passaggio a: "
+
+msgid "Previewing: "
+msgstr "Anteprima di: "
+
+msgid "Font Settings"
+msgstr "Impostazioni carattere"
+
+msgid "Select Recordings Folder"
+msgstr "Seleziona cartella registrazioni"
+
+msgid "Select"
+msgstr "Seleziona"
+
+msgid "API Key (v3 Auth)"
+msgstr "Chiave API (Autenticazione v3)"
+
+msgid "Subtitles"
+msgstr "Sottotitoli"
+
+msgid "Error: Channel URL is missing."
+msgstr "Errore: URL del canale mancante."
+
+msgid "Error: Could not schedule recording."
+msgstr "Errore: Impossibile programmare la registrazione."
+
+msgid "Unknown Program"
+msgstr "Programma sconosciuto"
+
+msgid "Error: Channel ID could not be retrieved."
+msgstr "Errore: Impossibile recuperare l'ID del canale."
+
+msgid "Error: Profile information missing."
+msgstr "Errore: Informazioni del profilo mancanti."
+
+msgid "Error: Video file could not be deleted!"
+msgstr "Errore: Impossibile eliminare il file video!"
+
+msgid "Error: Could not display results."
+msgstr "Errore: Impossibile mostrare i risultati."
+
+msgid "Error: Could not retrieve file ID for selected subtitle."
+msgstr "Errore: Impossibile recuperare l'ID del file per il sottotitolo selezionato."
+
+msgid "Error: API key not found for download."
+msgstr "Errore: Chiave API per il download non trovata."
+
+msgid "Error: Downloaded subtitle file could not be loaded."
+msgstr "Errore: Impossibile caricare il file dei sottotitoli scaricato."
+
+msgid "Error: Downloaded subtitle file not found."
+msgstr "Errore: File dei sottotitoli scaricato non trovato."
+
+msgid "Select External Subtitle File"
+msgstr "Seleziona file sottotitoli esterno"
+
+msgid "Subtitle Files"
+msgstr "File sottotitoli"
+
+msgid "All Files"
+msgstr "Tutti i file"
+
+msgid "External subtitle loaded."
+msgstr "Sottotitolo esterno caricato."
+
+msgid "Could not load subtitle file."
+msgstr "Impossibile caricare il file dei sottotitoli."
+
+msgid "Add"
+msgstr "Aggiungi"
+
+msgid "Picture"
+msgstr "Immagine"
+
+msgid "Music"
+msgstr "Musica"
+
+msgid "Error: Could not retrieve movie info."
+msgstr "Errore: Impossibile recuperare le informazioni sul film."
+
+msgid "Next Episode"
+msgstr "Prossimo episodio"
+
+msgid "Error: Could not create PiP window."
+msgstr "Errore: Impossibile creare la finestra PiP."
+
+msgid "Error: An issue occurred while removing the library."
+msgstr "Errore: Si è verificato un problema durante la rimozione della libreria."
+
+msgid "Media record removed."
+msgstr "Registrazione multimediale rimossa."
+
+msgid "Error: An issue occurred while removing the media record."
+msgstr "Errore: Si è verificato un problema durante la rimozione della registrazione multimediale."
+
+msgid "Track record removed."
+msgstr "Registrazione della traccia rimossa."
+
+msgid "Error: An issue occurred while removing the track record."
+msgstr "Errore: Si è verificato un problema durante la rimozione della traccia."
+
+msgid "Error: Recording not found in list."
+msgstr "Errore: Registrazione non trovata nell'elenco."
+
+msgid "Error: Recording was not removed from list."
+msgstr "Errore: La registrazione non è stata rimossa dall'elenco."
+
+msgid "Select Accent Color"
+msgstr "Seleziona colore accento"
+
+msgid "Accent color updated!"
+msgstr "Colore accento aggiornato!"
+
+msgid "Apply"
+msgstr "Applica"
+
+msgid "Play"
+msgstr "Riproduci"
+
+msgid "Error: Episode ID/Format not found."
+msgstr "Errore: ID/Formato dell'episodio non trovato."
+
+msgid "Grid View"
+msgstr "Visualizzazione a griglia"
+
+msgid "List View"
+msgstr "Visualizzazione a elenco"
+
+msgid "Change View"
+msgstr "Cambia visualizzazione"
+
+msgid "Add to Record List"
+msgstr "Aggiungi alla lista delle registrazioni"
+
+msgid "Check the details below and adjust recording offsets if necessary."
+msgstr "Controlla i dettagli di seguito e regola gli scostamenti di registrazione se necessario."
+
+msgid "Channel / Time"
+msgstr "Canale / Orario"
+
+msgid "Start Offset"
+msgstr "Scostamento inizio"
+
+msgid "Start early if broadcast begins early"
+msgstr "Inizia prima se la trasmissione inizia in anticipo"
+
+msgid "Exact Time"
+msgstr "Ora esatta"
+
+msgid "5 Minutes Before"
+msgstr "5 Minuti prima"
+
+msgid "10 Minutes Before"
+msgstr "10 Minuti prima"
+
+msgid "15 Minutes Before"
+msgstr "15 Minuti prima"
+
+msgid "20 Minutes Before"
+msgstr "20 Minuti prima"
+
+msgid "Custom (Manual)"
+msgstr "Personalizzato (Manuale)"
+
+msgid "End Offset"
+msgstr "Scostamento fine"
+
+msgid "Extend if broadcast runs late"
+msgstr "Estendi se la trasmissione è in ritardo"
+
+msgid "5 Minutes After"
+msgstr "5 Minuti dopo"
+
+msgid "10 Minutes After"
+msgstr "10 Minuti dopo"
+
+msgid "15 Minutes After"
+msgstr "15 Minuti dopo"
+
+msgid "20 Minutes After"
+msgstr "20 Minuti dopo"
+
+msgid "Known For"
+msgstr "Conosciuto per"
+
+msgid "Loading biography..."
+msgstr "Caricamento biografia..."
+
+msgid "Biography information could not be loaded."
+msgstr "Impossibile caricare le informazioni sulla biografia."
+
+msgid "No biography found."
+msgstr "Nessuna biografia trovata."
+
+msgid "No biography available for this person."
+msgstr "Nessuna biografia disponibile per questa persona."
+
+msgid "Click for biography"
+msgstr "Clicca per la biografia"
+
+msgid "Translate"
+msgstr "Traduci"
+
+msgid "Translating..."
+msgstr "Traduzione in corso..."
+
+msgid "Important Notice"
+msgstr "Avviso Importante"
+
+msgid "For the scheduled recording to complete successfully, please ensure your computer does not go to sleep during the recording time and that the sleep mode feature is disabled."
+msgstr "Affinché la registrazione programmata venga completata con successo, assicurati che il computer non vada in sospensione durante il tempo di registrazione e che la funzione di modalità di sospensione sia disabilitata."
+
+msgid "Sleep timer cancelled."
+msgstr "Timer di spegnimento annullato."
+
+msgid "Not enough information to perform a search."
+msgstr "Informazioni insufficienti per effettuare una ricerca."
+
+msgid "Search timed out."
+msgstr "Timeout della ricerca."
+
+msgid "API Key is invalid or authorization failed."
+msgstr "La chiave API non è valida o l'autorizzazione è fallita."
+
+msgid "API usage limit exceeded. Please try again later."
+msgstr "Limite di utilizzo dell'API superato. Riprova più tardi."
+
+msgid "Could not communicate with API (Error: {})."
+msgstr "Impossibile comunicare con l'API (Errore: {})."
+
+msgid "Network error or API unreachable."
+msgstr "Errore di rete o API irraggiungibile."
+
+msgid "An unknown error occurred."
+msgstr "Si è verificato un errore sconosciuto."
+
+msgid "Could not retrieve subtitle download link."
+msgstr "Impossibile recuperare il link per il download dei sottotitoli."
+
+msgid "No subtitle file found inside the downloaded ZIP."
+msgstr "Nessun file di sottotitoli trovato nel file ZIP scaricato."
+
+msgid "The downloaded ZIP file is corrupt."
+msgstr "Il file ZIP scaricato è danneggiato."
+
+msgid "Could not read subtitle file (encoding error)."
+msgstr "Impossibile leggere il file dei sottotitoli (errore di codifica)."
+
+msgid "Download timed out."
+msgstr "Timeout del download."
+
+msgid "API usage limit exceeded."
+msgstr "Limite di utilizzo dell'API superato."
+
+msgid "Subtitle file not found on server."
+msgstr "File dei sottotitoli non trovato sul server."
+
+msgid "API error during download ({})."
+msgstr "Errore API durante il download ({})."
+
+msgid "Network error during download."
+msgstr "Errore di rete durante il download."
+
+msgid "Could not download subtitle (unknown error)."
+msgstr "Impossibile scaricare i sottotitoli (errore sconosciuto)."
+
+msgid "Could not retrieve subtitle content."
+msgstr "Impossibile recuperare il contenuto dei sottotitoli."
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Questo prodotto utilizza l'API TMDb ma non è supportato né certificato da TMDb."
 

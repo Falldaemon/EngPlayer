@@ -4,7 +4,7 @@ import gi
 import os
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, Gdk, Gio
+from gi.repository import Gtk, Adw, Gdk, Gio, GLib
 from ui.profile_window import ProfileWindow
 import database
 import gettext
@@ -19,7 +19,6 @@ class MediaCenterApplication(Adw.Application):
         self.activate()
 
     def do_startup(self):
-        """This method runs once on application startup."""
         try:
             saved_theme = database.get_config_value('app_theme')
             style_manager = Adw.StyleManager.get_default()
@@ -50,3 +49,7 @@ class MediaCenterApplication(Adw.Application):
             return
         self.win = ProfileWindow(application=app)
         self.win.present()
+
+    def do_shutdown(self):
+        print("Application is closing safely.")
+        Adw.Application.do_shutdown(self)

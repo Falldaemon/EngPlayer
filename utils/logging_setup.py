@@ -5,9 +5,6 @@ import sys
 import os 
 
 def setup_logging():
-    """
-    Configures the application's logging system.
-    """
     is_debug = '--debug' in sys.argv
     log_format = '%(asctime)s - %(name)s - %(levelname)s - %(message)s'   
     root_logger = logging.getLogger()

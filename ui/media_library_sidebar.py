@@ -6,10 +6,6 @@ from gi.repository import Gtk
 import gettext
 _ = gettext.gettext
 class MediaLibrarySidebar(Gtk.Box):
-    """
-    A widget containing the navigation buttons for the media library
-    (e.g., Videos, Pictures, Music) and control buttons.
-    """
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6, **kwargs)
         self.set_margin_top(6)

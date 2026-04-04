@@ -31,7 +31,6 @@ class SubtitleResultsDialog(Adw.PreferencesWindow):
         self._populate_results(subtitle_results)
 
     def _populate_results(self, results):
-        """Populates the ListBox with subtitle results."""
         if not results:
             label = Gtk.Label(label=_("No subtitles found."), margin_top=15, margin_bottom=15)
             self.results_listbox.append(label)
@@ -54,7 +53,6 @@ class SubtitleResultsDialog(Adw.PreferencesWindow):
             self.results_listbox.append(row)
 
     def _on_row_activated(self, listbox, row):
-        """Runs when a subtitle row is clicked in the list."""
         if hasattr(row, 'subtitle_data'):
             selected_subtitle = row.subtitle_data
             logging.info(f"Subtitle selected: ID {selected_subtitle.get('subtitle_id')}, Language: {selected_subtitle.get('language')}")

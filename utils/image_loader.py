@@ -13,10 +13,6 @@ _failed_urls_memory = set()
 _downloading_urls = set()
 
 def load_image_async(url, widget, on_success_callback=None, on_failure=None):
-    """
-    Downloads an image from a URL, using a local disk cache to avoid
-    re-downloading. Implements blacklist and race-condition prevention.
-    """
     if not url or not widget:
         return
     if url in _failed_urls_memory:

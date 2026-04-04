@@ -1,7 +1,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib
+from gi.repository import Gtk, Adw, GLib, Pango
 import gettext
 
 _ = gettext.gettext
@@ -34,7 +34,15 @@ class MediaInfoDialog(Adw.Window):
         footer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8,
                              margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
         footer_box.append(Gtk.Separator())
-        self.location_label = Gtk.Label(xalign=0, wrap=True, selectable=True, css_classes=["caption"])
+        self.location_label = Gtk.Label(
+        xalign=0, 
+        wrap=True, 
+        wrap_mode=Pango.WrapMode.CHAR, 
+        selectable=True, 
+        lines=3,
+        ellipsize=Pango.EllipsizeMode.END,
+        css_classes=["caption"]
+        )
         footer_box.append(self.location_label)
         self.bitrate_label = Gtk.Label(label=_("Bitrate: 0.0 Mbps"), css_classes=["caption-heading"])
         footer_box.append(self.bitrate_label)

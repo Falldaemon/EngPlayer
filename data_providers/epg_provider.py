@@ -3,20 +3,37 @@
 import requests
 import logging
 import os
+import io
+import hashlib
 from xml.etree import ElementTree as ET
 from datetime import datetime, timezone, timedelta
+import charset_normalizer
+import database
+import gzip
+import re
 import gettext
 _ = gettext.gettext
 
 def parse_epg_data(xml_content):
-    """
-    Parses XMLTV format content and returns a dictionary
-    containing program lists, keyed by channel ID.
-    (Now includes past programs)
-    """
-    epg_data = {}
     try:
-        root = ET.fromstring(xml_content)
+        database.init_epg_db()
+        current_hash = hashlib.md5(xml_content.encode('utf-8', errors='ignore')).hexdigest()
+        last_hash = database.get_config_value('last_epg_hash')
+        conn = database.get_epg_db_connection()
+        cursor = conn.cursor()
+        try:
+            cursor.execute("SELECT COUNT(*) FROM epg_programs")
+            program_count_in_db = cursor.fetchone()[0]
+        except Exception as e:
+            logging.error(f"Error checking epg_programs count: {e}")
+            program_count_in_db = 0
+        conn.close()
+        logging.debug(f"[EPG HASH CHECK] Last Hash: {last_hash}, Current Hash: {current_hash}, DB Count: {program_count_in_db}")
+        if last_hash == current_hash and program_count_in_db > 10:
+            logging.info("EPG data is exactly the same as the database. Skipping parsing to save time!")
+            return True
+        logging.info("New EPG data OR empty database detected. Parsing and updating...")
+        database.clear_epg_db()
 
         def parse_time(time_str):
             dt_part = time_str[:-6]
@@ -26,96 +43,134 @@ def parse_epg_data(xml_content):
             offset_minutes = int(tz_part[3:5])
             sign = -1 if tz_part[0] == '-' else 1
             tz_offset = timezone(timedelta(hours=sign * offset_hours, minutes=sign * offset_minutes))
-            return dt_obj.replace(tzinfo=tz_offset)
+            return dt_obj.replace(tzinfo=tz_offset)            
         program_count = 0
-        for programme in root.findall('programme'):
-            channel_id = programme.get('channel')
-            if not channel_id:
-                continue
-            title_elem = programme.find('title')
-            desc_elem = programme.find('desc')
-            title = title_elem.text if title_elem is not None else _("No Title")
-            desc = desc_elem.text if desc_elem is not None else ""
-            start_time_str = programme.get('start')
-            stop_time_str = programme.get('stop')
-            try:
-                 start_time = parse_time(start_time_str)
-                 stop_time = parse_time(stop_time_str)
-            except (ValueError, TypeError) as e:
-                 logging.warning(f"Invalid time format for EPG program: {start_time_str} / {stop_time_str}. Skipping. Error: {e}")
-                 continue
-            if channel_id not in epg_data:
-                epg_data[channel_id] = []
-            epg_data[channel_id].append({
-                "title": title,
-                "desc": desc,
-                "start": start_time,
-                "stop": stop_time
-            })
-            program_count += 1
-        for channel_id in epg_data:
-            epg_data[channel_id].sort(key=lambda x: x['start'])
-        logging.info(f"Successfully parsed {program_count} EPG programs for {len(epg_data)} channels (including past programs).")
-        return epg_data
+        batch_data = []       
+        f = io.StringIO(xml_content)
+        context = ET.iterparse(f, events=('start', 'end'))
+        _event, root = next(context)
+        for event, elem in context:
+            if event == 'end' and elem.tag == 'programme':
+                channel_id = elem.get('channel')
+                if not channel_id:
+                    elem.clear()
+                    root.clear()
+                    continue                  
+                title_elem = elem.find('title')
+                desc_elem = elem.find('desc')
+                title = title_elem.text if (title_elem is not None and title_elem.text) else _("No Title")
+                desc = desc_elem.text if (desc_elem is not None and desc_elem.text) else ""               
+                start_time_str = elem.get('start')
+                stop_time_str = elem.get('stop')              
+                try:
+                     start_time = parse_time(start_time_str)
+                     stop_time = parse_time(stop_time_str)
+                     start_ts = int(start_time.timestamp())
+                     stop_ts = int(stop_time.timestamp())
+                except (ValueError, TypeError) as e:
+                     logging.warning(f"Invalid time format for EPG program. Skipping. Error: {e}")
+                     elem.clear()
+                     root.clear()
+                     continue
+                batch_data.append((channel_id, title, desc, start_ts, stop_ts))
+                program_count += 1
+                if len(batch_data) >= 10000:
+                    database.insert_epg_batch(batch_data)
+                    batch_data.clear()               
+                elem.clear()
+                root.clear()
+        if batch_data:
+            database.insert_epg_batch(batch_data)
+        database.set_config_value('last_epg_hash', current_hash)          
+        logging.info(f"Successfully saved {program_count} EPG programs to SQLite Database.")
+        return True       
     except ET.ParseError as e:
         logging.error(f"Failed to parse EPG XML content: {e}")
-        return {}
+        return False
     except Exception as e:
         logging.error(f"An unexpected error occurred during EPG parsing: {e}")
-        return {}
+        return False
+        
+def sanitize_xml(xml_string):
+    if not xml_string:
+        return xml_string       
+    xml_string = xml_string.strip()
+    if xml_string.startswith('<?xml') or xml_string.startswith('<tv'):
+        return xml_string
+    match = re.search(r'(<\?xml.*|<tv.*)', xml_string, re.DOTALL)
+    if match:
+        return match.group(1)       
+    return xml_string        
 
 def _load_from_url(url):
-    """(HELPER FUNCTION) Downloads EPG data from the given URL."""
     try:
         headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36"
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
+            "Accept-Encoding": "gzip, deflate"
         }
         response = requests.get(url, timeout=60, headers=headers)
-        response.raise_for_status()
+        response.raise_for_status()      
+        raw_bytes = response.content
+        if raw_bytes.startswith(b'\x1f\x8b'):
+            logging.info("EPG URL: GZIP format detected, decompressing...")
+            try:
+                raw_bytes = gzip.decompress(raw_bytes)
+            except Exception as e:
+                logging.error(f"EPG URL: Gzip decompress failed: {e}")
         try:
-            xml_content = response.content.decode('utf-8')
+            xml_content = raw_bytes.decode('utf-8')
+            logging.info("EPG URL decoded successfully using standard UTF-8.")
         except UnicodeDecodeError:
             try:
-                xml_content = response.content.decode('iso-8859-9')
-            except UnicodeDecodeError:
-                 xml_content = response.content.decode(response.apparent_encoding, errors='ignore')
-        return xml_content
+                prediction = charset_normalizer.detect(raw_bytes)
+                correct_encoding = prediction['encoding'] if prediction and prediction.get('encoding') else 'utf-8'
+                logging.info(f"EPG URL encoding auto-detected as: {correct_encoding}")
+                xml_content = raw_bytes.decode(correct_encoding, errors='replace')
+            except Exception as e:
+                logging.error(f"EPG URL decode error: {e}")
+                xml_content = raw_bytes.decode('utf-8', errors='replace')
+        cleaned_xml = sanitize_xml(xml_content)
+        if len(cleaned_xml) != len(xml_content):
+            logging.info(f"Sanitized garbage characters from XML URL. Original: {len(xml_content)}, Cleaned: {len(cleaned_xml)}")           
+        return cleaned_xml        
     except requests.exceptions.RequestException as e:
         logging.error(f"Failed to download EPG data from URL: {e}")
         return None
 
 def _load_from_file(file_path):
-    """(HELPER FUNCTION) Reads EPG data from the given local file."""
     try:
         if not os.path.exists(file_path):
             logging.error(f"EPG file not found at local path: {file_path}")
-            return None
-        encodings_to_try = ['utf-8', 'iso-8859-9', 'cp1254']
-        xml_content = None
-        for enc in encodings_to_try:
-             try:
-                 with open(file_path, 'r', encoding=enc) as f:
-                     xml_content = f.read()
-                 logging.info(f"Local EPG file read successfully with encoding: {enc}")
-                 break
-             except UnicodeDecodeError:
-                 logging.warning(f"Failed to read local EPG file with encoding {enc}. Trying next...")
-             except Exception as e:
-                 logging.error(f"Failed to read local EPG file '{file_path}': {e}")
-                 return None
-        if xml_content is None:
-             logging.error(f"Could not decode local EPG file with any known encoding: {file_path}")
-             return None
-        return xml_content
+            return None           
+        with open(file_path, 'rb') as f:
+            raw_bytes = f.read()
+        if raw_bytes.startswith(b'\x1f\x8b'):
+            logging.info("Local EPG file: GZIP format detected, decompressing...")
+            try:
+                raw_bytes = gzip.decompress(raw_bytes)
+            except Exception as e:
+                logging.error(f"Local EPG file: Gzip decompress failed: {e}")
+        try:
+            xml_content = raw_bytes.decode('utf-8')
+            logging.info("Local EPG file decoded successfully using standard UTF-8.")
+        except UnicodeDecodeError:
+            try:
+                prediction = charset_normalizer.detect(raw_bytes)
+                correct_encoding = prediction['encoding'] if prediction and prediction.get('encoding') else 'utf-8'
+                logging.info(f"Local EPG file encoding auto-detected as: {correct_encoding}")
+                xml_content = raw_bytes.decode(correct_encoding, errors='replace')
+            except Exception as e:
+                logging.error(f"Local EPG file decode error: {e}")
+                xml_content = raw_bytes.decode('utf-8', errors='replace')
+        cleaned_xml = sanitize_xml(xml_content)
+        if len(cleaned_xml) != len(xml_content):
+            logging.info(f"Sanitized garbage characters from Local XML. Original: {len(xml_content)}, Cleaned: {len(cleaned_xml)}")         
+        return cleaned_xml        
     except IOError as e:
         logging.error(f"Failed to open local EPG file '{file_path}': {e}")
         return None
 
 def load_epg_data(path_or_url):
-    """
-    (MAIN FUNCTION) Detects if the given path is a URL or local file,
-    loads the data, and returns the RAW CONTENT (Parsing is not done here).
-    """
     if not path_or_url:
         return None
     logging.info(f"Loading EPG content from: {path_or_url}")

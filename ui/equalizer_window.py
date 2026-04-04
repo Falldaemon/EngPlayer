@@ -67,7 +67,6 @@ class EqualizerWindow(Gtk.Window):
         self._check_current_settings()
 
     def _check_current_settings(self):
-        """Checks which preset matches the current slider settings when the window is opened."""
         current_values = []
         for i in range(10):
             saved_value = database.get_config_value(f"eq_band_{i}")
@@ -82,7 +81,6 @@ class EqualizerWindow(Gtk.Window):
         self.is_applying_preset = False
 
     def _on_preset_changed(self, combo):
-        """Updates the sliders and the player when a preset is selected from the ComboBox."""
         if self.is_applying_preset:
             return
         active_id = combo.get_active_id()
@@ -100,7 +98,6 @@ class EqualizerWindow(Gtk.Window):
         self.is_applying_preset = False
 
     def on_band_changed(self, slider, band_index):
-        """Runs when a slider is manually moved."""
         if self.is_applying_preset:
             return
         value = slider.get_value()
@@ -112,5 +109,4 @@ class EqualizerWindow(Gtk.Window):
             self.is_applying_preset = False
 
     def _on_reset_clicked(self, button):
-        """The reset button now selects the 'flat' preset."""
         self.preset_combo.set_active_id("flat")

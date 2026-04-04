@@ -85,6 +85,25 @@
   </content_rating>
   
   <releases>
+	  <release version="0.1.6" date="2026-04-04">
+      <description>
+        <p>This major release introduces Timeshift, a smart subtitle engine, compressed EPG support, detailed actor profiles, and extensive personalization options.</p>
+        <ul>
+          <li>New Feature: Added Timeshift to pause and resume live broadcasts.</li>
+          <li>New Feature: Added detailed Actor Profiles with biographies and known works.</li>
+          <li>New Feature: Native support for downloading and decompressing .xml.gz EPG files.</li>
+          <li>New Feature: Introduced Advanced EPG with both Grid and List views.</li>
+          <li>New Feature: Smart Subtitle Engine for automatic and flawless character encoding.</li>
+          <li>New Feature: Added Video Playback Speed control and Aspect Ratio options.</li>
+          <li>New Feature: VOD and Series descriptions can now be translated into the system language.</li>
+          <li>New Feature: Global Search to find content quickly across the app.</li>
+          <li>New Feature: Quick Channel History to view and switch between the last 30 watched channels.</li>
+          <li>New Feature: Programmable Sleep Timer and Advanced List Sorting (A-Z/Z-A).</li>
+          <li>UI: Added new color themes and customizable font styles and sizes.</li>
+          <li>General: Minor UI enhancements and various bug fixes.</li>
+        </ul>
+      </description>
+    </release>
 	  <release version="0.1.5" date="2026-02-04">
       <description>
         <p>This release introduces a refreshed UI, full-screen channel management, and buffer control.</p>

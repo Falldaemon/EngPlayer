@@ -25,13 +25,16 @@ class SubtitleDialog(Adw.MessageDialog):
         self.set_close_response("close")        
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, margin_top=12)
         self.set_extra_child(content_box)      
+        list_box = Gtk.ListBox()
+        list_box.add_css_class("boxed-list")
+        content_box.append(list_box)
         self.toggle_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
         self.toggle_switch.set_active(current_state)
         self.toggle_switch.connect("notify::active", self.on_toggle_changed)     
         toggle_row = Adw.ActionRow(title=_("Show Subtitles"))
         toggle_row.add_suffix(self.toggle_switch)
         toggle_row.set_activatable_widget(self.toggle_switch)
-        content_box.append(toggle_row)      
+        list_box.append(toggle_row)        
         if embedded_tracks:
             self.track_combo = Gtk.ComboBoxText()
             for track in embedded_tracks:
@@ -42,13 +45,13 @@ class SubtitleDialog(Adw.MessageDialog):
             combo_row = Adw.ActionRow(title=_("Embedded Track"))
             combo_row.add_suffix(self.track_combo)
             combo_row.set_activatable_widget(self.track_combo)
-            content_box.append(combo_row)         
+            list_box.append(combo_row)           
         load_button = Gtk.Button.new_with_label(_("Load from File"))
         load_button.connect("clicked", lambda w: self.emit('load-external-requested'))
-        content_box.append(load_button)      
+        content_box.append(load_button)          
         online_search_button = Gtk.Button.new_with_label(_("Search Online"))
         online_search_button.connect("clicked", lambda w: self.emit('online-search-requested'))
-        content_box.append(online_search_button)      
+        content_box.append(online_search_button)            
         sync_row = Adw.ActionRow(title=_("Synchronization Adjust"))
         sync_box = Gtk.Box(spacing=6, valign=Gtk.Align.CENTER)
         btn_sync_minus = Gtk.Button.new_from_icon_name("go-previous-symbolic")
@@ -63,13 +66,12 @@ class SubtitleDialog(Adw.MessageDialog):
         sync_box.append(btn_sync_plus)
         sync_row.add_suffix(sync_box)
         sync_row.set_activatable(False)
-        content_box.append(sync_row)      
+        list_box.append(sync_row)       
         settings_button = Gtk.Button.new_with_label(_("Settings"))
         settings_button.connect("clicked", self._on_settings_clicked)
         content_box.append(settings_button)
 
     def _on_settings_clicked(self, button):
-        """Opens the subtitle settings window."""
         settings_dialog = SubtitleSettingsDialog(self.get_transient_for())
         settings_dialog.present()
 
@@ -90,9 +92,7 @@ class SubtitleDialog(Adw.MessageDialog):
             self.track_combo.set_active_id(str(track_id))
 
     def _on_sync_adjust_clicked(self, button, adjustment_ms):
-        """Emits the signal when the +/- buttons are clicked."""
         self.emit('sync-adjust-requested', adjustment_ms)
 
     def update_sync_label(self, delay_ms):
-        """Method to be called from MainWindow to update the label."""
         self.sync_label.set_text(f"{delay_ms} ms")

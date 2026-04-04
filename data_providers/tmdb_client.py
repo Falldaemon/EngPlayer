@@ -33,26 +33,25 @@ IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
 HEADERS = {"User-Agent": f"EngPlayer/{VERSION}", "Accept": "application/json"}
 
 def get_system_language():
-    """
-    Detects system language robustly for ALL languages.
-    Parses environment variables like 'de_DE.UTF-8' to 'de'.
-    """
     env_lang = os.environ.get("LANG", "") or os.environ.get("LANGUAGE", "")
     if env_lang and len(env_lang) >= 2:
-        return env_lang.split('_')[0].split('.')[0].lower()
+        code = env_lang.split('_')[0].split('.')[0].lower()
+        if code and code != 'c' and code != 'posix':
+            return code            
     try:
         lang_code = locale.getdefaultlocale()[0]
         if lang_code:
-            return lang_code.split('_')[0]
-    except Exception:
-        pass
+            code = lang_code.split('_')[0].lower()
+            if code and code != 'c' and code != 'posix':
+                return code
+    except Exception as e:
+        logging.error(f"Language detection error: {e}")       
     return "en"
 
 SYSTEM_LANGUAGE = get_system_language()
 MIN_MATCH_SCORE = 75
 
 def _perform_tmdb_search(api_key, query, endpoint, language=None, year=None):
-    """ Helper function: Performs a TMDb search in a specific language and year. """
     search_url = f"{API_BASE_URL}/search/{endpoint}"
     params = {"api_key": api_key, "query": query}
     lang_for_log = language if language else "global"
@@ -82,9 +81,6 @@ def _perform_tmdb_search(api_key, query, endpoint, language=None, year=None):
         raise e
 
 def _find_best_match(original_title, year, results):
-    """
-    Finds the best match using fuzzy matching.
-    """
     if not results:
         return None, 0
     if not FUZZ_AVAILABLE:
@@ -115,10 +111,6 @@ def _find_best_match(original_title, year, results):
     return best_match, highest_score
 
 def search_media(api_key, title, media_type, year=None):
-    """
-    Main search function.
-    Returns 3 states: (data, "success"), (None, "no_match_found"), (None, "network_error")
-    """
     if not api_key: return None, "api_key_missing"
     endpoint = "tv" if media_type == "tv" else "movie"
     search_query = title
@@ -243,7 +235,8 @@ def get_media_details(api_key, media_id, media_type):
             if actor and actor.get('name') and actor.get('profile_path'):
                 cast_list_with_pics.append({
                     "name": actor.get('name'),
-                    "profile_path": actor.get('profile_path')
+                    "profile_path": actor.get('profile_path'),
+                    "id": actor.get('id')
                 })
         logging.debug(f"{len(cast_list_with_pics)} cast members (with pictures) found.")
         creators = [member['name'] for member in merged_data.get('created_by', []) if member and 'name' in member]
@@ -346,3 +339,52 @@ def get_season_details(api_key, tv_id, season_number):
             "vote_average": ep.get("vote_average")
         }
     return processed_episodes
+    
+def get_person_details(api_key, person_id):
+    if not api_key or not person_id: return None
+    url = f"{API_BASE_URL}/person/{person_id}"
+    params = {
+        "api_key": api_key, 
+        "language": SYSTEM_LANGUAGE,
+        "append_to_response": "combined_credits"
+    }  
+    try:
+        response = requests.get(url, params=params, headers=HEADERS, timeout=10)
+        response.raise_for_status()
+        data = response.json()
+        if not data.get("biography") and SYSTEM_LANGUAGE != "en":
+            params["language"] = "en-US"
+            res_en = requests.get(url, params=params, headers=HEADERS, timeout=10)
+            if res_en.status_code == 200:
+                data["biography"] = res_en.json().get("biography")
+        credits = data.get("combined_credits", {}).get("cast", [])
+        filtered_credits = []
+        seen_ids = set()
+        EXCLUDED_GENRES = {10767, 10763, 10764} 
+        for c in credits:
+            media_id = c.get("id")
+            char_name = str(c.get("character", "")).lower()
+            genres = set(c.get("genre_ids", []))
+            order = c.get("order", 100) 
+            if any(x in char_name for x in ["self", "himself", "herself", "guest"]):
+                continue
+            if genres.intersection(EXCLUDED_GENRES):
+                continue
+            if media_id in seen_ids or not c.get("poster_path"):
+                continue
+            if "(voice)" in char_name and order > 2:
+                continue
+            filtered_credits.append(c)
+            seen_ids.add(media_id)
+        known_for = sorted(filtered_credits, key=lambda x: x.get("vote_count", 0), reverse=True)[:8]       
+        return {
+            "name": data.get("name"),
+            "biography": data.get("biography"),
+            "birthday": data.get("birthday"),
+            "place_of_birth": data.get("place_of_birth"),
+            "profile_path": data.get("profile_path"),
+            "known_for": known_for
+        }
+    except Exception as e:
+        logging.error(f"TMDb Person Details Error: {e}")
+        return None

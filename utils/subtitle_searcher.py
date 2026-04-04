@@ -20,10 +20,6 @@ HEADERS = {
 }
 
 def search_subtitles_online(file_path, title_for_search, api_key, callback_on_main_thread, tmdb_id=None, year=None):
-    """
-    Searches for subtitles using the OpenSubtitles API (by TMDb ID, title, or year)
-    and sends the results to the main thread via callback.
-    """
     logging.info(f"Starting subtitle search. Title='{title_for_search}', Year='{year}', TMDb ID='{tmdb_id}'")
     results = []
     error = None
@@ -115,11 +111,6 @@ def search_subtitles_online(file_path, title_for_search, api_key, callback_on_ma
     GLib.idle_add(callback_on_main_thread, results, error)
 
 def download_subtitle_file(file_id, api_key, callback_on_main_thread):
-    """
-    Gets the download link for the given file_id, downloads the file,
-    extracts it from ZIP if necessary, and returns the path to the temporary SRT file via callback.
-    (This function remains unchanged)
-    """
     logging.info(f"Subtitle download process started: file_id={file_id}")
     temp_srt_path = None
     error = None

@@ -2,7 +2,8 @@
 
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GObject, Pango, GLib, GdkPixbuf, Gdk
+gi.require_version("Adw", "1")
+from gi.repository import Gtk, GObject, Pango, GLib, GdkPixbuf, Gdk, Adw
 import gettext
 _ = gettext.gettext
 import logging
@@ -10,12 +11,158 @@ import threading
 import os
 import json
 import re
+
+import locale
+from deep_translator import GoogleTranslator
+
+def get_system_language():
+    try:
+        langs = GLib.get_language_names()
+        for lang in langs:
+            code = lang[:2].lower()
+            if code and code != 'c':
+                return code               
+        env_lang = os.environ.get('LANG', '')
+        if env_lang:
+            code = env_lang[:2].lower()
+            if code and code != 'c':
+                return code             
+        return 'en'        
+    except Exception as e:
+        logging.error(f"Language detection error: {e}")
+        return 'en'
+
+def translate_text_manually(text, callback, button_to_disable=None):
+    if not text or len(text.strip()) == 0:
+        return
+    if button_to_disable:
+        button_to_disable.set_sensitive(False)
+
+    def run_translation():
+        try:
+            target_lang = get_system_language()
+            translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
+            GLib.idle_add(callback, translated)
+        except Exception as e:
+            logging.error(f"Translation error: {e}")
+            GLib.idle_add(callback, text)
+        finally:
+            if button_to_disable:
+                GLib.idle_add(button_to_disable.set_sensitive, True)
+    threading.Thread(target=run_translation, daemon=True).start()
+
 from utils.image_loader import load_image_async
 from data_providers import tmdb_client
 from core.config import get_fallback_tmdb_key
 import database
 from utils.theme_utils import get_icon_theme_folder
 IMAGE_BASE_URL_PROFILE = "https://image.tmdb.org/t/p/w185"
+
+class ActorBioDialog(Adw.Window):
+    def __init__(self, parent, actor_id, actor_name_fallback):
+        super().__init__(transient_for=parent, modal=True)
+        self.set_title(actor_name_fallback)
+        self.set_default_size(750, 600) 
+        self.add_css_class("media-info-dialog")
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.set_content(content_box)       
+        header = Adw.HeaderBar()
+        header.set_show_end_title_buttons(True)
+        content_box.append(header)
+        self.translate_btn = Gtk.Button()
+        self.translate_btn.set_tooltip_text(_("Translate"))      
+        theme_folder = get_icon_theme_folder()
+        trans_icon_path = os.path.join("resources", "icons", theme_folder, "translate.svg")
+        if os.path.exists(trans_icon_path):
+            img = Gtk.Image.new_from_file(trans_icon_path)
+            img.set_pixel_size(16)
+            self.translate_btn.set_child(img)
+        else:
+            self.translate_btn.set_icon_name("preferences-desktop-locale-symbolic")          
+        self.translate_btn.connect("clicked", self._on_translate_clicked)
+        header.pack_end(self.translate_btn)       
+        self.original_bio = ""
+        main_scroll = Gtk.ScrolledWindow(vexpand=True)
+        content_box.append(main_scroll)
+        container = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL, 
+            spacing=24, 
+            margin_top=24, 
+            margin_bottom=24, 
+            margin_start=24, 
+            margin_end=24
+        )
+        main_scroll.set_child(container)
+        top_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=24)
+        container.append(top_hbox)
+        self.profile_image = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
+        self.profile_image.set_size_request(200, 300)
+        self.profile_image.set_valign(Gtk.Align.START)
+        img_frame = Gtk.Frame(child=self.profile_image)
+        top_hbox.append(img_frame)
+        info_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, hexpand=True)
+        top_hbox.append(info_vbox)       
+        self.name_label = Gtk.Label(xalign=0, css_classes=["title-1"])
+        self.name_label.set_markup(f"<b>{GLib.markup_escape_text(actor_name_fallback)}</b>")
+        info_vbox.append(self.name_label)       
+        self.birth_label = Gtk.Label(xalign=0, css_classes=["dim-label"])
+        info_vbox.append(self.birth_label)       
+        self.bio_label = Gtk.Label(xalign=0, yalign=0, wrap=True)
+        self.bio_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
+        self.bio_label.set_markup("<i>" + _("Loading biography...") + "</i>")
+        info_vbox.append(self.bio_label)
+        self.known_for_section = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12)
+        self.known_for_section.set_visible(False)
+        container.append(self.known_for_section)
+        kf_label = Gtk.Label(xalign=0, css_classes=["title-2"])
+        kf_label.set_markup(f"<b>{_('Known For')}</b>")
+        self.known_for_section.append(kf_label)
+        self.posters_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        self.known_for_section.append(self.posters_hbox)      
+        threading.Thread(target=self._fetch_data, args=(actor_id,), daemon=True).start()
+
+    def _fetch_data(self, actor_id):
+        user_key = database.get_config_value("tmdb_api_key")
+        api_key = user_key if user_key else get_fallback_tmdb_key()
+        if api_key:
+            details = tmdb_client.get_person_details(api_key, actor_id)
+            GLib.idle_add(self._update_ui, details)
+
+    def _update_ui(self, details):
+        if not details: return
+        if details.get("profile_path"):
+            url = f"https://image.tmdb.org/t/p/w300{details['profile_path']}"
+            load_image_async(url, self.profile_image, on_success_callback=lambda w, p: w.set_paintable(Gdk.Texture.new_for_pixbuf(p)))      
+        bday = details.get("birthday"); place = details.get("place_of_birth")
+        self.birth_label.set_text(f"{bday} • {place}" if bday and place else (bday or place or ""))
+        self.original_bio = details.get("biography") or _("No biography found.")
+        self.bio_label.set_text(self.original_bio)
+        known_works = details.get("known_for", [])
+        if known_works:
+            self.known_for_section.set_visible(True)
+            for work in known_works:
+                p_path = work.get("poster_path")
+                if not p_path: continue               
+                work_vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
+                work_vbox.set_size_request(80, -1)
+                work_img = Gtk.Image(pixel_size=120)
+                work_img.set_from_icon_name("view-more-symbolic")
+                load_image_async(f"https://image.tmdb.org/t/p/w154{p_path}", work_img, 
+                                 on_success_callback=lambda w, p: w.set_from_pixbuf(p))              
+                work_title = Gtk.Label(label=work.get("title") or work.get("name", ""), wrap=True, lines=2, ellipsize=Pango.EllipsizeMode.END)
+                work_title.add_css_class("caption")              
+                work_vbox.append(work_img); work_vbox.append(work_title)
+                self.posters_hbox.append(work_vbox)
+
+    def _on_translate_clicked(self, btn):
+        if getattr(self, "original_bio", "") == "" or self.original_bio == _("No biography found."):
+            return        
+        self.bio_label.set_markup("<i>" + _("Translating...") + "</i>")
+        
+        def on_translated(result):
+            self.bio_label.set_text(result)           
+        translate_text_manually(self.original_bio, on_translated, btn)
+
 class SeriesDetailView(Gtk.Box):
     __gsignals__ = {
         "back-requested": (GObject.SignalFlags.RUN_FIRST, None, ()),
@@ -26,12 +173,17 @@ class SeriesDetailView(Gtk.Box):
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=12, **kwargs)
         self.set_margin_start(24); self.set_margin_end(24)
-        self.set_margin_top(12); self.set_margin_bottom(12)
+        self.set_margin_top(12); self.set_margin_bottom(12)        
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.append(header_box)
-        back_button = Gtk.Button(icon_name="go-previous-symbolic", label=_("Back to Series List"))
-        back_button.connect("clicked", lambda w: self.emit("back-requested"))
+        back_button = Gtk.Button()
         back_button.set_halign(Gtk.Align.START)
+        back_button.set_has_frame(False)         
+        btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        btn_box.append(Gtk.Image.new_from_icon_name("go-previous-symbolic"))
+        btn_box.append(Gtk.Label(label=_("Back")))
+        back_button.set_child(btn_box)      
+        back_button.connect("clicked", lambda w: self.emit("back-requested"))
         header_box.append(back_button)
         main_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=30)
         main_box.set_vexpand(True); main_box.set_valign(Gtk.Align.FILL)
@@ -89,7 +241,25 @@ class SeriesDetailView(Gtk.Box):
         self.trailer_button.set_child(button_content_box)
         self.trailer_button.set_sensitive(False)
         self.trailer_button.connect("clicked", self._on_trailer_clicked)
-        self.info_box.append(self.trailer_button)
+        action_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, margin_top=10)
+        action_button_box.append(self.trailer_button)
+        self.translate_btn = Gtk.Button(css_classes=["pill"])       
+        translate_box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER)
+        trans_icon_path = os.path.join("resources", "icons", theme_folder, "translate.svg")
+        if os.path.exists(trans_icon_path):
+             trans_icon = Gtk.Image.new_from_file(trans_icon_path)
+             trans_icon.set_pixel_size(16)
+             translate_box.append(trans_icon)
+        else:
+             trans_fallback = Gtk.Image.new_from_icon_name("preferences-desktop-locale-symbolic")
+             trans_fallback.set_pixel_size(16)
+             translate_box.append(trans_fallback)            
+        trans_label = Gtk.Label(label=_("Translate"))
+        translate_box.append(trans_label)
+        self.translate_btn.set_child(translate_box)
+        self.translate_btn.connect("clicked", self._on_translate_clicked)
+        action_button_box.append(self.translate_btn)
+        self.info_box.append(action_button_box)      
         episodes_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, hexpand=True)
         main_box.append(episodes_box)
         season_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -121,7 +291,6 @@ class SeriesDetailView(Gtk.Box):
         self.current_tmdb_season_data = None
 
     def update_content(self, series_info, series_id=None):
-        """Processes series info, checks TMDb, and updates the UI."""
         logging.debug(f"SERIES DETAIL: update_content STARTED.")
         self.current_tmdb_season_data = None
         self.episodes_data = {}
@@ -180,7 +349,6 @@ class SeriesDetailView(Gtk.Box):
                      tmdb_handled = True
                  else:
                      logging.warning("SERIES DETAIL: TMDb ID found but API key is missing (and fallback failed).")
-
         if not tmdb_handled:
             logging.debug("SERIES DETAIL: TMDb not handled. CALLING fallback _update_labels_from_xtream_info.")
             self._update_labels_from_xtream_info(series_info)
@@ -214,7 +382,6 @@ class SeriesDetailView(Gtk.Box):
         logging.info("SERIES DETAIL: update_content FINISHED.")
 
     def _fetch_tmdb_details_by_id_thread(self, api_key, tmdb_id):
-        """(Background Thread) Fetches series details using the provided TMDb ID."""
         logging.debug(f"SERIES DETAIL: TMDb API thread (by ID) started: ID={tmdb_id}")
         tmdb_details = tmdb_client.get_media_details(api_key, tmdb_id, 'tv')
         if tmdb_details:
@@ -233,108 +400,92 @@ class SeriesDetailView(Gtk.Box):
             GLib.idle_add(self._trigger_xtream_fallback_update)
 
     def _update_labels_from_tmdb_data(self, tmdb_api_or_db_data):
-         """Updates labels with TMDb data (from API response OR DB row format)."""
-         logging.debug("SERIES DETAIL: Updating UI labels with TMDb data...")
-         try:
-             initial_title = self.title_label.get_text().split(' (')[0]
-             release_date = tmdb_api_or_db_data.get("first_air_date", "") or tmdb_api_or_db_data.get("release_date", "") or ""
-             year_str = f" ({release_date[:4]})" if release_date else ""
-             tmdb_title = tmdb_api_or_db_data.get('name', initial_title) or tmdb_api_or_db_data.get('title', initial_title) or initial_title
-             self.clean_tmdb_title = tmdb_title
-             self.title_label.set_markup(f"<span weight='bold' size='large'>{GLib.markup_escape_text(tmdb_title + year_str)}</span>")
-             self.release_date_label.set_text(_("First Aired:") + f" {release_date}" if release_date else "")
-             rating_val = tmdb_api_or_db_data.get('rating')
-             if rating_val is None: rating_val = tmdb_api_or_db_data.get('vote_average')
-             self.rating_label.set_markup(f"<b>{_('TMDb Rating')}:</b> {rating_val:.1f} / 10" if rating_val is not None else "")
-             overview = tmdb_api_or_db_data.get("overview", "") or ""
-             self._set_overview_text(overview if overview else _("Plot information not found."))
-             director_val = tmdb_api_or_db_data.get('director', "") or ""
-             self.director_label.set_markup(f"<b>{_('Creator/Director')}:</b> {director_val if director_val else 'N/A'}")
-             countries = tmdb_api_or_db_data.get('countries', "")
-             if countries:
-                 self.country_label.set_markup(f"<b>{_('Production Country')}:</b> {countries}")
-             else:
-                 self.country_label.set_text("")
-             genres = tmdb_api_or_db_data.get('genres', '')
-             logging.debug(f"SERIES DETAIL: Updating genres: '{genres}'")
-             safe_genres = GLib.markup_escape_text(genres) if genres else ""
-             self.genre_label.set_markup(f"<i>{safe_genres}</i>" if safe_genres else "")
-             cast_with_pics_json = tmdb_api_or_db_data.get('cast_members')
-             cast_list = []
-             logging.debug(f"SERIES DETAIL: Searching for cast data... DB JSON: {cast_with_pics_json is not None}, API List: {'cast_with_pics' in tmdb_api_or_db_data}")
-             if cast_with_pics_json:
-                try:
-                    cast_list = json.loads(cast_with_pics_json)
-                    logging.debug(f"SERIES DETAIL: {len(cast_list)} cast members read from database JSON.")
-                except json.JSONDecodeError:
-                    logging.warning("SERIES DETAIL: Cast data in database is not in JSON format.")
-                    cast_list = []
-             elif 'cast_with_pics' in tmdb_api_or_db_data and isinstance(tmdb_api_or_db_data['cast_with_pics'], list):
-                 cast_list = tmdb_api_or_db_data['cast_with_pics']
-                 logging.debug(f"SERIES DETAIL: {len(cast_list)} cast members list from API response used.")
-             while (child := self.cast_flowbox.get_child_at_index(0)):
+        logging.debug("SERIES DETAIL: Updating UI labels with TMDb data...")
+        try:
+            initial_title = self.title_label.get_text().split(' (')[0]
+            release_date = tmdb_api_or_db_data.get("first_air_date", "") or tmdb_api_or_db_data.get("release_date", "") or ""
+            year_str = f" ({release_date[:4]})" if release_date else ""
+            tmdb_title = tmdb_api_or_db_data.get('name', initial_title) or tmdb_api_or_db_data.get('title', initial_title) or initial_title
+            self.clean_tmdb_title = tmdb_title
+            self.title_label.set_markup(f"<span weight='bold' size='large'>{GLib.markup_escape_text(tmdb_title + year_str)}</span>")
+            self.release_date_label.set_text(_("First Aired:") + f" {release_date}" if release_date else "")           
+            rating_val = tmdb_api_or_db_data.get('rating')
+            if rating_val is None: rating_val = tmdb_api_or_db_data.get('vote_average')
+            self.rating_label.set_markup(f"<b>{_('TMDb Rating')}:</b> {rating_val:.1f} / 10" if rating_val is not None else "")           
+            overview = tmdb_api_or_db_data.get("overview", "") or ""
+            self._set_overview_text(overview if overview else _("Plot information not found."))           
+            director_val = tmdb_api_or_db_data.get('director', "") or ""
+            self.director_label.set_markup(f"<b>{_('Creator/Director')}:</b> {director_val if director_val else 'N/A'}")           
+            countries = tmdb_api_or_db_data.get('countries', "")
+            self.country_label.set_markup(f"<b>{_('Production Country')}:</b> {countries}" if countries else "")           
+            genres = tmdb_api_or_db_data.get('genres', '')
+            self.genre_label.set_markup(f"<i>{GLib.markup_escape_text(genres)}</i>" if genres else "")
+            cast_with_pics_json = tmdb_api_or_db_data.get('cast_members')
+            cast_list = []
+            if cast_with_pics_json:
+                try: cast_list = json.loads(cast_with_pics_json)
+                except: cast_list = []
+            elif 'cast_with_pics' in tmdb_api_or_db_data:
+                cast_list = tmdb_api_or_db_data['cast_with_pics']
+            while (child := self.cast_flowbox.get_child_at_index(0)):
                 self.cast_flowbox.remove(child)
-             if cast_list:
-                logging.debug(f"SERIES DETAIL: Creating boxes for {len(cast_list)} cast members...")
+            if cast_list:
+                theme_folder = get_icon_theme_folder()
+                info_icon_path = os.path.join("resources", "icons", theme_folder, "info.svg")
                 for actor in cast_list:
-                    actor_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4, margin_bottom=6)
-                    actor_box.set_size_request(100, -1)
-                    actor_image = Gtk.Image(pixel_size=138, icon_name="avatar-default-symbolic")
-                    profile_path = actor.get('profile_path')
-                    if profile_path:
-                        full_image_url = IMAGE_BASE_URL_PROFILE + profile_path
-                        load_image_async(
-                            full_image_url, actor_image,
-                            on_success_callback=lambda widget, pixbuf: widget.set_from_pixbuf(pixbuf)
-                        )
-                    actor_name_label = Gtk.Label(label=actor.get('name', 'N/A'), wrap=True, justify=Gtk.Justification.CENTER, xalign=0.5)
-                    actor_name_label.set_size_request(100, -1)
-                    actor_box.append(actor_image)
-                    actor_box.append(actor_name_label)
-                    self.cast_flowbox.append(actor_box)
-             else:
-                 no_cast_label = Gtk.Label(label=_("Cast information not found."), css_classes=["caption"])
-                 self.cast_flowbox.append(no_cast_label)
-                 logging.debug("SERIES DETAIL: Cast list is empty, 'not found' message added.")
-             poster_key = tmdb_api_or_db_data.get("poster_path")
-             if poster_key:
-                 full_poster_url = tmdb_client.get_poster_url(poster_key)
-                 if full_poster_url:
-                     load_image_async(
-                         full_poster_url, self.poster_image,
-                         on_success_callback=lambda widget, pixbuf: widget.set_paintable(Gdk.Texture.new_for_pixbuf(pixbuf))
-                     )
-             trailer_key = tmdb_api_or_db_data.get("trailer_key")
-             logging.info(f"SERIES DETAIL UI Update: Found trailer_key = {trailer_key}")
-             if trailer_key:
-                 self.current_trailer_key = trailer_key
-                 self.trailer_button.set_sensitive(True)
-                 logging.debug(f"SERIES DETAIL: Trailer key found and button enabled: {trailer_key}")
-             else:
-                 self.current_trailer_key = None
-                 self.trailer_button.set_sensitive(False)
-                 logging.debug("SERIES DETAIL: No trailer key found in TMDb data.")
-             logging.info("SERIES DETAIL: UI update with TMDb data completed successfully.")
-             active_season_id = self.season_combo.get_active_id()
-             tmdb_id_val = tmdb_api_or_db_data.get("id")
-             if active_season_id and tmdb_id_val:
-                 logging.info(f"Auto-refreshing plots for Season {active_season_id} now that TMDb ID ({tmdb_id_val}) is available...")
-                 user_key = database.get_config_value("tmdb_api_key")
-                 api_key = user_key if user_key else get_fallback_tmdb_key()
-                 if api_key:
+                    actor_id = actor.get('id'); actor_name = actor.get('name', 'N/A')
+                    actor_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, margin_bottom=6)
+                    actor_box.set_size_request(110, -1)
+                    header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+                    header_box.set_size_request(-1, 24)
+                    actor_box.append(header_box)
+                    if actor_id:
+                        icon = Gtk.Image.new_from_file(info_icon_path) if os.path.exists(info_icon_path) else Gtk.Image.new_from_icon_name("info-symbolic")
+                        icon.set_pixel_size(18); icon.set_halign(Gtk.Align.END); icon.set_hexpand(True); icon.set_opacity(0.8)
+                        header_box.append(icon)
+                    actor_image = Gtk.Image(pixel_size=110, icon_name="avatar-default-symbolic")
+                    if actor.get('profile_path'):
+                        load_image_async(IMAGE_BASE_URL_PROFILE + actor['profile_path'], actor_image, on_success_callback=lambda w, p: w.set_from_pixbuf(p))
+                    actor_box.append(actor_image)                 
+                    name_lbl = Gtk.Label(label=actor_name, wrap=True, justify=Gtk.Justification.CENTER, css_classes=["caption"])
+                    actor_box.append(name_lbl)                  
+                    actor_button = Gtk.Button(css_classes=["actor-cast-button"])
+                    actor_button.set_child(actor_box); actor_button.set_halign(Gtk.Align.CENTER)
+                    if actor_id:
+                        actor_button.set_tooltip_text(_("Click for biography"))
+                        actor_button.connect("clicked", lambda b, aid=actor_id, anm=actor_name: ActorBioDialog(self.get_root(), aid, anm).present())
+                    self.cast_flowbox.append(actor_button)
+            else:
+                self.cast_flowbox.append(Gtk.Label(label=_("Cast information not found."), css_classes=["caption"]))
+            if cast_list and database.get_use_tmdb_status():
+                has_ids = any(actor.get('id') for actor in cast_list if isinstance(actor, dict))
+                if not has_ids:
+                    logging.info("SERIES DETAIL: Legacy data detected (missing IDs). Starting silent background repair...")
+                    tmdb_id = tmdb_api_or_db_data.get('tmdb_id') or tmdb_api_or_db_data.get('id')
+                    user_key = database.get_config_value("tmdb_api_key")
+                    api_key = user_key if user_key else get_fallback_tmdb_key()
+                    if api_key and tmdb_id:
+                        threading.Thread(target=self._fetch_tmdb_details_by_id_thread, args=(api_key, tmdb_id), daemon=True).start()
+            trailer_key = tmdb_api_or_db_data.get("trailer_key")
+            if trailer_key:
+                self.current_trailer_key = trailer_key
+                self.trailer_button.set_sensitive(True)
+            else:
+                self.current_trailer_key = None
+                self.trailer_button.set_sensitive(False)
+            active_season_id = self.season_combo.get_active_id()
+            tmdb_id_val = tmdb_api_or_db_data.get("id") or tmdb_api_or_db_data.get("tmdb_id")
+            if active_season_id and tmdb_id_val:
+                user_key = database.get_config_value("tmdb_api_key")
+                api_key = user_key if user_key else get_fallback_tmdb_key()
+                if api_key:
                     episodes = self.episodes_data.get(active_season_id, [])
-                    thread = threading.Thread(
-                        target=self._fetch_season_details_thread,
-                        args=(api_key, tmdb_id_val, active_season_id, episodes),
-                        daemon=True
-                    )
-                    thread.start()
-         except Exception as e:
-             logging.error(f"SERIES DETAIL: Error processing TMDb data (_update_labels_from_tmdb_data): {e}", exc_info=True)
-         return GLib.SOURCE_REMOVE
+                    threading.Thread(target=self._fetch_season_details_thread, args=(api_key, tmdb_id_val, active_season_id, episodes), daemon=True).start()
+        except Exception as e:
+            logging.error(f"SERIES DETAIL: Error processing TMDb data: {e}", exc_info=True)
+        return GLib.SOURCE_REMOVE
 
     def _update_labels_from_xtream_info(self, series_info_data):
-        """Updates labels with Xtream series_info data (FALLBACK)."""
         logging.debug("SERIES DETAIL: Fallback - Updating UI labels with Xtream data...")
         if not series_info_data or "info" not in series_info_data:
             self.current_trailer_key = None
@@ -383,7 +534,6 @@ class SeriesDetailView(Gtk.Box):
         return GLib.SOURCE_REMOVE
 
     def _trigger_xtream_fallback_update(self):
-         """Called when fetching data with TMDb ID fails."""
          logging.debug("SERIES DETAIL: Could not get data with TMDb ID, triggering Xtream fallback.")
          self._update_labels_from_xtream_info(None)
          return GLib.SOURCE_REMOVE
@@ -469,8 +619,11 @@ class SeriesDetailView(Gtk.Box):
             vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
             vbox.append(Gtk.Label(xalign=0, use_markup=True, label=f"<b>{ep_num}. {GLib.markup_escape_text(title)}</b>"))
             if tmdb_season_data and tmdb_episode_id and t_data and t_data.get('overview'):
-                 overview_lbl = Gtk.Label(xalign=0, label=t_data['overview'], wrap=True, max_width_chars=60, lines=2, ellipsize=Pango.EllipsizeMode.END)
+                 overview_text = t_data['overview']
+                 overview_lbl = Gtk.Label(xalign=0, label=overview_text, wrap=True, max_width_chars=60, lines=2, ellipsize=Pango.EllipsizeMode.END)
                  overview_lbl.add_css_class("caption"); overview_lbl.set_opacity(0.7)
+                 overview_lbl._is_episode_overview = True
+                 overview_lbl._original_text = overview_text              
                  vbox.append(overview_lbl)
             main_hbox.append(vbox)
             if is_watched:
@@ -489,13 +642,46 @@ class SeriesDetailView(Gtk.Box):
     def _on_episode_row_activated(self, listbox, row):
         if hasattr(row, "episode_data"):
             self.emit("episode-activated", row.episode_data)
+            
+    def _on_translate_clicked(self, btn):
+        buffer = self.overview_textview.get_buffer()
+        start_iter = buffer.get_start_iter()
+        end_iter = buffer.get_end_iter()
+        text_to_translate = buffer.get_text(start_iter, end_iter, True)      
+        ignore_list = [
+            _("Loading information..."), 
+            _("Plot information not found.")
+        ]      
+        if text_to_translate and text_to_translate not in ignore_list:
+            buffer.insert(end_iter, "\n\n(" + _("Translating...") + ")")
+            def on_main_translated(result):
+                buffer.delete(buffer.get_start_iter(), buffer.get_end_iter())
+                buffer.insert(buffer.get_start_iter(), result)
+            translate_text_manually(text_to_translate, on_main_translated, btn)
+        child = self.episode_listbox.get_first_child()
+        while child:
+            row_box = child.get_first_child()
+            if row_box:
+                vbox = row_box.get_first_child()
+                if vbox:
+                    lbl = vbox.get_first_child()
+                    while lbl:
+                        if hasattr(lbl, "_is_episode_overview") and getattr(lbl, "_original_text", ""):
+                            orig_text = lbl._original_text
+                            lbl.set_text("(" + _("Translating...") + ")")
+                            def make_callback(label_widget):
+                                def callback(translated):
+                                    label_widget.set_text(translated)
+                                return callback
+                            translate_text_manually(orig_text, make_callback(lbl), None)                         
+                        lbl = lbl.get_next_sibling()
+            child = child.get_next_sibling()
 
     def _on_trailer_clicked(self, button):
         if self.current_trailer_key:
             self.emit("trailer-requested", self.current_trailer_key)
 
     def _fetch_season_details_thread(self, api_key, tmdb_id, season_num, provider_episodes):
-        """Fetches season details, saves to DB, and updates UI."""
         tmdb_season_data = tmdb_client.get_season_details(api_key, tmdb_id, season_num)
         if tmdb_season_data:
             if self.series_id_xtream:
@@ -534,11 +720,9 @@ class SeriesDetailView(Gtk.Box):
         user_key = database.get_config_value("tmdb_api_key")
         api_key = user_key if user_key else get_fallback_tmdb_key()
         if not api_key: return
-
         clean_title, year = title_parser.parse_title_for_search(series_name)
         self.clean_tmdb_title = clean_title 
         if not clean_title: return
-
         search_result, status = tmdb_client.search_media(api_key, clean_title, 'tv', year)
         if status == "success" and search_result:
             tmdb_id = search_result.get('id')
@@ -599,6 +783,9 @@ class SeriesDetailView(Gtk.Box):
                 if tmdb_ep.get('overview'):
                     if vbox.get_last_child() != title_label:
                         vbox.remove(vbox.get_last_child())
-                    overview_lbl = Gtk.Label(xalign=0, label=tmdb_ep['overview'], wrap=True, max_width_chars=60, lines=2, ellipsize=Pango.EllipsizeMode.END)
+                    overview_text = tmdb_ep['overview']
+                    overview_lbl = Gtk.Label(xalign=0, label=overview_text, wrap=True, max_width_chars=60, lines=2, ellipsize=Pango.EllipsizeMode.END)
                     overview_lbl.add_css_class("caption"); overview_lbl.set_opacity(0.7)
+                    overview_lbl._is_episode_overview = True
+                    overview_lbl._original_text = overview_text                    
                     vbox.append(overview_lbl)

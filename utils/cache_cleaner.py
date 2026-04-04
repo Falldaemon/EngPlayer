@@ -7,9 +7,6 @@ import database
 from gi.repository import GLib
 
 def _clean_directory(cache_dir, max_age_days):
-    """
-    Deletes files older than max_age_days from a specific folder.
-    """
     if not os.path.isdir(cache_dir):
         return 0
     deleted_count = 0
@@ -35,9 +32,6 @@ def _clean_directory(cache_dir, max_age_days):
         return 0
 
 def clean_all_caches(max_age_days=30):
-    """
-    Cleans all known image caches in the application.
-    """
     logging.info(f"Cache cleanup started (files older than {max_age_days} days will be deleted)...")
     base_cache_dir = database.get_cache_path()
     poster_cache_dir = os.path.join(base_cache_dir, "poster_cache")

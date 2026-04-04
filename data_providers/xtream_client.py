@@ -4,7 +4,6 @@ import requests
 import logging
 
 def _get_api_data(profile_info, action):
-    """A helper function to make requests to the Xtream Codes player API."""
     host = profile_info.get("host")
     username = profile_info.get("username")
     password = profile_info.get("password")
@@ -35,10 +34,6 @@ def _get_api_data(profile_info, action):
         logging.error(f"Failed to decode JSON from Xtream API for action '{action}'.")
         return None, None
 def get_user_authentication(profile_info):
-    """
-    Fetches only the user_info block (status, exp_date, created_at)
-    by making an action-less authentication call.
-    """
     json_response, user_info = _get_api_data(profile_info, "")
     if user_info:
         logging.info("Successfully fetched user_info (exp_date, etc.).")
@@ -47,7 +42,6 @@ def get_user_authentication(profile_info):
     return None
 
 def get_series_categories(profile_info):
-    """Fetches the list of series categories."""
     data, _ = _get_api_data(profile_info, "get_series_categories")
     if isinstance(data, list):
         logging.info(f"Successfully fetched {len(data)} series categories.")
@@ -55,7 +49,6 @@ def get_series_categories(profile_info):
     return []
 
 def get_live_categories(profile_info):
-    """Fetches the list of live stream categories."""
     data, _ = _get_api_data(profile_info, "get_live_categories")
     if isinstance(data, list):
         logging.info(f"Successfully fetched {len(data)} live categories.")
@@ -63,7 +56,6 @@ def get_live_categories(profile_info):
     return []
 
 def get_vod_categories(profile_info):
-    """Fetches the list of VOD categories."""
     data, _ = _get_api_data(profile_info, "get_vod_categories")
     if isinstance(data, list):
         logging.info(f"Successfully fetched {len(data)} VOD categories.")
@@ -71,7 +63,6 @@ def get_vod_categories(profile_info):
     return []
 
 def get_live_streams(profile_info):
-    """Fetches all live streams."""
     data, _ = _get_api_data(profile_info, "get_live_streams")
     if isinstance(data, list):
         logging.info(f"Successfully fetched {len(data)} live streams.")
@@ -81,7 +72,6 @@ def get_live_streams(profile_info):
     return []
 
 def get_vod_streams(profile_info):
-    """Fetches all VOD streams."""
     data, _ = _get_api_data(profile_info, "get_vod_streams")
     if isinstance(data, list):
         logging.info(f"Successfully fetched {len(data)} VOD streams.")
@@ -91,7 +81,6 @@ def get_vod_streams(profile_info):
     return []
 
 def get_series_streams(profile_info, category_id):
-    """Fetches all series streams for a specific category."""
     action_params = f"get_series&category_id={category_id}"
     data, _ = _get_api_data(profile_info, action_params)
     if isinstance(data, list):
@@ -100,7 +89,6 @@ def get_series_streams(profile_info, category_id):
     return []
 
 def get_series_info(profile_info, series_id):
-    """Fetches detailed information for a single series, including episodes."""
     action_params = f"get_series_info&series_id={series_id}"
     data, _ = _get_api_data(profile_info, action_params)
     if isinstance(data, dict):
@@ -109,7 +97,6 @@ def get_series_info(profile_info, series_id):
     return None
 
 def get_vod_info(profile_info, vod_id):
-    """Fetches detailed information for a single VOD stream."""
     action_params = f"get_vod_info&vod_id={vod_id}"
     data, _ = _get_api_data(profile_info, action_params)
     if isinstance(data, dict):

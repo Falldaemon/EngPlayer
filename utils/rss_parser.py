@@ -5,10 +5,6 @@ import ssl
 from core.config import VERSION 
 
 def parse_podcast_feed(rss_url):
-    """
-    Downloads the given RSS URL and parses the Podcast title, image, and episodes.
-    Returns a dictionary (dict).
-    """
     try:
         ctx = ssl.create_default_context()
         ctx.check_hostname = False

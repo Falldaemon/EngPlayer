@@ -27,19 +27,13 @@ HEADERS = {
 }
 
 def _generate_code_verifier():
-    """Generates a 64-byte random verifier for PKCE."""
     return base64.urlsafe_b64encode(os.urandom(64)).decode('utf-8').rstrip('=')
 
 def _generate_code_challenge(verifier):
-    """Generates a SHA256 code challenge from the given verifier."""
     challenge_bytes = hashlib.sha256(verifier.encode('utf-8')).digest()
     return base64.urlsafe_b64encode(challenge_bytes).decode('utf-8').rstrip('=')
 
 def _start_local_server_for_callback(verifier, final_callback_on_main):
-    """
-    (Background Thread)
-    Starts a temporary localhost server to capture the code redirected by Trakt.tv.
-    """
     server_socket = None
     try:
         server_socket = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -87,11 +81,6 @@ def _start_local_server_for_callback(verifier, final_callback_on_main):
         GLib.idle_add(final_callback_on_main, None, _("Unknown server error."))
 
 def _exchange_code_for_token(code, verifier, final_callback_on_main):
-    """
-    (Background Thread)
-    Exchanges the received 'code' and 'verifier' for the actual 'access_token'.
-    Client Secret IS NOT USED.
-    """
     logging.info("PKCE: Exchanging received code for a token...")
     url = f"{TRAKT_API_URL}/oauth/token"
     payload = {
@@ -113,10 +102,6 @@ def _exchange_code_for_token(code, verifier, final_callback_on_main):
         GLib.idle_add(final_callback_on_main, None, _("Could not retrieve token."))
 
 def start_pkce_authentication(final_callback_on_main):
-    """
-    (Called from Main Thread)
-    Starts the PKCE authentication flow.
-    """
     if not TRAKT_CLIENT_ID:
         logging.error("PKCE: Trakt Client ID is not set in trakt_client.py!")
         GLib.idle_add(final_callback_on_main, None, _("Application Client ID is not set."))
@@ -144,20 +129,12 @@ def start_pkce_authentication(final_callback_on_main):
         GLib.idle_add(final_callback_on_main, None, _("Authentication could not be initiated."))
 
 def _get_api_headers(access_token):
-    """
-    Generates the standard headers for all authenticated Trakt API requests.
-    Client ID is now added as 'trakt-api-key'.
-    """
     headers = HEADERS.copy()
     headers['trakt-api-key'] = TRAKT_CLIENT_ID
     headers['Authorization'] = f"Bearer {access_token}"
     return headers
 
 def _refresh_token(refresh_token):
-    """
-    Refreshes an expired token with a new one.
-    Client Secret IS NOT USED.
-    """
     if not refresh_token:
         logging.error("Trakt: Token refresh failed (no refresh_token).")
         return None
@@ -182,10 +159,6 @@ def _refresh_token(refresh_token):
         return None
 
 def _get_valid_token_data():
-    """
-    Gets the token from the database. Tries to refresh if expired.
-    (Client Secret info NOT REQUIRED)
-    """
     token_data = database.get_trakt_token()
     if not token_data:
         return None
@@ -201,10 +174,6 @@ def _get_valid_token_data():
     return token_data
 
 def add_to_history(tmdb_id, media_type, callback_on_main=None):
-    """
-    (Background Thread)
-    Adds a media item (movie or episode) to the Trakt.tv watch history.
-    """
     logging.info(f"Trakt: Request received to add to history. TMDb ID: {tmdb_id}, Type: {media_type}")
     token_data = _get_valid_token_data()
     if not token_data:
@@ -238,10 +207,6 @@ def add_to_history(tmdb_id, media_type, callback_on_main=None):
         if callback_on_main: GLib.idle_add(callback_on_main, None, str(e))
 
 def get_watched_history(media_type, callback_on_main):
-    """
-    (Background Thread)
-    Fetches the user's ENTIRE watch history (movies or episodes).
-    """
     logging.info(f"Trakt: Fetching watch history (Type: {media_type})...")
     token_data = _get_valid_token_data()
     if not token_data:

@@ -28,7 +28,6 @@ class CatchupDialog(Adw.PreferencesWindow):
         self._populate_programs()
 
     def _populate_programs(self):
-        """Filters EPG data, groups by date, and populates the list."""
         channel_programs = self.all_epg_data.get(self.channel_id, [])
         if not channel_programs:
             no_data_group = Adw.PreferencesGroup()
@@ -87,7 +86,6 @@ class CatchupDialog(Adw.PreferencesWindow):
                 day_group.add(row)
 
     def _on_program_row_activated(self, row):
-        """Runs when a program row is clicked."""
         if hasattr(row, "program_data"):
             selected_program = row.program_data
             logging.info(f"Catch-up program selected: {selected_program['title']} @ {selected_program['start']}")

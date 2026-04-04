@@ -8,7 +8,9 @@ from .player_controls import PlayerControls
 from .channel_list import ChannelList
 import gettext
 import os
-from utils.theme_utils import get_icon_theme_folder
+import database
+from ui.theme_manager import ThemeManager
+from datetime import datetime
 
 _ = gettext.gettext
 
@@ -44,8 +46,8 @@ class VideoView(Gtk.Box):
         self.fullscreen_channel_list.set_halign(Gtk.Align.START)
         self.fullscreen_channel_list.set_valign(Gtk.Align.FILL)
         self.fullscreen_channel_list.set_size_request(350, -1)
-        self.fullscreen_channel_list.set_visible(False)
-        self.fullscreen_channel_list.search_entry.set_visible(False)        
+        self.fullscreen_channel_list.enable_fullscreen_mode()
+        self.fullscreen_channel_list.set_visible(False)     
         self.overlay_container.add_overlay(self.fullscreen_channel_list)
         self.controls = PlayerControls()
         self.append(self.controls)        
@@ -78,6 +80,31 @@ class VideoView(Gtk.Box):
         self.next_episode_box.append(self.next_episode_cancel_button)
         self.overlay_container.add_overlay(self.next_episode_box)      
         self.append(self.epg_scroll)
+        self.clock_box = Gtk.Box(css_classes=["floating-clock"])
+        self.clock_box.set_halign(Gtk.Align.END)
+        self.clock_box.set_valign(Gtk.Align.START)
+        self.clock_box.set_margin_top(40)
+        self.clock_box.set_margin_end(50)
+        self.clock_label = Gtk.Label()
+        self.clock_box.append(self.clock_label)
+        self.overlay_container.add_overlay(self.clock_box)
+        self.clock_box.set_visible(False)      
+        GLib.timeout_add_seconds(1, self._update_clock_text)
+        self.controls.connect("notify::visible", self._sync_clock_visibility)
+
+    def _update_clock_text(self):
+        current_time = datetime.now().strftime("%H:%M:%S")
+        if self.clock_label.get_text() != current_time:
+            self.clock_label.set_text(current_time)
+        return True
+
+    def _sync_clock_visibility(self, widget=None, pspec=None):
+        is_fullscreen = self.controls.has_css_class("fullscreen-controls")
+        is_controls_visible = self.controls.get_visible()     
+        if is_fullscreen and is_controls_visible:
+            self.clock_box.set_visible(True)
+        else:
+            self.clock_box.set_visible(False)
 
     def on_epg_row_activated(self, listbox, row):
         if hasattr(row, 'program_data'):
@@ -106,7 +133,8 @@ class VideoView(Gtk.Box):
                 else:
                     label.set_text(display_text)
                 hbox.append(label)
-                theme_folder = get_icon_theme_folder()
+                saved_theme = database.get_config_value('app_theme')
+                theme_folder = ThemeManager.get_icon_folder(saved_theme)             
                 icon_path = os.path.join("resources", "icons", theme_folder, "info.svg")
                 info_icon = Gtk.Image.new_from_file(icon_path)
                 info_icon.set_pixel_size(16)
@@ -122,12 +150,10 @@ class VideoView(Gtk.Box):
         self.epg_scroll.set_visible(visible)
 
     def set_mode(self, mode):
-        """Switches the interface to 'video' or 'audio' mode."""
         is_video_mode = (mode == 'video')
         self.video_frame.set_visible(is_video_mode)
 
     def _on_video_frame_pressed(self, gesture, n_press, x, y):
-        """Emits the signal only when the video area is double-clicked."""
         if n_press == 2:
             self.emit("video-area-clicked")
 
@@ -142,6 +168,7 @@ class VideoView(Gtk.Box):
         self.controls.set_margin_end(30)
         self.controls.set_visible(True)
         self.overlay_container.add_overlay(self.controls)
+        self._sync_clock_visibility()
 
     def disable_fullscreen_overlay_mode(self):
         self.overlay_container.remove_overlay(self.controls)
@@ -151,3 +178,4 @@ class VideoView(Gtk.Box):
         self.controls.set_margin_start(0)
         self.controls.set_margin_end(0)
         self.insert_child_after(self.controls, self.overlay_container)
+        self._sync_clock_visibility()

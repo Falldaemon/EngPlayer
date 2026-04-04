@@ -41,8 +41,10 @@ _ = gettext.gettext
 
 class ChannelList(Gtk.Box):
     __gsignals__ = {
+        'channel-selected': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+        'back-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'pip-requested': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'back-clicked': (GObject.SignalFlags.RUN_FIRST, None, ())
+        'switcher-changed': (GObject.SignalFlags.RUN_FIRST, None, (str,))
     }
 
     def __init__(self, **kwargs):
@@ -62,15 +64,54 @@ class ChannelList(Gtk.Box):
         self.title_label = Gtk.Label(label="", xalign=0)
         self.title_label.add_css_class("heading")
         self.title_label.set_hexpand(True)
-        self.header_box.append(self.title_label)      
+        self.header_box.append(self.title_label)
+        self.is_fullscreen_mode = False
+        self.switcher_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        self.switcher_box.add_css_class("linked")
+        self.switcher_box.set_hexpand(True)
+        self.switcher_box.set_halign(Gtk.Align.CENTER)
+        self.switcher_box.set_visible(False)
+        self.btn_bouquets = Gtk.ToggleButton(label=_("Bouquets"))
+        self.btn_favorites = Gtk.ToggleButton(label=_("Favorites"))
+        self.btn_history = Gtk.ToggleButton(label=_("History"))
+        self.btn_favorites.set_group(self.btn_bouquets)
+        self.btn_history.set_group(self.btn_bouquets)
+        self.switcher_box.append(self.btn_bouquets)
+        self.switcher_box.append(self.btn_favorites)
+        self.switcher_box.append(self.btn_history)
+        self.btn_bouquets.connect("toggled", self._on_switcher_toggled, "bouquets")
+        self.btn_favorites.connect("toggled", self._on_switcher_toggled, "favorites")
+        self.btn_history.connect("toggled", self._on_switcher_toggled, "history")
+        self.header_box.append(self.switcher_box)      
         self.append(self.header_box)
-        self.search_entry = Gtk.SearchEntry(
-            placeholder_text=_("Search channel..."),
-            margin_start=6, margin_end=6, margin_top=6, margin_bottom=6
-        )
+        self.search_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
+        self.search_box.set_margin_start(6)
+        self.search_box.set_margin_end(6)
+        self.search_box.set_margin_top(6)
+        self.search_box.set_margin_bottom(6)       
+        self.search_entry = Gtk.SearchEntry(placeholder_text=_("Search channel..."))
+        self.search_entry.set_hexpand(True)
         self.search_entry.connect("search-changed", self._on_search_changed)
-        self.append(self.search_entry)
+        self.search_box.append(self.search_entry)
+        sort_menu = Gio.Menu()
+        sort_menu.append(_("Default Order"), "sort.default")
+        sort_menu.append(_("A-Z (Ascending)"), "sort.asc")
+        sort_menu.append(_("Z-A (Descending)"), "sort.desc")
+        self.sort_button = Gtk.MenuButton()
+        self.sort_button.set_icon_name("view-sort-descending-symbolic")
+        self.sort_button.set_menu_model(sort_menu)
+        self.sort_button.set_tooltip_text(_("Sort Items"))
+        self.sort_button.add_css_class("flat")
+        self.search_box.append(self.sort_button)
+        self.append(self.search_box)      
+        sort_action_group = Gio.SimpleActionGroup()
+        for mode in ["default", "asc", "desc"]:
+            act = Gio.SimpleAction.new(mode, None)
+            act.connect("activate", self._on_sort_mode_changed, mode)
+            sort_action_group.add_action(act)
+        self.insert_action_group("sort", sort_action_group)
         self.spinner = Gtk.Spinner(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, vexpand=True)
+        self.spinner.set_size_request(48, 48)
         self.channel_listbox = Gtk.ListBox()
         scrolled_window = Gtk.ScrolledWindow()
         key_controller = Gtk.EventControllerKey()
@@ -85,12 +126,29 @@ class ChannelList(Gtk.Box):
         self.view_stack.add_named(self.spinner, "loading")
         self.append(self.view_stack)
         self.active_row = None
+        self.current_sort_mode = "default"
+        self.channel_listbox.set_sort_func(self._sort_list_items)
+        
+    def enable_fullscreen_mode(self):
+        self.is_fullscreen_mode = True
+        self.title_label.set_visible(False)
+        self.switcher_box.set_visible(True)
 
+    def _on_switcher_toggled(self, button, mode):
+        if button.get_active():
+            self.emit("switcher-changed", mode)
+
+    def set_switcher_active(self, mode):
+        if mode == "bouquets":
+            self.btn_bouquets.set_active(True)
+        elif mode == "favorites":
+            self.btn_favorites.set_active(True)
+        elif mode == "history":
+            self.btn_history.set_active(True)        
+        
     def populate_channels_async(self, channels, icon_path=""):
-        """
-        Populates the channel list and starts a background timer to refresh EPG status.
-        """
         self._failed_epg_searches.clear()
+        self._item_counter = 0
         if hasattr(self, 'epg_update_timer_id') and self.epg_update_timer_id:
             GLib.source_remove(self.epg_update_timer_id)
             self.epg_update_timer_id = None
@@ -103,7 +161,7 @@ class ChannelList(Gtk.Box):
         logo_map = {}
         epg_data = None
         epg_clean_map = None
-        main_window = self.get_ancestor(Gtk.Window)
+        main_window = self.get_ancestor(Gtk.Window)       
         if main_window:
             if hasattr(main_window, 'logo_map'):
                 logo_map = main_window.logo_map
@@ -111,21 +169,25 @@ class ChannelList(Gtk.Box):
                 epg_data = main_window.epg_data
             if hasattr(main_window, 'epg_clean_map'):
                 epg_clean_map = main_window.epg_clean_map
+        self._epg_available = bool(epg_data)
         channel_generator = (channel for channel in channels)
-        GLib.idle_add(
-            self._populate_chunk,
-            channel_generator,
-            logo_map,
-            favorite_urls_set,
-            locked_urls_set,
-            epg_data,
-            epg_clean_map
-        )
-        self.epg_update_timer_id = GLib.timeout_add_seconds(60, self._update_all_rows_epg)
+        def _delayed_start():
+            GLib.idle_add(
+                self._populate_chunk,
+                channel_generator,
+                logo_map,
+                favorite_urls_set,
+                locked_urls_set,
+                epg_data,
+                epg_clean_map
+            )
+            return GLib.SOURCE_REMOVE         
+        GLib.timeout_add(10, _delayed_start)      
+        if self._epg_available:
+            self.epg_update_timer_id = GLib.timeout_add_seconds(60, self._update_all_rows_epg)
 
     def _populate_chunk(self, channel_generator, logo_map, favorite_urls, locked_urls, epg_data, epg_clean_map):
-        """Processes channel chunks and calculates progress for each current program."""
-        chunk_size = 50
+        chunk_size = 5
         try:
             for _ in range(chunk_size):
                 channel = next(channel_generator)              
@@ -151,15 +213,22 @@ class ChannelList(Gtk.Box):
             return True
 
     def _add_row_to_listbox(self, channel, logo_map, is_fav, is_locked, epg_info=None):
-        """Creates a ListBoxRow and stores widget references for dynamic updates."""
         row = Gtk.ListBoxRow()
+        row.original_index = getattr(self, '_item_counter', 0)
+        self._item_counter = getattr(self, '_item_counter', 0) + 1
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12)
         hbox.set_margin_start(10); hbox.set_margin_end(10)
         row.set_child(hbox)
         if 'url' in channel:
+            logo_container = Gtk.Box()
+            logo_container.set_size_request(46, 46)
+            logo_container.set_valign(Gtk.Align.CENTER)         
             placeholder = PlaceholderIcon()
             placeholder.set_size_request(36, 36)
-            hbox.append(placeholder)           
+            placeholder.set_halign(Gtk.Align.CENTER)
+            placeholder.set_valign(Gtk.Align.CENTER)         
+            logo_container.append(placeholder)
+            hbox.append(logo_container)          
             logo_to_load = self._find_logo_path(channel, logo_map)
             row.correct_logo_path = logo_to_load           
             if logo_to_load and logo_to_load.strip():
@@ -194,6 +263,12 @@ class ChannelList(Gtk.Box):
         row.lock_icon.set_pixel_size(16); hbox.append(row.lock_icon)
         row.fav_icon.set_visible(is_fav)
         row.lock_icon.set_visible(is_locked)
+        menu_button = Gtk.Button()
+        menu_button.set_icon_name("view-more-symbolic") 
+        menu_button.add_css_class("flat") 
+        menu_button.set_valign(Gtk.Align.CENTER)
+        menu_button.connect("clicked", self._on_menu_button_clicked, row)
+        hbox.append(menu_button)
         right_click_gesture = Gtk.GestureClick.new(); right_click_gesture.set_button(3)
         right_click_gesture.connect("pressed", self._on_row_right_clicked, row)
         row.add_controller(right_click_gesture)
@@ -201,15 +276,42 @@ class ChannelList(Gtk.Box):
 
     def _on_row_right_clicked(self, gesture, n_press, x, y, listbox_row):
         if gesture.get_current_button() == 3:
-            self.active_row = listbox_row
-            menu_model = self._build_dynamic_menu_for_channel(listbox_row.channel_data)
-            popover = Gtk.PopoverMenu.new_from_model(menu_model)
-            popover.add_css_class("channel-action-popover")
-            popover.set_parent(listbox_row)
-            popover.popup()
+            self._show_context_menu(listbox_row, listbox_row)
 
-    def _build_dynamic_menu_for_channel(self, channel_data):
+    def _on_menu_button_clicked(self, button, row):
+        self._show_context_menu(row, button)
+
+    def _show_context_menu(self, row, parent_widget):
+        self.active_row = row
+        menu_model = self._build_dynamic_menu_for_channel(row.channel_data, parent_widget)      
+        popover = Gtk.PopoverMenu.new_from_model(menu_model)
+        popover.add_css_class("channel-action-popover")
+        popover.set_parent(parent_widget) 
+        main_window = self.get_ancestor(Gtk.Window)
+        if main_window:
+            main_window.is_popover_open = True
+            popover.connect("closed", lambda p: setattr(main_window, 'is_popover_open', False))        
+        popover.popup()
+
+    def _build_dynamic_menu_for_channel(self, channel_data, parent_widget):
         main_menu = Gio.Menu()
+        action_group = Gio.SimpleActionGroup()
+        if 'type' in channel_data:
+            item_type = channel_data['type']
+            item_id = channel_data['id']          
+            is_locked = False
+            if item_type == 'bouquet':
+                is_locked = database.get_bouquet_lock_status(item_id)
+            elif item_type == 'fav_group':
+                is_locked = database.get_favorite_list_lock_status(item_id)              
+            lock_label = _("Unlock") if is_locked else _("Lock")
+            main_menu.append(lock_label, "row.toggle_category_lock")          
+            toggle_lock_action = Gio.SimpleAction.new("toggle_category_lock", None)
+            toggle_lock_action.connect("activate", self._on_toggle_category_lock_activated)
+            action_group.add_action(toggle_lock_action)           
+            if parent_widget:
+                 parent_widget.insert_action_group("row", action_group)
+            return main_menu
         if 'url' not in channel_data:
             return main_menu
         fav_submenu = Gio.Menu()
@@ -246,17 +348,21 @@ class ChannelList(Gtk.Box):
             move_action = Gio.SimpleAction.new("move_interactive", None)
             move_action.connect("activate", self._on_move_interactive_activated)
             action_group.add_action(move_action)
-        main_menu.append_section(None, Gio.Menu())
-        main_menu.append(_("Play as Picture-in-Picture"), "row.play_pip")
-        play_pip_action = Gio.SimpleAction.new("play_pip", None)
-        play_pip_action.connect("activate", self._on_play_pip_activated)
-        action_group.add_action(play_pip_action)
-        if self.active_row:
-             self.active_row.insert_action_group("row", action_group)
+        main_window = self.get_ancestor(Gtk.Window)
+        is_video_active = False
+        if main_window and getattr(main_window, 'current_media_type', None) is not None:
+            is_video_active = True
+        if is_video_active:
+            main_menu.append_section(None, Gio.Menu())
+            main_menu.append(_("Play as Picture-in-Picture"), "row.play_pip")
+            play_pip_action = Gio.SimpleAction.new("play_pip", None)
+            play_pip_action.connect("activate", self._on_play_pip_activated)
+            action_group.add_action(play_pip_action)
+        if parent_widget:
+             parent_widget.insert_action_group("row", action_group)
         return main_menu
 
     def _on_play_pip_activated(self, action, value):
-        """Runs when the 'Play as Picture-in-Picture' menu item is selected."""
         if not self.active_row or not self.active_row.channel_data:
             logging.warning("PiP requested but no active row or channel data found.")
             return
@@ -364,7 +470,8 @@ class ChannelList(Gtk.Box):
         self.active_row.fav_icon.set_visible(True)
         main_window = self.get_ancestor(Gtk.Window)
         if main_window and hasattr(main_window, 'favorites_view'):
-             main_window.favorites_view.emit("favorites-changed")
+            if self.active_list_id is not None:
+                main_window.favorites_view.emit("favorites-changed")
 
     def _on_remove_from_list_activated(self, list_id):
         if not self.active_row: return
@@ -379,7 +486,8 @@ class ChannelList(Gtk.Box):
             row_to_remove.fav_icon.set_visible(False)
         main_window = self.get_ancestor(Gtk.Window)
         if main_window and hasattr(main_window, 'favorites_view'):
-             main_window.favorites_view.emit("favorites-changed")
+            if self.active_list_id is not None:
+                main_window.favorites_view.emit("favorites-changed")
 
     def _on_create_new_list_activated(self, action, value):
         dialog = Adw.MessageDialog.new(self.get_root(), _("New Favorite List"), _("Please enter the name for the new list:"))
@@ -420,6 +528,45 @@ class ChannelList(Gtk.Box):
                 database.set_channel_lock_status(url, False); self.active_row.lock_icon.set_visible(False)
             else:
                 self.get_root().show_toast(_("Wrong Password!"))
+                
+    def _on_toggle_category_lock_activated(self, action, value):
+        if not self.active_row: return       
+        data = self.active_row.channel_data
+        item_type = data['type']
+        item_id = data['id']        
+        is_currently_locked = False
+        if item_type == 'bouquet':
+            is_currently_locked = database.get_bouquet_lock_status(item_id)
+        elif item_type == 'fav_group':
+            is_currently_locked = database.get_favorite_list_lock_status(item_id)           
+        if is_currently_locked:
+            prompt = PasswordPromptDialog(self.get_root())
+            prompt.connect("response", self._on_password_prompt_response_for_category_unlock)
+            prompt.present()
+        else:
+            password_is_set = database.get_config_value('app_password') is not None
+            if password_is_set:
+                if item_type == 'bouquet':
+                    database.set_bouquet_lock_status(item_id, True)
+                elif item_type == 'fav_group':
+                    database.set_favorite_list_lock_status(item_id, True)
+                self.active_row.lock_icon.set_visible(True)
+            else:
+                self.show_set_password_dialog()
+
+    def _on_password_prompt_response_for_category_unlock(self, dialog, response_id):
+        if response_id == "ok":
+            if database.check_password(dialog.get_password()):
+                data = self.active_row.channel_data
+                item_type = data['type']
+                item_id = data['id']              
+                if item_type == 'bouquet':
+                    database.set_bouquet_lock_status(item_id, False)
+                elif item_type == 'fav_group':
+                    database.set_favorite_list_lock_status(item_id, False)                 
+                self.active_row.lock_icon.set_visible(False)
+            else:
+                self.get_root().show_toast(_("Wrong Password!"))                
 
     def _replace_placeholder_with_image(self, placeholder, pixbuf):
         if not placeholder or not placeholder.get_parent(): return
@@ -523,14 +670,12 @@ class ChannelList(Gtk.Box):
             current_row = current_row.get_next_sibling()
 
     def _on_move_interactive_activated(self, action, value):
-        """Opens the new dialog when the 'Move...' menu item is selected."""
         if not self.active_row:
             return
         dialog = MoveChannelDialog(self.get_root(), self.active_row, self)
         dialog.present()
 
     def move_row_up(self, row_to_move):
-        """Public method called by the dialog, moves the row ONE UP."""
         if not row_to_move or self.active_list_id is None:
             return
         current_index = row_to_move.get_index()
@@ -539,75 +684,104 @@ class ChannelList(Gtk.Box):
         target_index = current_index - 1
         target_row = self.channel_listbox.get_row_at_index(target_index)
         if not target_row:
-            return
+            return           
         success = database.swap_favorite_channel_order(
             self.active_list_id,
             row_to_move.channel_data["url"],
             target_row.channel_data["url"]
         )
         if success:
-            self.channel_listbox.remove(row_to_move)
-            self.channel_listbox.insert(row_to_move, target_index)
+            temp_idx = getattr(row_to_move, 'original_index', 0)
+            row_to_move.original_index = getattr(target_row, 'original_index', 0)
+            target_row.original_index = temp_idx            
+            self.channel_listbox.invalidate_sort()
             self.channel_listbox.select_row(row_to_move)
+            row_to_move.grab_focus()
         return success
 
     def move_row_down(self, row_to_move):
-        """Public method called by the dialog, moves the row ONE DOWN."""
         if not row_to_move or self.active_list_id is None:
             return
         current_index = row_to_move.get_index()
         target_index = current_index + 1
         target_row = self.channel_listbox.get_row_at_index(target_index)
         if not target_row:
-            return
+            return          
         success = database.swap_favorite_channel_order(
             self.active_list_id,
             row_to_move.channel_data["url"],
             target_row.channel_data["url"]
         )
         if success:
-            self.channel_listbox.remove(row_to_move)
-            self.channel_listbox.insert(row_to_move, target_index)
+            temp_idx = getattr(row_to_move, 'original_index', 0)
+            row_to_move.original_index = getattr(target_row, 'original_index', 0)
+            target_row.original_index = temp_idx           
+            self.channel_listbox.invalidate_sort()
             self.channel_listbox.select_row(row_to_move)
+            row_to_move.grab_focus()
         return success
 
-    def _get_current_program_info(self, channel, epg_data, epg_clean_map):
-        if not epg_data:
+    def _get_current_program_info(self, channel, epg_data=None, epg_clean_map=None):
+        if not getattr(self, '_epg_available', False):
             return None
         t_id = (channel.get("tvg-id") or "").strip()
         t_name = (channel.get("tvg-name") or "").strip()
         name = (channel.get("name") or "").strip()
-        search_key = t_id or t_name or name
-        if not search_key:
-            return None
-        if search_key in self._failed_epg_searches:
+        search_key = t_id or t_name or name      
+        if not search_key or search_key in self._failed_epg_searches:
             return None    
-        programs = epg_data.get(search_key)
-        if not programs and epg_clean_map:
-            clean_id = self._clean_key(search_key)
-            if clean_id:
-                programs = epg_clean_map.get(clean_id)
-                if not programs and FUZZ_AVAILABLE and process:
-                    best_match_tuple = process.extractOne(clean_id, epg_clean_map.keys())
-                    if best_match_tuple:
-                        best_match, score = best_match_tuple
-                        if score >= 80 and \
-                           self._check_digits_match(clean_id, best_match) and \
-                           self._check_country_match(clean_id, best_match):
-                            len1, len2 = len(clean_id), len(best_match)
-                            ratio = max(len1, len2) / min(len1, len2) if min(len1, len2) > 0 else 0
-                            first_char_match = clean_id[0] == best_match[0] if clean_id and best_match else False
-                            if ratio <= 2.0 and first_char_match:
-                                programs = epg_clean_map[best_match]
-                            else:
-                                reason = "Ratio" if ratio > 2.0 else "First Char"
-                                logging.debug(f"List EPG Rejected ({reason}): '{clean_id}' vs '{best_match}'")
-                if not programs:
-                    soft_id = clean_id.replace("tv.", ".")
-                    programs = epg_clean_map.get(soft_id)    
+        if not hasattr(self, '_epg_fast_cache'):
+            self._epg_fast_cache = {}          
+        programs = None
+        matched_key = self._epg_fast_cache.get(search_key)
+        if not matched_key:
+            matched_key = database.get_epg_mapping(search_key)
+            if matched_key:
+                self._epg_fast_cache[search_key] = matched_key 
+        if matched_key:
+            programs = database.get_epg_programs(matched_key)
+        else:
+            programs = database.get_epg_programs(search_key)
+            if programs:
+                self._epg_fast_cache[search_key] = search_key
+                database.save_epg_mapping(search_key, search_key)
+            if not programs:
+                clean_id = self._clean_key(search_key)
+                if clean_id:
+                    programs = database.get_epg_programs(clean_id)
+                    if programs:
+                        self._epg_fast_cache[search_key] = clean_id
+                        database.save_epg_mapping(search_key, clean_id)                     
+                    if not programs and FUZZ_AVAILABLE and process:
+                        if not hasattr(self, '_temp_db_keys'):
+                            self._temp_db_keys = database.get_all_epg_channel_ids()                          
+                        if self._temp_db_keys:
+                            best_match_tuple = process.extractOne(clean_id, self._temp_db_keys)
+                            if best_match_tuple:
+                                best_match, score = best_match_tuple
+                                if score >= 80 and \
+                                   self._check_digits_match(clean_id, best_match) and \
+                                   self._check_country_match(clean_id, best_match):
+                                    len1, len2 = len(clean_id), len(best_match)
+                                    ratio = max(len1, len2) / min(len1, len2) if min(len1, len2) > 0 else 0
+                                    first_char_match = clean_id[0].lower() == best_match[0].lower() if clean_id and best_match else False
+                                    if ratio <= 2.0 and first_char_match:
+                                        programs = database.get_epg_programs(best_match)
+                                        if programs:
+                                            self._epg_fast_cache[search_key] = best_match
+                                            database.save_epg_mapping(search_key, best_match) 
+                                    else:
+                                        reason = "Ratio" if ratio > 2.0 else "First Char"
+                                        logging.debug(f"List EPG Rejected ({reason}): '{clean_id}' vs '{best_match}'")                  
+                    if not programs:
+                        soft_id = clean_id.replace("tv.", ".")
+                        programs = database.get_epg_programs(soft_id)
+                        if programs:
+                            self._epg_fast_cache[search_key] = soft_id
+                            database.save_epg_mapping(search_key, soft_id)                        
         if not programs:
             self._failed_epg_searches.add(search_key)
-            return None
+            return None          
         now = datetime.now(timezone.utc)
         for prog in programs:
             if prog['start'] <= now <= prog['stop']:
@@ -623,18 +797,10 @@ class ChannelList(Gtk.Box):
         return None
 
     def _update_all_rows_epg(self):
-        """
-        Iterates through all visible rows and updates EPG titles and progress bars.
-        """
-        main_window = self.get_ancestor(Gtk.Window)
-        if not main_window or not hasattr(main_window, 'epg_data'):
-            return True
-        epg_data = main_window.epg_data
-        epg_clean_map = getattr(main_window, 'epg_clean_map', None)
         row = self.channel_listbox.get_first_child()
         while row:
             if hasattr(row, 'channel_data'):
-                epg_info = self._get_current_program_info(row.channel_data, epg_data, epg_clean_map)
+                epg_info = self._get_current_program_info(row.channel_data)
                 if epg_info:
                     if not row.epg_label:
                         row.epg_label = Gtk.Label(xalign=0, ellipsize=Pango.EllipsizeMode.END)
@@ -663,4 +829,32 @@ class ChannelList(Gtk.Box):
     def set_header(self, title, show_back=False):
         self.title_label.set_text(title)
         self.back_button.set_visible(show_back)
-        self.header_box.set_visible(True)
+        self.header_box.set_visible(True)       
+        if show_back:
+            if hasattr(self, 'switcher_box'):
+                self.switcher_box.set_visible(False)
+            self.title_label.set_visible(True)
+        else:
+            if getattr(self, 'is_fullscreen_mode', False):
+                if hasattr(self, 'switcher_box'):
+                    self.switcher_box.set_visible(True)
+                self.title_label.set_visible(False)
+            else:
+                if hasattr(self, 'switcher_box'):
+                    self.switcher_box.set_visible(False)
+                self.title_label.set_visible(True)
+                
+    def _on_sort_mode_changed(self, action, parameter, mode):
+        self.current_sort_mode = mode
+        self.channel_listbox.invalidate_sort()
+
+    def _sort_list_items(self, row1, row2):
+        if self.current_sort_mode == "default":
+            return getattr(row1, 'original_index', 0) - getattr(row2, 'original_index', 0)           
+        name1 = row1.channel_data.get("name", "").lower() if hasattr(row1, 'channel_data') else ""
+        name2 = row2.channel_data.get("name", "").lower() if hasattr(row2, 'channel_data') else ""      
+        if self.current_sort_mode == "asc":
+            return (name1 > name2) - (name1 < name2)
+        elif self.current_sort_mode == "desc":
+            return (name2 > name1) - (name2 < name1)
+        return 0                

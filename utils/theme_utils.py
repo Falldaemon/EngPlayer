@@ -1,14 +1,17 @@
-import gi
-gi.require_version("Adw", "1")
-from gi.repository import Adw
+import database
+
+def is_dark_theme():
+    theme_name = database.get_config_value('app_theme')
+    if not theme_name or theme_name == "default":
+        theme_name = "deep_abyss"
+    if theme_name in ["force_light", "mist", "latte"]:
+        return False
+    return True
 
 def get_icon_theme_folder():
-    """
-    Checks the current Adwaita style manager to see if the dark theme is active
-    and returns the corresponding folder name ('dark' or 'light').
-    """
-    style_manager = Adw.StyleManager.get_default()
-    if style_manager.get_dark():
-        return "dark"
-    else:
+    theme_name = database.get_config_value('app_theme')
+    if not theme_name or theme_name == "default":
+        theme_name = "deep_abyss"
+    if theme_name in ["force_light", "mist", "latte"]:
         return "light"
+    return "dark"
