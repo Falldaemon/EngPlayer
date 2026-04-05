@@ -3383,6 +3383,11 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_close_request(self, window):
         logging.info("Close request received. Stopping GStreamer safely before destroying the window...")
+        try:
+            image_download_pool.shutdown(wait=False, cancel_futures=True)
+            logging.info("Background logo downloads forcefully cancelled.")
+        except TypeError:
+            image_download_pool.shutdown(wait=False)
         self._hide_next_episode_prompt()
         if self.active_recorder:
             self.active_recorder.stop()

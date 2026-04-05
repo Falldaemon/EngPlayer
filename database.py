@@ -245,6 +245,7 @@ def _initialize_profile_db():
 def initialize_database():
     _initialize_config_db()
     _initialize_library_db()
+    init_epg_db()
 
 def set_active_profile_db(profile_id):
     global CURRENT_PROFILE_DB_FILE
@@ -1288,11 +1289,18 @@ def get_epg_programs(channel_id, start_ts=None, end_ts=None):
     params = [channel_id]
     if start_ts and end_ts:
         query += " AND stop_time > ? AND start_time < ?"
-        params.extend([start_ts, end_ts])       
-    query += " ORDER BY start_time ASC"   
-    cursor.execute(query, params)
-    rows = cursor.fetchall()
-    conn.close()   
+        params.extend([start_ts, end_ts])              
+    query += " ORDER BY start_time ASC"      
+    try:
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+    except sqlite3.OperationalError as e:
+        logging.warning(f"EPG table not found or not ready yet. Skipping: {e}")
+        conn.close()
+        return []
+        
+    conn.close() 
+     
     programs = []
     for r in rows:
         programs.append({

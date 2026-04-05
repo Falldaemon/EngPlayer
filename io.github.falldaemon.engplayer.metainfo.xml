@@ -85,6 +85,14 @@
   </content_rating>
   
   <releases>
+	  <release version="0.1.6.1" date="2026-04-06">
+      <description>
+        <p>This hotfix resolves a critical application crash during channel playback.</p>
+        <ul>
+          <li>Fix: Resolved a critical issue where the application would crash during channel playback if the EPG provider link was missing, broken, or failed to download.</li>
+        </ul>
+      </description>
+    </release>
 	  <release version="0.1.6" date="2026-04-04">
       <description>
         <p>This major release introduces Timeshift, a smart subtitle engine, compressed EPG support, detailed actor profiles, and extensive personalization options.</p>
