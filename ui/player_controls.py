@@ -21,7 +21,8 @@ class PlayerControls(Gtk.Box):
         "seek-value-changed": (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         "stop-trailer-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "go-live-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "epg-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "epg-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "episode-list-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, **kwargs):
@@ -98,6 +99,7 @@ class PlayerControls(Gtk.Box):
         right_icons = {
             "equalizer": "equalizer.svg",
             "audio-track": "language.svg",
+            "episode-list": "series.svg",
             "epg": "epg-list.svg",
             "subtitles": "media-show-subtitles.svg",
             "volume": "audio-speakers.svg",
@@ -110,6 +112,7 @@ class PlayerControls(Gtk.Box):
             right_box.append(btn)
         self.buttons["equalizer"].set_tooltip_text(_("Audio Equalizer"))
         self.buttons["audio-track"].set_tooltip_text(_("Select Audio Track"))
+        self.buttons["episode-list"].set_tooltip_text(_("Episode List"))
         self.buttons["epg"].set_tooltip_text(_("Advanced EPG"))
         self.buttons["subtitles"].set_tooltip_text(_("Subtitle Options"))
         self.buttons["volume"].set_tooltip_text(_("Volume Control"))
@@ -132,6 +135,8 @@ class PlayerControls(Gtk.Box):
         self.volume_popover.connect("closed", self._on_volume_popover_closed)
         self.buttons["subtitles"].connect("clicked", lambda btn: self.emit("subtitle-button-clicked"))
         self.buttons["epg"].connect("clicked", lambda btn: self.emit("epg-button-clicked"))
+        self.buttons["episode-list"].connect("clicked", lambda btn: self.emit("episode-list-button-clicked"))
+        self.buttons["episode-list"].set_visible(False)
         self.more_popover = Gtk.PopoverMenu()
         self.more_popover.set_parent(self.buttons["more-menu"])
         self.buttons["more-menu"].connect("clicked", lambda btn: self.more_popover.popup())

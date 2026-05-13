@@ -47,8 +47,8 @@ class VideoView(Gtk.Box):
         self.fullscreen_channel_list.set_valign(Gtk.Align.FILL)
         self.fullscreen_channel_list.set_size_request(350, -1)
         self.fullscreen_channel_list.enable_fullscreen_mode()
-        self.fullscreen_channel_list.set_visible(False)     
-        self.overlay_container.add_overlay(self.fullscreen_channel_list)
+        self.fullscreen_channel_list.set_visible(False)
+        self.fullscreen_channel_list.set_can_target(False)
         self.controls = PlayerControls()
         self.append(self.controls)        
         click_gesture = Gtk.GestureClick.new()
@@ -158,6 +158,9 @@ class VideoView(Gtk.Box):
             self.emit("video-area-clicked")
 
     def enable_fullscreen_overlay_mode(self):
+        if self.fullscreen_channel_list.get_parent() is None:
+            self.overlay_container.add_overlay(self.fullscreen_channel_list)
+        self.fullscreen_channel_list.set_can_target(True)
         self.remove(self.controls)
         self.controls.remove_css_class("player-controls") 
         self.controls.add_css_class("fullscreen-controls")      
@@ -171,11 +174,19 @@ class VideoView(Gtk.Box):
         self._sync_clock_visibility()
 
     def disable_fullscreen_overlay_mode(self):
+        self.fullscreen_channel_list.set_visible(False)
+        self.fullscreen_channel_list.set_can_target(False)
+        if self.fullscreen_channel_list.get_parent() is self.overlay_container:
+            self.overlay_container.remove_overlay(self.fullscreen_channel_list)
         self.overlay_container.remove_overlay(self.controls)
         self.controls.remove_css_class("fullscreen-controls")
         self.controls.add_css_class("player-controls")     
+        self.controls.set_valign(Gtk.Align.FILL)
+        self.controls.set_halign(Gtk.Align.FILL)
+        self.controls.set_margin_top(0)
         self.controls.set_margin_bottom(0)
         self.controls.set_margin_start(0)
         self.controls.set_margin_end(0)
+        self.controls.set_visible(True)
         self.insert_child_after(self.controls, self.overlay_container)
         self._sync_clock_visibility()

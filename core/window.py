@@ -52,6 +52,7 @@ except ImportError:
         FUZZ_AVAILABLE = False
 from background import task_manager
 from background import image_download_pool
+from utils.image_loader import load_image_async
 from utils.theme_utils import get_icon_theme_folder
 from utils import title_parser
 from utils.sleep_inhibitor import SleepInhibitor
@@ -90,6 +91,8 @@ from ui.custom_visualizer import CustomVisualizer
 from ui.epg_grid_view import EpgGridView
 
 _ = gettext.gettext
+RECENTLY_ADDED_LIMIT = 100
+RECENT_SERIES_DETAIL_LIMIT = 40
 
 class MainWindow(Adw.ApplicationWindow):
     def __init__(self, profile, channels, vod, series, epg_data, **kwargs):
@@ -144,6 +147,9 @@ class MainWindow(Adw.ApplicationWindow):
         self.auto_play_cancelled = False
         self.is_playing_trailer = False
         self.return_view_after_trailer = None
+        self.pre_fullscreen_layout_state = None
+        self.detail_return_view_name = None
+        self.series_detail_return_view_name = None
         self.pip_player = None
         self.pip_window = None
         self.metadata_semaphore = threading.Semaphore(4)
@@ -391,6 +397,7 @@ class MainWindow(Adw.ApplicationWindow):
         icon_base_path = os.path.join("resources", "icons", target_folder)
         button_defs = [
             ("iptv", "iptv.svg", "tv-symbolic", _("Live TV")),
+            ("recent", "recent-added.svg", "document-open-recent-symbolic", _("Recently Added")),
             ("history", "history.svg", "document-open-recent-symbolic", _("History")),
             ("favorites", "favorites.svg", "starred-symbolic", _("Favorites")),
             ("vod", "vod.svg", "user-desktop-symbolic", _("VOD")),
@@ -451,6 +458,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.history_view = HistoryView(main_window=self)
         self.history_view.connect("channel-selected", self.on_history_channel_selected)
         self.sidebar.list_stack.add_titled(self.history_view, "history", "History")
+        self.recent_sidebar = self._create_recent_sidebar()
+        self.sidebar.list_stack.add_titled(self.recent_sidebar, "recent", "Recently Added")
         self.vod_category_list = BouquetList()
         self.sidebar.list_stack.add_titled(self.vod_category_list, "vod", "VOD")
         self.media_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.SLIDE_LEFT_RIGHT, transition_duration=300)
@@ -517,6 +526,18 @@ class MainWindow(Adw.ApplicationWindow):
         self.collection_grid_view = CollectionGridView()
         self.main_content_stack.add_named(self.collection_grid_view, "collection_view")
         self.collection_grid_view.connect("collection-activated", self.on_collection_selected)
+        self.recent_content_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=14,
+            margin_top=12,
+            margin_bottom=18,
+            margin_start=18,
+            margin_end=18
+        )
+        self.recent_content_view = Gtk.ScrolledWindow()
+        self.recent_content_view.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        self.recent_content_view.set_child(self.recent_content_box)
+        self.main_content_stack.add_named(self.recent_content_view, "recent_content_view")
         self.series_view_placeholder = Gtk.Box(
             orientation=Gtk.Orientation.VERTICAL,
             halign=Gtk.Align.CENTER,
@@ -603,6 +624,7 @@ class MainWindow(Adw.ApplicationWindow):
         controls.connect("audio-track-selected", self.on_audio_track_selected)
         controls.connect("subtitle-button-clicked", self.on_subtitle_button_clicked)
         controls.connect("epg-button-clicked", self.on_epg_button_clicked)
+        controls.connect("episode-list-button-clicked", self.on_episode_list_button_clicked)
         self.video_view.next_episode_cancel_button.connect("clicked", self._on_cancel_auto_play_clicked)
         self.video_view.next_episode_skip_button.connect("clicked", self._on_skip_to_next_episode_clicked)
         self.current_subtitle_track = -1
@@ -700,6 +722,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.favorites_view.favorite_channels_list.search_entry.set_text("")
             self.vod_category_list.search_entry.set_text("")
             self.series_sidebar.search_entry.set_text("")
+            self.recent_search_entry.set_text("")
             self.media_search_entry.set_text("")
             if view_name not in ["vod", "series", "media"]:
                  self.media_search_entry.set_text("")
@@ -737,9 +760,17 @@ class MainWindow(Adw.ApplicationWindow):
                     _("This feature is only available for Xtream Codes profiles.")
                 )
                 return
-            self.series_view_placeholder.get_first_child().set_text(
-                _("Fetching series categories...")
-            )
+            hidden_bouquets = database.get_hidden_bouquets()
+            if self.series_data:
+                category_names = [c for c in self.series_data.keys() if c not in hidden_bouquets]
+                self.series_sidebar.populate_bouquets_async(category_names)
+                self.series_view_placeholder.get_first_child().set_text(
+                    _("Please select a category from the left.")
+                )
+            else:
+                self.series_view_placeholder.get_first_child().set_text(
+                    _("Fetching series categories...")
+                )
             thread = threading.Thread(
                 target=self._fetch_series_categories_thread,
                 daemon=True
@@ -765,8 +796,459 @@ class MainWindow(Adw.ApplicationWindow):
                 thread.start()
             elif not data_shown:
                 self.show_toast(_("No VOD categories found."))
+        elif view_name == "recent":
+            self._show_recently_added_view()
         else:
             self.main_content_stack.set_visible_child_name("placeholder_view")
+
+    def _parse_added_timestamp(self, item_data):
+        if not isinstance(item_data, dict):
+            return 0
+        for key in ("added", "date_added", "last_modified", "updated"):
+            value = item_data.get(key)
+            if value is None or value == "":
+                continue
+            try:
+                return int(float(value))
+            except (TypeError, ValueError):
+                pass
+            if isinstance(value, str):
+                try:
+                    return int(datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp())
+                except ValueError:
+                    continue
+        return 0
+
+    def _get_recently_added_items(self, grouped_data, limit=RECENTLY_ADDED_LIMIT):
+        if not grouped_data:
+            return []
+        recent_items = []
+        for category_name, items in grouped_data.items():
+            for item in items:
+                added_ts = self._parse_added_timestamp(item)
+                if added_ts > 0:
+                    recent_items.append((added_ts, category_name, item))
+        recent_items.sort(key=lambda row: row[0], reverse=True)
+        return recent_items[:limit]
+
+    def _get_recent_entries(self):
+        hidden_bouquets = database.get_hidden_bouquets()
+        entries = []
+
+        for added_ts, category_name, item in self._get_recently_added_items(self.series_data):
+            if category_name not in hidden_bouquets:
+                entries.append(("series", added_ts, category_name, item, "dated"))
+
+        if self.profile_data.get("type") == "xtream":
+            known_series_ids = {
+                str(item.get("series_id") or item.get("id"))
+                for _media_type, _added_ts, _category_name, item, _source in entries
+            }
+            for category_name, candidate_entries in self._get_recent_series_candidate_groups():
+                if category_name in hidden_bouquets:
+                    continue
+                for _added_ts, item in candidate_entries:
+                    series_id = str(item.get("series_id") or item.get("id"))
+                    if series_id and series_id not in known_series_ids:
+                        entries.append(("series", 0, category_name, item, "possible_update"))
+                        known_series_ids.add(series_id)
+
+        for added_ts, category_name, item in self._get_recently_added_items(self.vod_data):
+            if category_name not in hidden_bouquets:
+                entries.append(("vod", added_ts, category_name, item, "dated"))
+
+        entries.sort(key=lambda row: row[1], reverse=True)
+        return entries
+
+    def _safe_int(self, value, default=0):
+        try:
+            return int(value)
+        except (TypeError, ValueError):
+            return default
+
+    def _get_recent_series_candidate_groups(self, limit=RECENT_SERIES_DETAIL_LIMIT):
+        if not self.series_data:
+            return []
+        current_year = datetime.now().year
+        priority_terms = (
+            "new", "recent", "latest", "update", str(current_year), str(current_year - 1)
+        )
+        scored = []
+        fallback = []
+        for category_name, items in self.series_data.items():
+            if not isinstance(items, list):
+                continue
+            category_lower = str(category_name).lower()
+            category_score = 0 if any(term in category_lower for term in priority_terms) else 1
+            for index, item in enumerate(items):
+                row = (category_score, index, category_name, item)
+                if category_score == 0:
+                    scored.append(row)
+                else:
+                    fallback.append(row)
+        candidates = sorted(scored, key=lambda row: (row[0], row[1])) + fallback
+        grouped = []
+        seen_categories = {}
+        for _score, _index, category_name, item in candidates[:limit]:
+            if category_name not in seen_categories:
+                seen_categories[category_name] = []
+                grouped.append((category_name, seen_categories[category_name]))
+            seen_categories[category_name].append((0, item))
+        return grouped
+
+    def _format_added_timestamp(self, added_ts):
+        try:
+            return datetime.fromtimestamp(added_ts).strftime("%Y-%m-%d")
+        except (OSError, OverflowError, ValueError, TypeError):
+            return ""
+
+    def _get_recent_time_buckets(self, entries):
+        now = datetime.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        tomorrow_start = today_start + timedelta(days=1)
+        week_start = today_start - timedelta(days=today_start.weekday())
+        last_week_start = week_start - timedelta(days=7)
+        last_visit_raw = database.get_config_value("recently_added_last_visit")
+        try:
+            last_visit_ts = int(float(last_visit_raw)) if last_visit_raw else 0
+        except (TypeError, ValueError):
+            last_visit_ts = 0
+
+        def ts(dt):
+            return int(dt.timestamp())
+
+        dated_entries = [entry for entry in entries if entry[1] > 0]
+        possible_updates = [entry for entry in entries if entry[1] <= 0]
+        bucket_defs = []
+        if last_visit_ts:
+            bucket_defs.append((
+                "since_last_visit",
+                _("New since last visit"),
+                _("Items added after your previous Recently Added check."),
+                [entry for entry in dated_entries if entry[1] > last_visit_ts]
+            ))
+        bucket_defs.extend([
+            (
+                "today",
+                _("Today"),
+                _("Fresh items from today."),
+                [entry for entry in dated_entries if ts(today_start) <= entry[1] < ts(tomorrow_start)]
+            ),
+            (
+                "this_week",
+                _("This week"),
+                _("Items added since the start of the week."),
+                [entry for entry in dated_entries if ts(week_start) <= entry[1] < ts(today_start)]
+            ),
+            (
+                "last_week",
+                _("Last week"),
+                _("Items added during the previous week."),
+                [entry for entry in dated_entries if ts(last_week_start) <= entry[1] < ts(week_start)]
+            ),
+            (
+                "older",
+                _("Older"),
+                _("Older recent items."),
+                [entry for entry in dated_entries if entry[1] < ts(last_week_start)]
+            ),
+        ])
+        if possible_updates:
+            bucket_defs.append((
+                "possible_updates",
+                _("Possible series updates"),
+                _("Series from update-focused categories without provider dates."),
+                possible_updates
+            ))
+        return [bucket for bucket in bucket_defs if bucket[3]]
+
+    def _append_recent_header_row(self, title):
+        row = Gtk.ListBoxRow()
+        row.set_selectable(False)
+        row.set_activatable(False)
+
+        label = Gtk.Label(label=title, xalign=0)
+        label.add_css_class("caption")
+        label.add_css_class("dim-label")
+        label.set_margin_top(12)
+        label.set_margin_bottom(4)
+        label.set_margin_start(12)
+        label.set_margin_end(12)
+        row.set_child(label)
+        self.recent_listbox.append(row)
+
+    def _create_recent_sidebar(self):
+        sidebar_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=0)
+        self.recent_search_entry = Gtk.SearchEntry(
+            placeholder_text=_("Search recently added..."),
+            margin_start=6,
+            margin_end=6,
+            margin_top=6,
+            margin_bottom=6
+        )
+        self.recent_search_entry.connect("search-changed", self._on_recent_search_changed)
+        sidebar_box.append(self.recent_search_entry)
+
+        self.recent_listbox = Gtk.ListBox()
+        self.recent_listbox.set_selection_mode(Gtk.SelectionMode.SINGLE)
+        self.recent_listbox.add_css_class("navigation-sidebar")
+        self.recent_listbox.connect("row-activated", self.on_recent_group_selected)
+
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_vexpand(True)
+        scrolled.set_child(self.recent_listbox)
+        sidebar_box.append(scrolled)
+        return sidebar_box
+
+    def _create_recent_group_row(self, bucket_id, title, subtitle, entries):
+        row = Gtk.ListBoxRow()
+        row.recent_bucket_id = bucket_id
+        row.recent_title = title
+        row.recent_entries = entries
+
+        hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        hbox.set_margin_start(10)
+        hbox.set_margin_end(10)
+        hbox.set_margin_top(8)
+        hbox.set_margin_bottom(8)
+
+        icon = Gtk.Image.new_from_icon_name("document-open-recent-symbolic")
+        hbox.append(icon)
+
+        label_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        label_box.set_hexpand(True)
+
+        title_label = Gtk.Label(label=title, xalign=0)
+        title_label.set_ellipsize(Pango.EllipsizeMode.END)
+        label_box.append(title_label)
+
+        subtitle_label = Gtk.Label(label=subtitle, xalign=0)
+        subtitle_label.add_css_class("caption")
+        subtitle_label.add_css_class("dim-label")
+        subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        label_box.append(subtitle_label)
+
+        hbox.append(label_box)
+        row.set_child(hbox)
+        row.recent_search_text = "{} {}".format(title, subtitle).lower()
+        return row
+
+    def _populate_recent_sidebar(self):
+        self.recent_listbox.remove_all()
+        rows = []
+        self.recent_entries = self._get_recent_entries()
+        self._append_recent_header_row(_("Recently Added"))
+        for bucket_id, title, description, entries in self._get_recent_time_buckets(self.recent_entries):
+            series_count = sum(1 for media_type, *_rest in entries if media_type == "series")
+            vod_count = sum(1 for media_type, *_rest in entries if media_type == "vod")
+            count_parts = []
+            if series_count:
+                count_parts.append(_("{} series").format(series_count))
+            if vod_count:
+                count_parts.append(_("{} movies").format(vod_count))
+            count_text = ", ".join(count_parts) if count_parts else _("No items")
+            row = self._create_recent_group_row(bucket_id, title, count_text, entries)
+            row.recent_search_text = "{} {} {}".format(title, description, count_text).lower()
+            self.recent_listbox.append(row)
+            rows.append(row)
+
+        if not rows:
+            placeholder = Gtk.Label(label=_("No recently added items found."))
+            placeholder.set_margin_top(20)
+            placeholder.add_css_class("dim-label")
+            self.recent_listbox.append(placeholder)
+            return None
+
+        return rows[0]
+
+    def _show_recently_added_view(self):
+        self.sidebar.list_stack.set_visible_child_name("recent")
+        first_row = self._populate_recent_sidebar()
+        if first_row:
+            self.recent_listbox.select_row(first_row)
+            self._show_recent_bucket(first_row)
+        else:
+            self._show_recent_empty_state()
+        database.set_config_value("recently_added_last_visit", int(time.time()))
+
+    def _show_recent_bucket(self, row):
+        entries = getattr(row, "recent_entries", None)
+        if not entries:
+            return
+        title = getattr(row, "recent_title", _("Recently Added"))
+        self._populate_recent_content(title, entries)
+
+    def on_recent_group_selected(self, listbox, row):
+        self._show_recent_bucket(row)
+
+    def _on_recent_search_changed(self, entry):
+        search_text = entry.get_text().lower().strip()
+        row = self.recent_listbox.get_first_child()
+        while row:
+            if hasattr(row, "recent_search_text"):
+                row.set_visible(search_text in row.recent_search_text)
+            row = row.get_next_sibling()
+
+    def _clear_recent_content(self):
+        while child := self.recent_content_box.get_first_child():
+            self.recent_content_box.remove(child)
+
+    def _show_recent_empty_state(self):
+        self._clear_recent_content()
+        label = Gtk.Label(label=_("No recently added items found."))
+        label.add_css_class("dim-label")
+        label.set_margin_top(24)
+        self.recent_content_box.append(label)
+        self.main_content_stack.set_visible_child_name("recent_content_view")
+
+    def _append_recent_content_title(self, title, entries):
+        series_count = sum(1 for media_type, *_rest in entries if media_type == "series")
+        vod_count = sum(1 for media_type, *_rest in entries if media_type == "vod")
+        title_label = Gtk.Label(xalign=0)
+        title_label.add_css_class("title-2")
+        title_label.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
+        self.recent_content_box.append(title_label)
+
+        summary_parts = []
+        if series_count:
+            summary_parts.append(_("{} series").format(series_count))
+        if vod_count:
+            summary_parts.append(_("{} movies").format(vod_count))
+        summary = ", ".join(summary_parts) if summary_parts else _("No items")
+        summary_label = Gtk.Label(label=summary, xalign=0, wrap=True)
+        summary_label.add_css_class("dim-label")
+        self.recent_content_box.append(summary_label)
+
+    def _append_recent_section(self, title, entries):
+        if not entries:
+            return
+        section_label = Gtk.Label(xalign=0)
+        section_label.add_css_class("heading")
+        section_label.set_markup(f"<b>{GLib.markup_escape_text(title)}</b>")
+        section_label.set_margin_top(10)
+        self.recent_content_box.append(section_label)
+
+        flowbox = Gtk.FlowBox()
+        flowbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        flowbox.set_max_children_per_line(6)
+        flowbox.set_min_children_per_line(2)
+        flowbox.set_row_spacing(12)
+        flowbox.set_column_spacing(12)
+        flowbox.set_homogeneous(False)
+        if hasattr(flowbox, "set_activate_on_single_click"):
+            flowbox.set_activate_on_single_click(True)
+        flowbox.connect("child-activated", self._on_recent_content_child_activated)
+        for entry in entries:
+            flowbox.append(self._create_recent_content_card(entry))
+        self.recent_content_box.append(flowbox)
+
+    def _populate_recent_content(self, title, entries):
+        self._clear_recent_content()
+        self._append_recent_content_title(title, entries)
+        series_updates = [
+            entry for entry in entries
+            if entry[0] == "series" and entry[4] == "possible_update"
+        ]
+        new_series = [
+            entry for entry in entries
+            if entry[0] == "series" and entry[4] != "possible_update"
+        ]
+        movies = [entry for entry in entries if entry[0] == "vod"]
+
+        self._append_recent_section(_("Series updates"), series_updates)
+        self._append_recent_section(_("New series"), new_series)
+        self._append_recent_section(_("Movies"), movies)
+        self.main_content_stack.set_visible_child_name("recent_content_view")
+
+    def _create_recent_content_card(self, entry):
+        media_type, added_ts, category_name, item, source = entry
+        child = Gtk.FlowBoxChild()
+        child.recent_media_type = media_type
+        child.recent_item_data = item
+
+        card = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        card.set_size_request(160, 260)
+        card.add_css_class("media-grid-item")
+
+        picture = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
+        picture.set_size_request(160, 205)
+        picture.set_vexpand(True)
+        picture.set_hexpand(False)
+        picture.set_halign(Gtk.Align.CENTER)
+        picture.set_valign(Gtk.Align.FILL)
+        card.append(picture)
+
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=1)
+        title = item.get("name", _("Untitled"))
+        title_label = Gtk.Label(label=title, xalign=0.5)
+        title_label.set_ellipsize(Pango.EllipsizeMode.END)
+        title_label.set_lines(1)
+        text_box.append(title_label)
+
+        date_text = self._format_added_timestamp(added_ts)
+        subtitle = category_name or ""
+        if date_text:
+            subtitle = "{} - {}".format(subtitle, date_text) if subtitle else date_text
+        elif source == "possible_update":
+            subtitle = "{} - {}".format(subtitle, _("provider did not include an update date")) if subtitle else _("provider did not include an update date")
+        subtitle_label = Gtk.Label(label=subtitle, xalign=0.5)
+        subtitle_label.add_css_class("caption")
+        subtitle_label.add_css_class("dim-label")
+        subtitle_label.set_ellipsize(Pango.EllipsizeMode.END)
+        subtitle_label.set_lines(1)
+        text_box.append(subtitle_label)
+
+        card.append(text_box)
+        child.set_child(card)
+        self._load_recent_card_poster(media_type, item, picture)
+        return child
+
+    def _get_recent_card_poster(self, media_type, item):
+        if media_type == "series":
+            return item.get("cover")
+        return item.get("stream_icon") or item.get("logo")
+
+    def _load_recent_card_poster(self, media_type, item, picture):
+        poster = self._get_recent_card_poster(media_type, item)
+        if not poster:
+            picture.set_paintable(None)
+            return
+        if os.path.isabs(poster):
+            try:
+                texture = Gdk.Texture.new_from_filename(poster)
+                picture.set_paintable(texture)
+            except GLib.Error:
+                picture.set_paintable(None)
+            return
+        poster_url = poster if poster.startswith("http") else tmdb_client.get_poster_url(poster)
+        if poster_url:
+            load_image_async(
+                poster_url,
+                picture,
+                on_success_callback=self._set_recent_card_poster,
+                on_failure=lambda: picture.set_paintable(None)
+            )
+
+    def _set_recent_card_poster(self, picture, pixbuf):
+        if picture and pixbuf:
+            try:
+                picture.set_paintable(Gdk.Texture.new_for_pixbuf(pixbuf))
+            except Exception as e:
+                logging.warning(f"Failed to set recently added poster: {e}")
+        return GLib.SOURCE_REMOVE
+
+    def _on_recent_content_child_activated(self, flowbox, child):
+        media_type = getattr(child, "recent_media_type", None)
+        item_data = getattr(child, "recent_item_data", None)
+        if not item_data:
+            return
+        if media_type == "series":
+            series_id = item_data.get("series_id") or item_data.get("id")
+            if series_id:
+                self.show_series_details_from_search(series_id, return_view_name="recent_content_view")
+        elif media_type == "vod":
+            self.show_vod_details_from_search(item_data, return_view_name="recent_content_view")
 
     def on_music_track_finished(self, player):
         if self.current_media_type != 'music':
@@ -1065,6 +1547,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.current_playing_media_path = None
         controls = self.video_view.controls
         controls.set_stop_trailer_button_visibility(is_trailer)
+        controls.set_button_visibility("episode-list", bool(episode_data))
         db_key = None
         if media_type == 'media':
             db_key = url
@@ -2601,6 +3084,9 @@ class MainWindow(Adw.ApplicationWindow):
         if not item:
             return
         current_grid_type = self.media_grid_view.current_media_type
+        return_view_name = None
+        if self.sidebar.list_stack.get_visible_child_name() == "recent":
+            return_view_name = "library_view"
         if current_grid_type == "series":
             series_id = item.props.path_or_url
             logging.info(f"Series item clicked. ID: {series_id}. Fetching details...")
@@ -2608,13 +3094,14 @@ class MainWindow(Adw.ApplicationWindow):
             self.loading_spinner.start()
             thread = threading.Thread(
                 target=self._fetch_series_info_thread,
-                args=(series_id,),
+                args=(series_id, return_view_name),
                 daemon=True
             )
             thread.start()
             return
         elif current_grid_type == "vod":
             logging.info(f"VOD item clicked. Stream ID: {item.props.path_or_url}")
+            self.detail_return_view_name = return_view_name
             self.detail_view.update_content(item, "vod")
             self.main_content_stack.set_visible_child_name("detail_view")
         elif current_grid_type == "music":
@@ -3227,6 +3714,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_fullscreen_clicked(self, button):
         controls = self.video_view.controls
         if not self.is_fullscreen():
+            self._capture_pre_fullscreen_layout_state()
             self.is_immersive_fullscreen = True
             self._set_ui_panels_visibility(False)
             self.fullscreen()
@@ -3234,6 +3722,7 @@ class MainWindow(Adw.ApplicationWindow):
             self.get_surface().set_cursor(Gdk.Cursor.new_from_name("none", None))
             controls.set_fullscreen_mode(True)                        
             if self.current_media_type == 'iptv':
+                self.video_view.fullscreen_channel_list.set_can_target(True)
                 self.video_view.fullscreen_channel_list.set_visible(True)
                 if self.current_playing_channel_data and self.current_channels_in_view:
                     active_title = getattr(self, 'last_played_bouquet_name', _("Channel List"))
@@ -3257,15 +3746,36 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.is_immersive_fullscreen = False
             self.unfullscreen()
-            self._set_ui_panels_visibility(True)
             self.video_view.disable_fullscreen_overlay_mode()
-            self.video_view.fullscreen_channel_list.set_visible(False)           
+            self.video_view.fullscreen_channel_list.set_visible(False)
+            self.video_view.fullscreen_channel_list.set_can_target(False)
+            self._restore_pre_fullscreen_layout_state()
             if self.hide_cursor_timer:
                 GLib.source_remove(self.hide_cursor_timer)
                 self.hide_cursor_timer = None
             self.get_surface().set_cursor(None)
             controls.set_fullscreen_mode(False)
             controls.set_visible(True)
+
+    def _capture_pre_fullscreen_layout_state(self):
+        self.pre_fullscreen_layout_state = {
+            "header": self.header.get_visible(),
+            "sidebar": self.sidebar.get_visible(),
+            "nav_rail": self.nav_rail_container.get_visible() if hasattr(self, "nav_rail_container") else True,
+            "epg": self.video_view.epg_scroll.get_visible() if hasattr(self.video_view, "epg_scroll") else False,
+        }
+
+    def _restore_pre_fullscreen_layout_state(self):
+        state = self.pre_fullscreen_layout_state or {}
+        self.header.set_visible(state.get("header", True))
+        self.sidebar.set_visible(state.get("sidebar", False))
+        if hasattr(self, "nav_rail_container"):
+            self.nav_rail_container.set_visible(state.get("nav_rail", True))
+        if self.current_media_type == "iptv":
+            self.video_view.set_epg_visibility(state.get("epg", True))
+        else:
+            self.video_view.set_epg_visibility(False)
+        self.pre_fullscreen_layout_state = None
 
     def _on_fullscreen_finished(self, window, param):
         self._set_ui_panels_visibility(False)
@@ -3475,6 +3985,11 @@ class MainWindow(Adw.ApplicationWindow):
         self._start_playback(url=url, media_type='vod', start_position=start_pos, episode_data=episode_data)
 
     def on_detail_view_back_requested(self, view):
+        if self.detail_return_view_name:
+            return_view = self.detail_return_view_name
+            self.detail_return_view_name = None
+            self.main_content_stack.set_visible_child_name(return_view)
+            return
         active_nav = self.sidebar.list_stack.get_visible_child_name()
         if active_nav in ["vod", "media"]:
              self.main_content_stack.set_visible_child_name("library_view")
@@ -3506,10 +4021,12 @@ class MainWindow(Adw.ApplicationWindow):
             self.video_view.controls.set_visible(visible)
             if self.current_media_type == 'iptv' and hasattr(self.video_view, 'fullscreen_channel_list'):
                 self.video_view.fullscreen_channel_list.set_visible(visible)
+                self.video_view.fullscreen_channel_list.set_can_target(visible)
         else:
             self.video_view.controls.set_visible(True)
             if hasattr(self.video_view, 'fullscreen_channel_list'):
                 self.video_view.fullscreen_channel_list.set_visible(False)
+                self.video_view.fullscreen_channel_list.set_can_target(False)
 
     def _on_mouse_motion(self, controller, x, y):
         if not self.is_immersive_fullscreen:
@@ -3792,7 +4309,7 @@ class MainWindow(Adw.ApplicationWindow):
                 cat.get('category_name', _('Unknown')) 
                 for cat in categories
                 if cat.get('category_name') not in hidden_bouquets
-            ]          
+            ]
             self.series_sidebar.populate_bouquets_async(category_names)
             self.show_toast(
                 _("{} series categories found!").format(len(category_names))
@@ -3855,13 +4372,14 @@ class MainWindow(Adw.ApplicationWindow):
                 _("Could not fetch series for this category.")
             )
 
-    def _fetch_series_info_thread(self, series_id):
+    def _fetch_series_info_thread(self, series_id, return_view_name=None):
         series_info = xtream_client.get_series_info(self.profile_data, series_id)
-        GLib.idle_add(self._on_series_info_fetched, series_info, series_id)
+        GLib.idle_add(self._on_series_info_fetched, series_info, series_id, return_view_name)
 
-    def _on_series_info_fetched(self, series_info, series_id):
+    def _on_series_info_fetched(self, series_info, series_id, return_view_name=None):
         self.loading_spinner.stop()
         if series_info:
+            self.series_detail_return_view_name = return_view_name
             self.series_detail_view.update_content(series_info, series_id)
             self.main_content_stack.set_visible_child_name("series_detail_view")
         else:
@@ -3871,6 +4389,11 @@ class MainWindow(Adw.ApplicationWindow):
             )
 
     def on_series_detail_back_requested(self, view):
+        if self.series_detail_return_view_name:
+            return_view = self.series_detail_return_view_name
+            self.series_detail_return_view_name = None
+            self.main_content_stack.set_visible_child_name(return_view)
+            return
         self.main_content_stack.set_visible_child_name("library_view")
         self.media_search_entry.set_text("")
 
@@ -3939,7 +4462,7 @@ class MainWindow(Adw.ApplicationWindow):
                 cat.get('category_name', _('Unknown')) 
                 for cat in categories
                 if cat.get('category_name') not in hidden_bouquets
-            ]           
+            ]
             self.vod_category_list.populate_bouquets_async(category_names)
             self.show_toast(
                 _("{} VOD categories found!").format(len(categories))
@@ -4097,6 +4620,129 @@ class MainWindow(Adw.ApplicationWindow):
             logging.debug("current_playing_media_path set to 'None' to prevent overwriting position save.")
         else:
             logging.warning("'Cancel' used but 'current_playing_media_path' (finished episode ID) not found.")
+
+    def on_episode_list_button_clicked(self, controls):
+        if not self.currently_playing_episode_data:
+            self.show_toast(_("No active series episode."))
+            return
+        if not getattr(self.series_detail_view, "episodes_data", None):
+            self.show_toast(_("Episode list is not loaded."))
+            return
+        self._show_player_episode_list_popover(controls)
+
+    def _show_player_episode_list_popover(self, controls):
+        button = getattr(controls, "buttons", {}).get("episode-list")
+        if not button:
+            self.show_toast(_("Episode list is not available."))
+            return
+
+        if getattr(self, "episode_list_popover", None):
+            self.episode_list_popover.unparent()
+            self.episode_list_popover = None
+
+        popover = Gtk.Popover()
+        popover.set_parent(button)
+        popover.set_has_arrow(True)
+
+        outer_box = Gtk.Box(
+            orientation=Gtk.Orientation.VERTICAL,
+            spacing=8,
+            margin_top=10,
+            margin_bottom=10,
+            margin_start=10,
+            margin_end=10
+        )
+        title = Gtk.Label(label=_("Episodes"), xalign=0)
+        title.add_css_class("heading")
+        outer_box.append(title)
+
+        episode_list = Gtk.ListBox()
+        episode_list.add_css_class("boxed-list")
+        episode_list.connect("row-activated", self._on_player_episode_row_activated, popover)
+
+        current_episode_id = str(self.currently_playing_episode_data.get("id") or self.currently_playing_episode_data.get("stream_id") or "")
+        episodes_data = self.series_detail_view.episodes_data
+        season_keys = sorted(episodes_data.keys(), key=lambda key: self._safe_int(key))
+
+        for season_key in season_keys:
+            header_row = Gtk.ListBoxRow()
+            header_row.set_selectable(False)
+            header_row.set_activatable(False)
+            header = Gtk.Label(label=_("Season {}").format(season_key), xalign=0)
+            header.add_css_class("caption")
+            header.add_css_class("dim-label")
+            header.set_margin_top(8)
+            header.set_margin_bottom(4)
+            header.set_margin_start(8)
+            header.set_margin_end(8)
+            header_row.set_child(header)
+            episode_list.append(header_row)
+
+            episodes = episodes_data.get(season_key) or []
+            try:
+                sorted_episodes = sorted(episodes, key=lambda episode: int(episode.get("episode_num", 0)))
+            except (TypeError, ValueError):
+                sorted_episodes = episodes
+
+            for episode in sorted_episodes:
+                episode_list.append(self._create_player_episode_row(episode, current_episode_id))
+
+        scrolled = Gtk.ScrolledWindow()
+        scrolled.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scrolled.set_min_content_width(360)
+        scrolled.set_max_content_width(520)
+        scrolled.set_min_content_height(260)
+        scrolled.set_max_content_height(520)
+        scrolled.set_child(episode_list)
+        outer_box.append(scrolled)
+
+        popover.set_child(outer_box)
+        self.episode_list_popover = popover
+        self.main_content_stack.set_visible_child_name("player_view")
+        popover.popup()
+
+    def _create_player_episode_row(self, episode, current_episode_id):
+        row = Gtk.ListBoxRow()
+        row.episode_data = episode
+
+        hbox = Gtk.Box(
+            orientation=Gtk.Orientation.HORIZONTAL,
+            spacing=10,
+            margin_top=8,
+            margin_bottom=8,
+            margin_start=8,
+            margin_end=8
+        )
+        episode_id = str(episode.get("id") or episode.get("stream_id") or "")
+        icon_name = "media-playback-start-symbolic" if episode_id == current_episode_id else "video-x-generic-symbolic"
+        icon = Gtk.Image.new_from_icon_name(icon_name)
+        hbox.append(icon)
+
+        text_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        text_box.set_hexpand(True)
+        ep_num = episode.get("episode_num", "?")
+        ep_title = episode.get("title") or episode.get("name") or _("Unknown Episode")
+        title_label = Gtk.Label(label=f"{ep_num}. {ep_title}", xalign=0)
+        title_label.set_ellipsize(Pango.EllipsizeMode.END)
+        text_box.append(title_label)
+
+        if episode_id == current_episode_id:
+            subtitle = Gtk.Label(label=_("Now playing"), xalign=0)
+            subtitle.add_css_class("caption")
+            subtitle.add_css_class("dim-label")
+            text_box.append(subtitle)
+
+        hbox.append(text_box)
+        row.set_child(hbox)
+        return row
+
+    def _on_player_episode_row_activated(self, listbox, row, popover):
+        episode_data = getattr(row, "episode_data", None)
+        if not episode_data:
+            return
+        popover.popdown()
+        self.main_content_stack.set_visible_child_name("player_view")
+        self.on_episode_activated(None, episode_data)
 
     def _on_skip_to_next_episode_clicked(self, button):
         logging.critical("!!!! _on_skip_to_next_episode_clicked CALLED !!!!")
@@ -5306,22 +5952,23 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.connect("response", _on_response)
         dialog.present()
 
-    def show_vod_details_from_search(self, item_data):
+    def show_vod_details_from_search(self, item_data, return_view_name=None):
         from ui.media_grid_view import MediaItem
         path_or_url = item_data.get('stream_id') or item_data.get('url')     
         title = item_data.get('name')
         item = MediaItem(path_or_url=str(path_or_url), title=title)
         item.props.poster_path = item_data.get('stream_icon') or item_data.get('logo')
+        self.detail_return_view_name = return_view_name
         self.detail_view.update_content(item, "vod")
         self.main_content_stack.set_visible_child_name("detail_view")
 
-    def show_series_details_from_search(self, series_id):
+    def show_series_details_from_search(self, series_id, return_view_name=None):
         if not series_id: return      
         self.main_content_stack.set_visible_child_name("loading_view")
         self.loading_spinner.start()
         thread = threading.Thread(
             target=self._fetch_series_info_thread,
-            args=(str(series_id),),
+            args=(str(series_id), return_view_name),
             daemon=True
         )
         thread.start()                                                                                                             
