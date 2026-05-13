@@ -1206,7 +1206,7 @@ class MainWindow(Adw.ApplicationWindow):
 
     def _get_recent_card_poster(self, media_type, item):
         if media_type == "series":
-            return item.get("cover")
+            return item.get("cover") or item.get("stream_icon") or item.get("logo")
         return item.get("stream_icon") or item.get("logo")
 
     def _load_recent_card_poster(self, media_type, item, picture):
