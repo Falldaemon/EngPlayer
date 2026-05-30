@@ -8,29 +8,80 @@ import threading
 from gi.repository import GLib
 
 class Recorder:
-    def __init__(self, stream_url, output_filepath, duration_sec=None):
+    def __init__(self, stream_url, output_filepath, duration_sec=None, on_progress=None, on_finished=None):
         self.stream_url = stream_url
         self.output_filepath = output_filepath
         self.duration_sec = duration_sec
+        self.on_progress = on_progress
+        self.on_finished = on_finished
+        self.total_bytes = 0
         self.process = None
         self.log_thread = None
         self.watchdog_timer = None
         logging.info(f"Recorder (FFmpeg Mode) initialized. URL: {self.stream_url}, Duration: {self.duration_sec}s")
 
     def _log_reader_thread(self):
+        import re
+        dur_re = re.compile(r'Duration:\s*(\d+):(\d+):(\d+\.?\d*)')
+        bit_re = re.compile(r'bitrate:\s*(\d+)\s*kb/s')
+        est_dur = None
+        est_bit = None
         try:
             for line in self.process.stderr:
                 if 'frame=' in line:
-                    logging.debug(f"(FFmpeg Live) {line.strip()}")
+                    logging.debug(f"(FFmpeg) {line.strip()}")
                 else:
-                    logging.info(f"(FFmpeg Live) {line.strip()}")
+                    logging.info(f"(FFmpeg) {line.strip()}")
+                if self.total_bytes == 0 and self.on_progress:
+                    dm = dur_re.search(line)
+                    bm = bit_re.search(line)
+                    if dm:
+                        h, m, s = int(dm.group(1)), int(dm.group(2)), float(dm.group(3))
+                        est_dur = h * 3600 + m * 60 + s
+                    if bm:
+                        est_bit = int(bm.group(1))
+                    if est_dur and est_bit:
+                        self.total_bytes = int(est_dur * est_bit * 1000 / 8)
+                        logging.info(f"Total size estimated from ffmpeg: {self.total_bytes} bytes")
         except Exception as e:
             logging.warning(f"Error in FFmpeg log reader thread: {e}")
+        finally:
+            if self.on_finished and self.process and self.process.poll() == 0:
+                GLib.idle_add(self.on_finished)
+
+    def _progress_monitor_thread(self):
+        import time
+        while self.process and self.process.poll() is None:
+            try:
+                done = os.path.getsize(self.output_filepath)
+                GLib.idle_add(self.on_progress, done, self.total_bytes)
+            except OSError:
+                pass
+            time.sleep(1)
+        # final update after ffmpeg exits
+        try:
+            done = os.path.getsize(self.output_filepath)
+            GLib.idle_add(self.on_progress, done, self.total_bytes)
+        except OSError:
+            pass
 
     def start(self):
         if self.process:
             logging.warning("Attempted to start recording, but a process is already running.")
             return           
+        if self.on_progress:
+            try:
+                import requests
+                r = requests.get(self.stream_url, stream=True, timeout=10, allow_redirects=True,
+                                 headers={'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0'})
+                cl = r.headers.get('Content-Length')
+                r.close()
+                self.total_bytes = int(cl) if cl else 0
+                logging.info(f"Download total size (Content-Length): {self.total_bytes} bytes")
+            except Exception as e:
+                logging.warning(f"Could not get Content-Length: {e}")
+                self.total_bytes = 0
+
         command = [
             'ffmpeg', '-y',
             '-user_agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
@@ -60,6 +111,10 @@ class Recorder:
             self.log_thread = threading.Thread(target=self._log_reader_thread)
             self.log_thread.daemon = True
             self.log_thread.start()
+            if self.on_progress:
+                progress_thread = threading.Thread(target=self._progress_monitor_thread)
+                progress_thread.daemon = True
+                progress_thread.start()
             logging.info(f"FFmpeg process started. PID: {self.process.pid}")          
             if self.duration_sec:
                 watchdog_timeout = int(self.duration_sec) + 120

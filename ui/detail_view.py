@@ -159,7 +159,9 @@ class DetailView(Gtk.Box):
     __gsignals__ = {
         "play-requested": (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
         "back-requested": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "trailer-requested": (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        "trailer-requested": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        "download-requested": (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
+        "cancel-download-requested": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, **kwargs):
@@ -170,7 +172,9 @@ class DetailView(Gtk.Box):
         self.set_margin_bottom(12)
         self.media_url = None
         self.media_type = None
-        self.current_trailer_key = None       
+        self.current_title = None
+        self.current_trailer_key = None
+        self._is_downloading = False       
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.append(header_box)
         back_button = Gtk.Button()
@@ -273,13 +277,27 @@ class DetailView(Gtk.Box):
         self.translate_btn.set_child(translate_box)      
         self.translate_btn.connect("clicked", self._on_translate_clicked)
         button_box.append(self.translate_btn)
+        download_row = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, halign=Gtk.Align.CENTER, margin_top=6, spacing=4)
+        self.append(download_row)
+        self.download_button = Gtk.Button(label=_("Download"), icon_name="folder-download-symbolic", css_classes=["pill"])
+        self.download_button.connect("clicked", self._on_download_clicked)
+        download_row.append(self.download_button)
+        self.download_progress_bar = Gtk.ProgressBar()
+        self.download_progress_bar.set_size_request(260, -1)
+        self.download_progress_bar.set_visible(False)
+        download_row.append(self.download_progress_bar)
+        self.download_size_label = Gtk.Label(css_classes=["caption"])
+        self.download_size_label.set_visible(False)
+        download_row.append(self.download_size_label)
 
     def update_content(self, item, media_type):
         logging.info(f"DETAILVIEW: update_content STARTED - Item: {item.props.title}, Type: {media_type}, URL/ID: {item.props.path_or_url}")
         self.media_url = item.props.path_or_url
         self.media_type = media_type
+        self.current_title = item.props.title or ""
         self.current_trailer_key = None
         self.trailer_button.set_sensitive(False)
+        self.download_button.set_visible(media_type in ('vod', 'media'))
         logging.debug("DETAILVIEW: Clearing UI and setting initial info...")
         self.poster_image.set_paintable(None)
         initial_title = item.props.title or ""
@@ -687,6 +705,40 @@ class DetailView(Gtk.Box):
         buffer = self.overview_textview.get_buffer()
         buffer.delete(buffer.get_start_iter(), buffer.get_end_iter())
         buffer.insert(buffer.get_start_iter(), text)
+
+    def _on_download_clicked(self, button):
+        if self._is_downloading:
+            self.emit("cancel-download-requested")
+        elif self.media_url and self.media_type:
+            self.emit("download-requested", self.media_url, self.media_type)
+
+    def start_download_ui(self):
+        self._is_downloading = True
+        self.download_button.set_sensitive(True)
+        self.download_button.set_label(_("Cancel"))
+        self.download_progress_bar.set_fraction(0)
+        self.download_progress_bar.set_visible(True)
+        self.download_size_label.set_text("")
+        self.download_size_label.set_visible(True)
+
+    def update_download_progress(self, done_bytes, total_bytes):
+        if total_bytes > 0:
+            fraction = min(done_bytes / total_bytes, 1.0)
+            self.download_progress_bar.set_fraction(fraction)
+            done_mb = done_bytes / 1048576
+            total_mb = total_bytes / 1048576
+            self.download_size_label.set_text(f"{done_mb:.1f} / {total_mb:.1f} MB  ({int(fraction * 100)}%)")
+        else:
+            self.download_progress_bar.pulse()
+            done_mb = done_bytes / 1048576
+            self.download_size_label.set_text(f"{done_mb:.1f} MB")
+
+    def finish_download_ui(self):
+        self._is_downloading = False
+        self.download_button.set_sensitive(True)
+        self.download_button.set_label(_("Download"))
+        self.download_progress_bar.set_visible(False)
+        self.download_size_label.set_visible(False)
 
     def _on_play_clicked(self, button):
         if self.media_url and self.media_type:

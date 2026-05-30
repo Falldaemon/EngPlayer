@@ -111,6 +111,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.subtitle_delay_ms = 0
         self.all_channels_map = {}
         self.active_recorder = None
+        self.active_downloader = None
         self.current_playing_channel_data = None
         self.slider_visibility_determined = False
         self.slider_check_attempts = 0
@@ -568,6 +569,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.detail_view.connect("play-requested", self.on_detail_view_play_requested)
         self.detail_view.connect("back-requested", self.on_detail_view_back_requested)
         self.detail_view.connect("trailer-requested", self.on_trailer_requested)
+        self.detail_view.connect("download-requested", self.on_detail_download_requested)
+        self.detail_view.connect("cancel-download-requested", self.on_detail_cancel_download)
         handler_id = self.bouquet_list.show_locked_button.connect("toggled", self._on_show_locked_toggled)
         self.bouquet_list.show_locked_button.handler_block(handler_id)
         initial_show_locked_state = database.get_show_locked_bouquets_status()
@@ -3391,6 +3394,9 @@ class MainWindow(Adw.ApplicationWindow):
         self._hide_next_episode_prompt()
         if self.active_recorder:
             self.active_recorder.stop()
+        if self.active_downloader:
+            self.active_downloader.stop()
+            self.active_downloader = None
         self.stop_pip()
         self.inhibitor.uninhibit()
         self.subtitle_manager.clear()
@@ -3473,6 +3479,59 @@ class MainWindow(Adw.ApplicationWindow):
         if response_id == "resume":
             start_pos = position
         self._start_playback(url=url, media_type='vod', start_position=start_pos, episode_data=episode_data)
+
+    def on_detail_cancel_download(self, view):
+        if self.active_downloader:
+            threading.Thread(target=self.active_downloader.stop, daemon=True).start()
+            self.active_downloader = None
+        self.detail_view.finish_download_ui()
+        self.show_toast(_("Download cancelled."))
+
+    def on_detail_download_requested(self, view, stream_id_or_path, media_type):
+        title = self.detail_view.current_title or stream_id_or_path
+        safe_title = "".join(c if c.isalnum() or c in " .-_" else "_" for c in title).strip()
+        profile_type = self.profile_data.get('type') if self.profile_data else None
+        if profile_type == 'xtream' and str(stream_id_or_path).isdigit():
+            info_data = xtream_client.get_vod_info(self.profile_data, stream_id_or_path)
+            if not info_data:
+                self.show_toast(_("Error: Could not retrieve movie info."))
+                return
+            movie_data = info_data.get('movie_data', {})
+            final_url = movie_data.get('direct_source')
+            if not final_url:
+                ext = movie_data.get('container_extension', 'mkv')
+                host = self.profile_data.get('host')
+                username = self.profile_data.get('username')
+                password = self.profile_data.get('password')
+                final_url = f"{host}/movie/{username}/{password}/{stream_id_or_path}.{ext}"
+        else:
+            final_url = stream_id_or_path
+            ext = final_url.rsplit('.', 1)[-1] if '.' in final_url.split('/')[-1] else 'mkv'
+            if len(ext) > 4:
+                ext = 'mkv'
+        recordings_dir = database.get_recordings_path()
+        os.makedirs(recordings_dir, exist_ok=True)
+        file_name = f"{safe_title}.mkv"
+        output_path = os.path.join(recordings_dir, file_name)
+        def on_progress(done_bytes, total_bytes):
+            self.detail_view.update_download_progress(done_bytes, total_bytes)
+
+        def on_finished():
+            self.active_downloader = None
+            self.detail_view.finish_download_ui()
+            self.show_toast(_("Download complete: {}").format(file_name))
+            logging.info(f"VOD download finished: {output_path}")
+
+        try:
+            downloader = Recorder(final_url, output_path, on_progress=on_progress, on_finished=on_finished)
+            downloader.start()
+            self.active_downloader = downloader
+            self.detail_view.start_download_ui()
+            self.show_toast(_("Download started: {}").format(file_name))
+            logging.info(f"VOD download started: {output_path}")
+        except Exception as e:
+            logging.error(f"Could not start download: {e}")
+            self.show_toast(_("Error: Could not start download!"))
 
     def on_detail_view_back_requested(self, view):
         active_nav = self.sidebar.list_stack.get_visible_child_name()
