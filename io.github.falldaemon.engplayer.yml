@@ -32,8 +32,10 @@ modules:
     build-commands:
       - make install prefix=/app
     sources:
-      - type: dir
-        path: .
+      - type: git
+        url: https://github.com/Falldaemon/EngPlayer.git
+        tag: v0.1.7
+        commit: ef900acce8b4df707331f947ef9ab6dec51d8f21
         x-checker-data:
           type: git
           tag-pattern: ^v([\d.]+)$
