@@ -34,22 +34,40 @@ class MediaInfoDialog(Adw.Window):
         footer_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8,
                              margin_top=12, margin_bottom=12, margin_start=12, margin_end=12)
         footer_box.append(Gtk.Separator())
+        location_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)       
         self.location_label = Gtk.Label(
-        xalign=0, 
-        wrap=True, 
-        wrap_mode=Pango.WrapMode.CHAR, 
-        selectable=True, 
-        lines=3,
-        ellipsize=Pango.EllipsizeMode.END,
-        css_classes=["caption"]
+            xalign=0, 
+            wrap=True, 
+            wrap_mode=Pango.WrapMode.CHAR, 
+            selectable=False,
+            lines=3,
+            ellipsize=Pango.EllipsizeMode.END,
+            css_classes=["caption"],
+            hexpand=True
         )
-        footer_box.append(self.location_label)
+        location_box.append(self.location_label)
+        copy_btn = Gtk.Button(icon_name="edit-copy-symbolic")
+        copy_btn.set_valign(Gtk.Align.CENTER)
+        copy_btn.set_tooltip_text(_("Copy Original URL"))
+        copy_btn.connect("clicked", self.on_copy_clicked)
+        location_box.append(copy_btn)
+        footer_box.append(location_box)
         self.bitrate_label = Gtk.Label(label=_("Bitrate: 0.0 Mbps"), css_classes=["caption-heading"])
         footer_box.append(self.bitrate_label)
         content_box.append(footer_box)
         self.update_ui()
         self.timer_id = GLib.timeout_add_seconds(1, self.update_ui)
         self.connect("close-request", self.on_close)
+
+    def on_copy_clicked(self, button):
+        stats = self.player.get_detailed_stats()
+        original_url = stats.get("url", "")
+        if original_url and original_url != "-":
+            clipboard = self.get_clipboard()
+            clipboard.set(original_url)
+            parent = self.get_transient_for()
+            if parent and hasattr(parent, 'show_toast'):
+                parent.show_toast(_("Original URL copied to clipboard!"))
 
     def _add_row(self, listbox, title, value):
         row = Adw.ActionRow(title=title)
@@ -72,7 +90,7 @@ class MediaInfoDialog(Adw.Window):
         self._add_row(self.audio_list, _("Language"), stats.get("language", "-"))
         self._add_row(self.audio_list, _("Channels"), stats.get("channels", "-"))
         self._add_row(self.audio_list, _("Sample Rate"), stats.get("sample_rate", "-"))
-        self.location_label.set_text(f'{_("Location")}: {stats.get("url", "-")}')
+        self.location_label.set_text(f'{_("Location")}: {stats.get("safe_url", "-")}')
         raw_bitrate = stats.get("bitrate", 0)
         mbps = raw_bitrate / 1_000_000
         self.bitrate_label.set_text(f'{_("Bitrate")}: {mbps:.2f} Mbps')        

@@ -76,10 +76,19 @@ class ProfileWindow(Gtk.ApplicationWindow):
         self.spinner = Gtk.Spinner()
         self.spinner.set_size_request(48, 48)
         self.spinner.set_halign(Gtk.Align.CENTER)
-        self.status_label = Gtk.Label(label=_("Starting..."), css_classes=["splash-status"])      
+        self.status_label = Gtk.Label(label=_("Starting..."), css_classes=["splash-status"])  
+        self.status_label.set_wrap(True)
+        self.status_label.set_justify(Gtk.Justification.CENTER) 
+        self.progress_bar = Gtk.ProgressBar()
+        self.progress_bar.set_margin_top(10)
+        self.progress_bar.set_margin_bottom(10)
+        self.progress_bar.set_margin_start(40)
+        self.progress_bar.set_margin_end(40)
+        self.progress_bar.set_show_text(True)    
         self.status_box.append(brand_label)
         self.status_box.append(self.spinner)
         self.status_box.append(self.status_label)
+        self.status_box.append(self.progress_bar)
         if not is_auto_login:
             main_box.append(scrolled_window)
             main_box.append(self.status_box) 
@@ -135,6 +144,15 @@ class ProfileWindow(Gtk.ApplicationWindow):
                 p[key] = time.time()
                 break
         save_profiles(profiles)
+        
+    def _update_progress(self, fraction, message):
+        def do_update():
+            if hasattr(self, 'progress_bar') and self.progress_bar:
+                self.progress_bar.set_fraction(fraction)
+            if hasattr(self, 'status_label') and self.status_label:
+                self.status_label.set_text(message)
+            return GLib.SOURCE_REMOVE
+        GLib.idle_add(do_update)        
 
     def on_open_profile(self, widget):
         selected_row = self.list_box.get_selected_row()
@@ -228,14 +246,20 @@ class ProfileWindow(Gtk.ApplicationWindow):
                     except (json.JSONDecodeError, IOError):
                         channels, vod = {}, {}
                 if not channels or not vod:
+                    self._update_progress(0.1, _("Fetching live channel categories..."))
                     live_categories = xtream_client.get_live_categories(profile)
+                    
+                    self._update_progress(0.2, _("Fetching live streams..."))
                     live_streams = xtream_client.get_live_streams(profile)
                     if live_streams is not None and live_categories is not None:
-                         channels = _transform_streams_to_bouquets(live_streams, live_categories, 'live')
-                    vod_categories = xtream_client.get_vod_categories(profile)
+                         channels = _transform_streams_to_bouquets(live_streams, live_categories, 'live')                  
+                    self._update_progress(0.4, _("Fetching VOD categories..."))
+                    vod_categories = xtream_client.get_vod_categories(profile)                  
+                    self._update_progress(0.5, _("Fetching VOD streams..."))
                     vod_streams = xtream_client.get_vod_streams(profile)
                     if vod_streams is not None and vod_categories is not None:
-                         vod = _transform_streams_to_bouquets(vod_streams, vod_categories, 'movie')
+                         vod = _transform_streams_to_bouquets(vod_streams, vod_categories, 'movie')                        
+                    self._update_progress(0.6, _("Fetching series and episodes..."))
                     series_categories = xtream_client.get_series_categories(profile)
                     series_streams = xtream_client.get_series_streams(profile, "all")
                     if series_streams is not None and series_categories is not None:
@@ -285,21 +309,27 @@ class ProfileWindow(Gtk.ApplicationWindow):
                             self._update_profile_timestamp(profile['id'], 'last_m3u_update')
                             m3u_content = downloaded_text
                     except Exception as e:
-                         logging.error(f"M3U load error: {e}")
+                         logging.error(f"M3U load error: {e}")                      
+                extracted_epg_url = None
                 if m3u_content:
-                    channels, vod = parse_m3u_content(m3u_content.splitlines())
+                    channels, vod, extracted_epg_url = parse_m3u_content(m3u_content.splitlines())
             epg_url_or_path = profile.get("epg_url")
-            if not epg_url_or_path and profile_type == "xtream":
-                host = profile.get("host")
-                username = profile.get("username")
-                password = profile.get("password")
-                if host and username and password:
-                    epg_url_or_path = f"{host}/xmltv.php?username={username}&password={password}"
+            if not epg_url_or_path:
+                if profile_type == "xtream":
+                    host = profile.get("host")
+                    username = profile.get("username")
+                    password = profile.get("password")
+                    if host and username and password:
+                        epg_url_or_path = f"{host}/xmltv.php?username={username}&password={password}"
+                        logging.info(f"Xtream EPG URL generated automatically: {epg_url_or_path}")
+                elif profile_type in ["m3u_url", "m3u_file"] and extracted_epg_url:
+                    epg_url_or_path = extracted_epg_url
+                    logging.info(f"Auto-detected EPG URL from M3U header: {epg_url_or_path}")
             if epg_url_or_path:
                 epg_cache_path = self._get_cache_path(profile['id'], 'epg_cache')
                 epg_ttl = 21600
                 last_epg_update = profile.get('last_epg_update', 0)
-                epg_is_stale = (time.time() - last_epg_update) > epg_ttl
+                epg_is_stale = (time.time() - last_epg_update) > epg_ttl                
                 epg_content = ""
                 if os.path.exists(epg_cache_path) and not epg_is_stale:
                     logging.info(f"Fresh EPG cache found: {epg_cache_path}")
@@ -309,9 +339,11 @@ class ProfileWindow(Gtk.ApplicationWindow):
                     except IOError:
                          epg_content = ""
                 if not epg_content:
+                    self._update_progress(0.7, _("Downloading EPG data... (This might take a while)"))
                     logging.info("EPG cache missing or stale. Downloading...")
                     epg_content = epg_provider.load_epg_data(epg_url_or_path)
                     if epg_content:
+                        self._update_progress(0.85, _("Saving EPG data to cache..."))
                         try:
                              with open(epg_cache_path, 'w', encoding='utf-8') as f:
                                  f.write(epg_content)
@@ -319,7 +351,9 @@ class ProfileWindow(Gtk.ApplicationWindow):
                         except IOError:
                              pass
                 if epg_content:
-                    epg_data = epg_provider.parse_epg_data(epg_content)
+                    self._update_progress(0.9, _("Processing EPG database..."))
+                    epg_data = epg_provider.parse_epg_data(epg_content)                   
+            self._update_progress(1.0, _("Loading complete. Preparing player..."))
             GLib.idle_add(self._on_loading_complete, profile, channels, vod, series, epg_data, None)
         except Exception as e:
             error_message = _("An unexpected error occurred while loading profile '{}'.\n\nReason: {}").format(profile['name'], e)

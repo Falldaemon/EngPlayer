@@ -31,6 +31,7 @@ class MediaItem(GObject.Object):
     provider_rating = GObject.Property(type=float, default=0.0)
     provider_added = GObject.Property(type=str, default=None)
     is_watched = GObject.Property(type=bool, default=False)
+    is_favorite = GObject.Property(type=bool, default=False)
 
     def __init__(self, path_or_url, title=None, poster_path=None, **kwargs):
         super().__init__(**kwargs)
@@ -52,7 +53,8 @@ class MediaGridView(Gtk.ScrolledWindow):
         "item-right-clicked": (GObject.SignalFlags.RUN_FIRST, None, (MediaItem, Gtk.Widget,)),
         "poster-load-failed": (GObject.SignalFlags.RUN_FIRST, None, (MediaItem,)),
         "population-finished": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "item-watched-toggled": (GObject.SignalFlags.RUN_FIRST, None, (MediaItem, bool))
+        "item-watched-toggled": (GObject.SignalFlags.RUN_FIRST, None, (MediaItem, bool)),
+        "item-favorite-toggled": (GObject.SignalFlags.RUN_FIRST, None, (MediaItem, bool))
     }
 
     def __init__(self, **kwargs):
@@ -107,13 +109,19 @@ class MediaGridView(Gtk.ScrolledWindow):
         except Exception as ex:
             logging.error(f"MediaGridView: Unexpected error while creating 'paths_to_check': {ex}")
         watched_set = set()
+        favorite_set = set()
         if paths_to_check:
             watched_set = database.get_watched_status_batch(paths_to_check)
+            if media_type == "series":
+                favorite_set = {str(f['series_id']) for f in database.get_all_series_favorites()}
+            else:
+                favorite_set = {str(f['stream_id']) for f in database.get_all_vod_favorites()}
         logging.debug(f"MediaGridView: {len(watched_set)} watched items found.")
         media_generator = (item for item in media_list)
-        GLib.idle_add(self._populate_chunk, media_generator, media_type, watched_set)
+        GLib.idle_add(self._populate_chunk, media_generator, media_type, watched_set, favorite_set)
 
-    def _populate_chunk(self, media_generator, media_type, watched_set):
+    def _populate_chunk(self, media_generator, media_type, watched_set, favorite_set=None):
+        if favorite_set is None: favorite_set = set()
         chunk_size = 20
         main_window = self.get_ancestor(Gtk.Window)
         trakt_movies_cache = getattr(main_window, 'trakt_watched_movies', set())
@@ -155,11 +163,13 @@ class MediaGridView(Gtk.ScrolledWindow):
                             database.save_playback_progress(db_key_for_check, position=0, is_finished=1)
                 else:
                     db_key_for_check = item_data["file_path"]
-                    item = MediaItem(path_or_url=item_data["file_path"], title=item_data["title"], poster_path=item_data["poster_path"])
+                    item = MediaItem(path_or_url=item_data["file_path"], title=item_data["title"], poster_path=item_data["poster_path"])               
                 if item:
                     if db_key_for_check and db_key_for_check in watched_set:
                         item.props.is_watched = True
-                    self.model.append(item)
+                    if db_key_for_check and db_key_for_check in favorite_set:
+                        item.props.is_favorite = True                     
+                    self.model.append(item)             
             return True
         except StopIteration:
             logging.info("Incremental population of the media grid is complete.")
@@ -221,6 +231,20 @@ class MediaGridView(Gtk.ScrolledWindow):
         watched_button.connect("clicked", self._on_watched_button_clicked, list_item)
         overlay.add_overlay(watched_button)
         list_item.watched_button = watched_button
+        favorite_button = Gtk.Button()
+        favorite_button.add_css_class("flat") 
+        favorite_button.set_valign(Gtk.Align.START)
+        favorite_button.set_halign(Gtk.Align.END) 
+        favorite_button.set_margin_end(8)
+        favorite_button.set_margin_top(8)
+        favorite_button.set_size_request(36, 36) 
+        fav_icon = Gtk.Image()
+        fav_icon.set_pixel_size(28) 
+        favorite_button.set_child(fav_icon)      
+        favorite_button.connect("clicked", self._on_favorite_button_clicked, list_item)
+        overlay.add_overlay(favorite_button)
+        list_item.favorite_button = favorite_button
+        list_item.fav_icon = fav_icon 
 
     def _on_factory_bind(self, factory, list_item):
         overlay = list_item.get_child()
@@ -232,8 +256,10 @@ class MediaGridView(Gtk.ScrolledWindow):
         title = item.props.title
         if self.current_media_type == "music":
             label.set_markup(title if title else "")
+            label.set_tooltip_markup(title if title else "")
         else:
             label.set_text(title if title else "")
+            label.set_tooltip_text(title if title else "")
         if watched_button:
             if item.props.is_watched:
                 watched_button.add_css_class("watched")
@@ -246,7 +272,22 @@ class MediaGridView(Gtk.ScrolledWindow):
             if self.current_media_type in ["music", "picture"]:
                 watched_button.set_visible(False)
             else:
-                watched_button.set_visible(True)
+                watched_button.set_visible(True)              
+            favorite_button = getattr(list_item, "favorite_button", None)
+            fav_icon = getattr(list_item, "fav_icon", None)
+        if favorite_button and fav_icon:
+            if item.props.is_favorite:
+                filled_path = os.path.join("resources", "icons", "star-filled.svg")
+                fav_icon.set_from_file(filled_path)
+                favorite_button.set_tooltip_text(_("Remove from Favorites"))
+            else:
+                empty_path = os.path.join("resources", "icons", "star-empty.svg")
+                fav_icon.set_from_file(empty_path)
+                favorite_button.set_tooltip_text(_("Add to Favorites"))
+            if self.current_media_type in ["vod", "series"]:
+                favorite_button.set_visible(True)
+            else:
+                favorite_button.set_visible(False)   
 
         def _replace_image_widget(widget, pixbuf):
             if widget and pixbuf:
@@ -365,4 +406,20 @@ class MediaGridView(Gtk.ScrolledWindow):
         else:
             button.remove_css_class("watched")
             button.set_tooltip_text(_("Mark as Watched"))
-
+            
+    def _on_favorite_button_clicked(self, button, list_item):
+        item = list_item.get_item()
+        if not item: return
+        new_state = not item.props.is_favorite
+        item.props.is_favorite = new_state       
+        fav_icon = getattr(list_item, "fav_icon", None)
+        if fav_icon:
+            if new_state:
+                filled_path = os.path.join("resources", "icons", "star-filled.svg")
+                fav_icon.set_from_file(filled_path)
+                button.set_tooltip_text(_("Remove from Favorites"))
+            else:
+                empty_path = os.path.join("resources", "icons", "star-empty.svg")
+                fav_icon.set_from_file(empty_path)
+                button.set_tooltip_text(_("Add to Favorites"))
+        self.emit("item-favorite-toggled", item, new_state)

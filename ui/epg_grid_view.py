@@ -110,23 +110,40 @@ class EpgGridView(Gtk.Box):
         main_content.append(self.timeline_label)      
         self.view_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, transition_duration=250)
         self.view_stack.set_vexpand(True)
-        main_content.append(self.view_stack)
-        self.grid_layout_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        main_content.append(self.view_stack)       
+        self.grid_layout_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
+        left_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        self.grid_layout_box.append(left_box)
+        self.top_left_spacer = Gtk.Fixed()
+        self.top_left_spacer.set_size_request(160, 40)
+        left_box.append(self.top_left_spacer)
+        self.channels_scroll = Gtk.ScrolledWindow()
+        self.channels_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.EXTERNAL)
+        self.channels_scroll.set_vexpand(True)
+        self.channels_fixed = Gtk.Fixed()
+        self.channels_scroll.set_child(self.channels_fixed)
+        left_box.append(self.channels_scroll)
+        right_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        right_box.set_hexpand(True)
+        self.grid_layout_box.append(right_box)
         self.header_scroll = Gtk.ScrolledWindow()
         self.header_scroll.set_policy(Gtk.PolicyType.EXTERNAL, Gtk.PolicyType.NEVER)
         self.header_fixed = Gtk.Fixed()
         self.header_scroll.set_child(self.header_fixed)
-        self.grid_layout_box.append(self.header_scroll)      
+        right_box.append(self.header_scroll)             
         self.grid_scroll = Gtk.ScrolledWindow()
         self.grid_scroll.add_css_class("epg-grid-box")
         self.grid_scroll.set_policy(Gtk.PolicyType.AUTOMATIC, Gtk.PolicyType.AUTOMATIC)
         self.grid_scroll.set_vexpand(True)
         self.grid_fixed = Gtk.Fixed()
         self.grid_scroll.set_child(self.grid_fixed)
-        self.grid_layout_box.append(self.grid_scroll)     
+        right_box.append(self.grid_scroll)     
         hadj_main = self.grid_scroll.get_hadjustment()
         hadj_header = self.header_scroll.get_hadjustment()
         hadj_main.bind_property("value", hadj_header, "value", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)
+        vadj_main = self.grid_scroll.get_vadjustment()
+        vadj_channels = self.channels_scroll.get_vadjustment()
+        vadj_main.bind_property("value", vadj_channels, "value", GObject.BindingFlags.BIDIRECTIONAL | GObject.BindingFlags.SYNC_CREATE)      
         self.view_stack.add_named(self.grid_layout_box, "grid_view")
         self.list_layout_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.list_header_scroll = Gtk.ScrolledWindow()
@@ -175,12 +192,17 @@ class EpgGridView(Gtk.Box):
             self._grid_scroll_idle_id = None
         if getattr(self, "_list_scroll_idle_id", None):
             GLib.source_remove(self._list_scroll_idle_id)
-            self._list_scroll_idle_id = None
+            self._list_scroll_idle_id = None           
         for idx, widgets in self._rendered_grid_rows.items():
             for w in widgets:
                 if w.get_parent() == self.grid_fixed:
                     self.grid_fixed.remove(w)
-        self._rendered_grid_rows.clear()
+                elif hasattr(self, 'channels_fixed') and w.get_parent() == self.channels_fixed:
+                    self.channels_fixed.remove(w)
+        self._rendered_grid_rows.clear()       
+        if hasattr(self, 'channels_fixed'):
+            while child := self.channels_fixed.get_first_child():
+                self.channels_fixed.remove(child)       
         for idx, (h_w, m_w) in self._rendered_list_cols.items():
             if h_w.get_parent() == self.list_header_fixed: self.list_header_fixed.remove(h_w)
             if m_w.get_parent() == self.list_fixed: self.list_fixed.remove(m_w)
@@ -205,16 +227,17 @@ class EpgGridView(Gtk.Box):
         now = datetime.now().astimezone()
         self.start_time = now.replace(minute=0, second=0, microsecond=0)
         self.PIXELS_PER_MIN, self.ROW_HEIGHT, self.CHANNEL_WIDTH, self.HEADER_HEIGHT = 4, 50, 160, 40
-        self.HOURS_TO_SHOW = 24       
+        self.HOURS_TO_SHOW = 24              
         for i in range(self.HOURS_TO_SHOW + 1):
             time_dt = self.start_time + timedelta(hours=i)
             lbl_text = time_dt.strftime('%a %H:%M') 
             lbl = Gtk.Label(label=lbl_text)
             lbl.add_css_class("caption")
-            self.header_fixed.put(lbl, self.CHANNEL_WIDTH + (i * 60 * self.PIXELS_PER_MIN), 10)                 
-        total_w = self.CHANNEL_WIDTH + (self.HOURS_TO_SHOW * 60 * self.PIXELS_PER_MIN) + 50
+            self.header_fixed.put(lbl, (i * 60 * self.PIXELS_PER_MIN), 10)                      
+        total_w = (self.HOURS_TO_SHOW * 60 * self.PIXELS_PER_MIN) + 50
         total_h = len(self._grid_data_to_render) * self.ROW_HEIGHT            
         self.header_fixed.set_size_request(total_w, self.HEADER_HEIGHT) 
+        self.channels_fixed.set_size_request(self.CHANNEL_WIDTH, total_h + 50)        
         self.now_line = Gtk.Box()
         self.now_line.set_size_request(2, total_h)
         self.now_line.add_css_class("now-indicator-line")
@@ -245,13 +268,15 @@ class EpgGridView(Gtk.Box):
         if h <= 0: h = 1080 
         start_idx = max(0, int(y / self.ROW_HEIGHT) - 2)
         end_idx = min(len(self._grid_data_to_render), int((y + h) / self.ROW_HEIGHT) + 3)
-        to_remove = []
+        to_remove = []       
         for idx in list(self._rendered_grid_rows.keys()):
             if idx < start_idx or idx >= end_idx:
                 for widget in self._rendered_grid_rows[idx]:
                     if widget.get_parent() == self.grid_fixed:
                         self.grid_fixed.remove(widget)
-                to_remove.append(idx)
+                    elif hasattr(self, 'channels_fixed') and widget.get_parent() == self.channels_fixed:
+                        self.channels_fixed.remove(widget)
+                to_remove.append(idx)              
         for idx in to_remove:
             del self._rendered_grid_rows[idx]
         added_new = False
@@ -319,10 +344,10 @@ class EpgGridView(Gtk.Box):
                     break
             if current_prog:
                 self.update_detail_panel(channel_item['raw_channel'], current_prog)
-            self.emit("channel-selected", channel_item['raw_channel'])                  
+            self.emit("channel-selected", channel_item['raw_channel'])                           
         ch_btn.connect("clicked", on_ch_clicked)
-        self.grid_fixed.put(ch_btn, 0, y_pos)           
-        widgets.append(ch_btn)
+        self.channels_fixed.put(ch_btn, 0, y_pos)           
+        widgets.append(ch_btn)      
         for prog in item.get('programs', []):
             p_start, p_stop = prog.get('start'), prog.get('stop')
             if not p_start or not p_stop: continue
@@ -382,7 +407,7 @@ class EpgGridView(Gtk.Box):
                 more_btn.connect("clicked", on_more_clicked_grid)
                 actions_box.append(more_btn)
                 card_box.append(actions_box)
-            self.grid_fixed.put(card_box, self.CHANNEL_WIDTH + int(s_diff * self.PIXELS_PER_MIN) + 2, y_pos + 2)              
+            self.grid_fixed.put(card_box, int(s_diff * self.PIXELS_PER_MIN) + 2, y_pos + 2)              
             widgets.append(card_box)
         return widgets
 
@@ -573,7 +598,7 @@ class EpgGridView(Gtk.Box):
     def _update_now_line_position(self):
         if not self.now_line or not getattr(self, 'start_time', None): return False
         diff_mins = (datetime.now().astimezone() - self.start_time).total_seconds() / 60.0
-        new_x = self.CHANNEL_WIDTH + int(diff_mins * self.PIXELS_PER_MIN)
+        new_x = int(diff_mins * self.PIXELS_PER_MIN)
         if self.now_line.get_parent() == self.grid_fixed:
             self.grid_fixed.remove(self.now_line)           
         self.grid_fixed.put(self.now_line, new_x, 0)
@@ -647,26 +672,29 @@ class EpgGridView(Gtk.Box):
     def _show_record_dialog(self, channel_data, prog_data, actions_box=None):
         dialog = Adw.MessageDialog(
             transient_for=self.get_root(), 
-            heading=_("Schedule Recording"),
-            body=_("Check the details below and adjust recording offsets if necessary.")
+            heading=_("Schedule Recording")
         )
+        body_text = _("Check the details below and adjust recording offsets if necessary.")
+        body_text += "\n\n<b>⚠️ " + _("IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned.") + "</b>"        
+        dialog.set_body(body_text)      
+        dialog.set_body_use_markup(True)
         dialog.add_css_class("scheduler-selection-dialog")
         content_box = Gtk.ListBox()
         content_box.set_selection_mode(Gtk.SelectionMode.NONE) 
         content_box.add_css_class("boxed-list") 
         content_box.set_margin_top(12)
-        content_box.set_size_request(420, -1)               
+        content_box.set_size_request(420, -1)                     
         name_row = Adw.ActionRow(title=_("Program Name"))
         self.record_name_entry = Gtk.Entry()
         self.record_name_entry.set_text(prog_data.get('title', ''))
         self.record_name_entry.set_valign(Gtk.Align.CENTER)
         name_row.add_suffix(self.record_name_entry)
-        content_box.append(name_row)       
+        content_box.append(name_row)             
         p_s = prog_data['start'].astimezone()
         p_e = prog_data['stop'].astimezone()
         time_str = f"{p_s.strftime('%d.%m %H:%M')} - {p_e.strftime('%H:%M')}"       
         info_row = Adw.ActionRow(title=_("Channel / Time"), subtitle=f"{channel_data.get('name', '')} | {time_str}")
-        content_box.append(info_row)      
+        content_box.append(info_row)            
         start_offset_row = Adw.ActionRow(title=_("Start Offset"), subtitle=_("Start early if broadcast begins early"))
         start_offset_row.set_title_lines(1)   
         start_offset_row.set_subtitle_lines(2) 
@@ -691,7 +719,7 @@ class EpgGridView(Gtk.Box):
 
         def on_start_combo_changed(combo):
             self.start_custom_spin.set_visible(combo.get_active_id() == "custom")
-        self.start_combo.connect("changed", on_start_combo_changed)       
+        self.start_combo.connect("changed", on_start_combo_changed)            
         end_offset_row = Adw.ActionRow(title=_("End Offset"), subtitle=_("Extend if broadcast runs late"))
         end_offset_row.set_title_lines(1)   
         end_offset_row.set_subtitle_lines(2) 
@@ -716,13 +744,24 @@ class EpgGridView(Gtk.Box):
 
         def on_end_combo_changed(combo):
             self.end_custom_spin.set_visible(combo.get_active_id() == "custom")
-        self.end_combo.connect("changed", on_end_combo_changed)       
+        self.end_combo.connect("changed", on_end_combo_changed)
+        warning_row = Adw.ActionRow(title=_("I understand the risk of account suspension"))
+        self.warning_check = Gtk.CheckButton()
+        self.warning_check.set_valign(Gtk.Align.CENTER)
+        warning_row.add_prefix(self.warning_check)
+        warning_row.set_activatable_widget(self.warning_check) 
+        content_box.append(warning_row)
         dialog.set_extra_child(content_box)
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("save", _("Save"))
         dialog.set_default_response("save")
         dialog.set_close_response("cancel")
         dialog.set_response_appearance("save", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_response_enabled("save", False)
+
+        def on_warning_toggled(check_btn):
+            dialog.set_response_enabled("save", check_btn.get_active())
+        self.warning_check.connect("toggled", on_warning_toggled)
 
         def on_dialog_response(dlg, response_id):
             if response_id == "save":

@@ -17,7 +17,8 @@ _ = gettext.gettext
 class VideoView(Gtk.Box):
     __gsignals__ = {
         "video-area-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "epg-item-activated": (GObject.SignalFlags.RUN_FIRST, None, (object,))
+        "epg-item-activated": (GObject.SignalFlags.RUN_FIRST, None, (object,)),
+        "back-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()) 
     }
 
     def __init__(self, **kwargs):
@@ -53,7 +54,31 @@ class VideoView(Gtk.Box):
         self.append(self.controls)        
         click_gesture = Gtk.GestureClick.new()
         click_gesture.connect("pressed", self._on_video_frame_pressed)
-        self.video_frame.add_controller(click_gesture)      
+        self.video_frame.add_controller(click_gesture) 
+        self.back_button_box = Gtk.Box(css_classes=["floating-back-button"])
+        self.back_button_box.set_halign(Gtk.Align.START)
+        self.back_button_box.set_valign(Gtk.Align.START)
+        self.back_button_box.set_margin_top(40)
+        self.back_button_box.set_margin_start(50)      
+        back_btn = Gtk.Button()
+        back_btn.add_css_class("flat")      
+        back_btn_content = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+        back_img = Gtk.Image.new_from_icon_name("go-previous-symbolic")
+        back_img.set_pixel_size(24)
+        back_btn_content.append(back_img)
+        back_label = Gtk.Label(label=_("Back"))
+        back_label.add_css_class("title-4") 
+        back_btn_content.append(back_label)       
+        back_btn.set_child(back_btn_content)
+        back_btn.connect("clicked", lambda b: self.emit("back-clicked"))        
+        self.back_button_box.append(back_btn)
+        self.overlay_container.add_overlay(self.back_button_box)
+        self.back_button_box.set_visible(False)
+        self.current_media_type = None   
+        motion_ctrl = Gtk.EventControllerMotion.new()
+        motion_ctrl.connect("motion", self._on_overlay_motion)
+        self.overlay_container.add_controller(motion_ctrl)
+        self._overlay_hide_timer_id = None  
         self.epg_listbox = Gtk.ListBox()
         self.epg_listbox.connect("row-activated", self.on_epg_row_activated)
         self.epg_scroll = Gtk.ScrolledWindow(css_classes=["epg-panel"])
@@ -90,21 +115,39 @@ class VideoView(Gtk.Box):
         self.overlay_container.add_overlay(self.clock_box)
         self.clock_box.set_visible(False)      
         GLib.timeout_add_seconds(1, self._update_clock_text)
-        self.controls.connect("notify::visible", self._sync_clock_visibility)
-
+        self.controls.connect("notify::visible", self._sync_overlay_elements_visibility)
+        
     def _update_clock_text(self):
         current_time = datetime.now().strftime("%H:%M:%S")
         if self.clock_label.get_text() != current_time:
             self.clock_label.set_text(current_time)
-        return True
+        return True        
 
-    def _sync_clock_visibility(self, widget=None, pspec=None):
+    def _sync_overlay_elements_visibility(self, widget=None, pspec=None):
         is_fullscreen = self.controls.has_css_class("fullscreen-controls")
         is_controls_visible = self.controls.get_visible()     
         if is_fullscreen and is_controls_visible:
             self.clock_box.set_visible(True)
         else:
             self.clock_box.set_visible(False)
+
+    def _on_overlay_motion(self, controller, x, y):
+        last_x = getattr(self, '_last_x', -1)
+        last_y = getattr(self, '_last_y', -1)
+        if abs(x - last_x) < 1 and abs(y - last_y) < 1:
+            return          
+        self._last_x = x
+        self._last_y = y
+        if self.current_media_type in ["vod", "series", "media"]:
+            self.back_button_box.set_visible(True)
+            if getattr(self, '_overlay_hide_timer_id', None):
+                GLib.source_remove(self._overlay_hide_timer_id)
+            self._overlay_hide_timer_id = GLib.timeout_add_seconds(4, self._hide_back_button)
+
+    def _hide_back_button(self):
+        self.back_button_box.set_visible(False)
+        self._overlay_hide_timer_id = None
+        return GLib.SOURCE_REMOVE
 
     def on_epg_row_activated(self, listbox, row):
         if hasattr(row, 'program_data'):
@@ -168,7 +211,7 @@ class VideoView(Gtk.Box):
         self.controls.set_margin_end(30)
         self.controls.set_visible(True)
         self.overlay_container.add_overlay(self.controls)
-        self._sync_clock_visibility()
+        self._sync_overlay_elements_visibility()
 
     def disable_fullscreen_overlay_mode(self):
         self.overlay_container.remove_overlay(self.controls)
@@ -178,4 +221,4 @@ class VideoView(Gtk.Box):
         self.controls.set_margin_start(0)
         self.controls.set_margin_end(0)
         self.insert_child_after(self.controls, self.overlay_container)
-        self._sync_clock_visibility()
+        self._sync_overlay_elements_visibility()

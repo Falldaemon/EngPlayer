@@ -4,6 +4,7 @@ import gi
 import time
 import logging
 import database
+import re
 import gettext
 gi.require_version("Gst", "1.0")
 from gi.repository import Gst, GObject, GLib
@@ -363,12 +364,12 @@ class Player(GObject.Object):
         target_ns = int(seconds * Gst.SECOND)
         rate = getattr(self, 'current_rate', 1.0)
         if rate == 1.0:
-            self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE, target_ns)
+            self.player.seek_simple(Gst.Format.TIME, Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT, target_ns)
         else:
             self.player.seek(
                 rate,
                 Gst.Format.TIME,
-                Gst.SeekFlags.FLUSH | Gst.SeekFlags.ACCURATE,
+                Gst.SeekFlags.FLUSH | Gst.SeekFlags.KEY_UNIT,
                 Gst.SeekType.SET,
                 target_ns,
                 Gst.SeekType.SET,
@@ -432,12 +433,21 @@ class Player(GObject.Object):
             self.last_bitrate = (self.total_bytes * 8) / elapsed
             self.total_bytes = 0
             self.last_time = now
+        safe_url = "-"
+        if self.current_uri:
+            url_pattern = re.compile(r'(https?://[^/]+/(?:series|movie|timeshift|live)?/?(?:[a-zA-Z0-9_-]+/)?)([^/]+)/([^/]+)(/[0-9a-zA-Z._-]+)')
+            def mask_url(match):
+                base = match.group(1)
+                stream_id = match.group(4)
+                return f"{base}***/****{stream_id}"
+            safe_url = url_pattern.sub(mask_url, self.current_uri)
         stats = {
             "video_codec": "-", "audio_codec": "-", "resolution": "-",
             "fps": "-", "format": "-", "channels": "-", "sample_rate": "-",
             "profile": "-", "level": "-", "language": "-",
             "bitrate": self.last_bitrate,
-            "url": self.current_uri or "-"
+            "url": self.current_uri or "-", 
+            "safe_url": safe_url      
         }
         if not self.player:
             return stats

@@ -159,7 +159,9 @@ class DetailView(Gtk.Box):
     __gsignals__ = {
         "play-requested": (GObject.SignalFlags.RUN_FIRST, None, (str, str,)),
         "back-requested": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "trailer-requested": (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        "trailer-requested": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        "download-requested": (GObject.SignalFlags.RUN_FIRST, None, (str, str, str,)),
+        "cancel-download-requested": (GObject.SignalFlags.RUN_FIRST, None, ()),
     }
 
     def __init__(self, **kwargs):
@@ -273,6 +275,16 @@ class DetailView(Gtk.Box):
         self.translate_btn.set_child(translate_box)      
         self.translate_btn.connect("clicked", self._on_translate_clicked)
         button_box.append(self.translate_btn)
+        self.download_btn = Gtk.Button(css_classes=["pill"])
+        self.download_box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER)
+        self.download_icon = Gtk.Image.new_from_icon_name("folder-download-symbolic")
+        self.download_label = Gtk.Label(label=_("Download"))
+        self.download_box.append(self.download_icon)
+        self.download_box.append(self.download_label)
+        self.download_btn.set_child(self.download_box)
+        self.download_btn.connect("clicked", self._on_download_clicked)
+        button_box.append(self.download_btn)      
+        self._is_downloading = False
 
     def update_content(self, item, media_type):
         logging.info(f"DETAILVIEW: update_content STARTED - Item: {item.props.title}, Type: {media_type}, URL/ID: {item.props.path_or_url}")
@@ -280,6 +292,7 @@ class DetailView(Gtk.Box):
         self.media_type = media_type
         self.current_trailer_key = None
         self.trailer_button.set_sensitive(False)
+        self.download_btn.set_visible(media_type == 'vod')
         logging.debug("DETAILVIEW: Clearing UI and setting initial info...")
         self.poster_image.set_paintable(None)
         initial_title = item.props.title or ""
@@ -701,3 +714,21 @@ class DetailView(Gtk.Box):
         spinner = Gtk.Spinner(spinning=True, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True, vexpand=True)
         box.append(spinner)
         return box
+        
+    def _on_download_clicked(self, button):
+        if self._is_downloading:
+            self.emit("cancel-download-requested")
+        elif self.media_url and self.media_type:
+            title = getattr(self, 'current_title', self.title_label.get_text())
+            self.emit("download-requested", self.media_url, self.media_type, title)
+
+    def set_download_state(self, is_downloading):
+        self._is_downloading = is_downloading
+        if is_downloading:
+            self.download_label.set_text(_("Cancel"))
+            self.download_icon.set_from_icon_name("process-stop-symbolic")
+            self.download_btn.add_css_class("destructive-action") 
+        else:
+            self.download_label.set_text(_("Download"))
+            self.download_icon.set_from_icon_name("folder-download-symbolic")
+            self.download_btn.remove_css_class("destructive-action")     

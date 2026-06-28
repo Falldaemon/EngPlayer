@@ -88,6 +88,10 @@ python-Levenshtein
 
 guessit
 
+## 🎥 Video
+
+[![EngPlayer Video](https://img.youtube.com/vi/FzfPG5DX9pc/0.jpg)](https://www.youtube.com/watch?v=FzfPG5DX9pc)
+
 📸 Screenshots
 
 <p align="center">

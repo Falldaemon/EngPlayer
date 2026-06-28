@@ -7,7 +7,10 @@ from gi.repository import Gtk, Adw, GObject, GLib, Pango
 import gettext
 from datetime import datetime, time, timedelta
 import database
+import logging
+
 _ = gettext.gettext
+
 class SchedulerWindow(Adw.PreferencesWindow):
     __gsignals__ = {
         'schedule-saved': (GObject.SignalFlags.RUN_FIRST, None, (str, str, str, int, int, str)), 
@@ -24,47 +27,59 @@ class SchedulerWindow(Adw.PreferencesWindow):
         self.bouquets_data = bouquets_data
         self.all_bouquet_names = sorted(self.bouquets_data.keys())
         self.selected_bouquet_name = None
-        self.selected_channel_data = None
+        self.selected_channel_data = None       
         main_page = Adw.PreferencesPage()
         self.add(main_page)
         add_group = Adw.PreferencesGroup(title=_("Add New Scheduled Recording"))
+        main_page.add(add_group)
+        warning_text = "<b>⚠️ " + _("IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned.") + "</b>"        
+        self.risk_check = Gtk.CheckButton()
+        self.risk_row = Adw.ActionRow(
+            title=_("I understand the risk of account suspension"),
+            subtitle=warning_text
+        )
+        self.risk_row.set_subtitle_lines(0) 
+        self.risk_row.add_prefix(self.risk_check)
+        self.risk_row.set_activatable_widget(self.risk_check)
+        add_group.add(self.risk_row)
         self.program_name_entry = Gtk.Entry(placeholder_text=_("E.g. TV Show Name (Optional)"))
         name_row = Adw.ActionRow(title=_("Program Name"), subtitle=_("Enter a custom name for the recording file"))
         name_row.add_suffix(self.program_name_entry)
-        add_group.add(name_row)
-        main_page.add(add_group)
+        add_group.add(name_row)       
         self.bouquet_label = Gtk.Label(label=_("No bouquet selected..."), halign=Gtk.Align.END, ellipsize=Pango.EllipsizeMode.END)
         bouquet_row = Adw.ActionRow(title=_("Bouquet"), subtitle=_("Select the bouquet for the channel to be recorded"))
         bouquet_row.add_suffix(self.bouquet_label)
         bouquet_row.set_activatable(True)
         bouquet_row.connect("activated", self.on_select_bouquet_clicked)
-        add_group.add(bouquet_row)
+        add_group.add(bouquet_row)       
         self.channel_label = Gtk.Label(label=_("Select a bouquet first..."), halign=Gtk.Align.END, ellipsize=Pango.EllipsizeMode.END)
         self.channel_row = Adw.ActionRow(title=_("Channel"), subtitle=_("Select the channel to be recorded"))
         self.channel_row.add_suffix(self.channel_label)
         self.channel_row.set_activatable(True)
         self.channel_row.set_sensitive(False)
         self.channel_row.connect("activated", self.on_select_channel_clicked)
-        add_group.add(self.channel_row)
+        add_group.add(self.channel_row)      
         self.calendar = Gtk.Calendar(margin_top=12, margin_bottom=12)
-        add_group.add(self.calendar)
+        add_group.add(self.calendar)     
         now = datetime.now()
         self.start_hour_spin = Gtk.SpinButton.new_with_range(0, 23, 1); self.start_hour_spin.set_value(now.hour)
         self.start_minute_spin = Gtk.SpinButton.new_with_range(0, 59, 1); self.start_minute_spin.set_value(now.minute)
         start_time_row = Adw.ActionRow(title=_("Start Time"))
         start_box = Gtk.Box(spacing=6); start_box.append(self.start_hour_spin); start_box.append(Gtk.Label(label=":")); start_box.append(self.start_minute_spin)
         start_time_row.add_suffix(start_box)
-        add_group.add(start_time_row)
+        add_group.add(start_time_row)        
         self.end_hour_spin = Gtk.SpinButton.new_with_range(0, 23, 1); self.end_hour_spin.set_value((now.hour + 1) % 24)
         self.end_minute_spin = Gtk.SpinButton.new_with_range(0, 59, 1); self.end_minute_spin.set_value(now.minute)
         end_time_row = Adw.ActionRow(title=_("End Time"))
         end_box = Gtk.Box(spacing=6); end_box.append(self.end_hour_spin); end_box.append(Gtk.Label(label=":")); end_box.append(self.end_minute_spin)
         end_time_row.add_suffix(end_box)
         add_group.add(end_time_row)
-        save_button = Gtk.Button(label=_("Schedule Recording"), halign=Gtk.Align.CENTER, margin_top=12)
-        save_button.add_css_class("suggested-action")
-        save_button.connect("clicked", self.on_save_clicked)
-        add_group.add(save_button)
+        self.save_button = Gtk.Button(label=_("Schedule Recording"), halign=Gtk.Align.CENTER, margin_top=12)
+        self.save_button.add_css_class("suggested-action")
+        self.save_button.set_sensitive(False) 
+        self.save_button.connect("clicked", self.on_save_clicked)
+        add_group.add(self.save_button)
+        self.risk_check.connect("toggled", lambda cb: self.save_button.set_sensitive(cb.get_active()))
         list_group = Adw.PreferencesGroup(title=_("Scheduled Tasks"))
         main_page.add(list_group)
         self.tasks_listbox = Gtk.ListBox()
@@ -104,6 +119,7 @@ class SchedulerWindow(Adw.PreferencesWindow):
 
     def on_delete_clicked(self, button, task_id):
         self.emit("schedule-deleted", task_id)
+        GLib.timeout_add(200, self.refresh_tasks_list)
 
     def on_save_clicked(self, button):
         if not self.selected_channel_data:
@@ -123,6 +139,7 @@ class SchedulerWindow(Adw.PreferencesWindow):
         start_timestamp = int(start_datetime.timestamp())
         end_timestamp = int(end_datetime.timestamp())
         self.emit("schedule-saved", self.get_transient_for().profile_data['id'], channel_name, channel_url, start_timestamp, end_timestamp, program_name)
+        GLib.timeout_add(200, self.refresh_tasks_list)
         self._show_sleep_warning()
 
     def _create_selection_dialog(self, title, placeholder_text):
@@ -208,4 +225,4 @@ class SchedulerWindow(Adw.PreferencesWindow):
         dialog.set_default_response("close")
         dialog.set_close_response("close")
         dialog.connect("response", lambda dlg, resp: dlg.close())
-        dialog.present()        
+        dialog.present()

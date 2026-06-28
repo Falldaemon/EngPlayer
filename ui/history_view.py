@@ -56,6 +56,7 @@ class HistoryRow(Gtk.ListBoxRow):
         name = channel_data.get("name", _("Unknown Channel"))
         self.name_label = Gtk.Label(label=name, xalign=0)
         self.name_label.set_ellipsize(Pango.EllipsizeMode.END)
+        self.name_label.set_tooltip_text(name)
         self.label_vbox.append(self.name_label)       
         self.hbox.append(self.label_vbox)
 

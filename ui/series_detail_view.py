@@ -167,7 +167,9 @@ class SeriesDetailView(Gtk.Box):
     __gsignals__ = {
         "back-requested": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "episode-activated": (GObject.SignalFlags.RUN_FIRST, None, (object,)),
-        "trailer-requested": (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        "trailer-requested": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        "episode-download-requested": (GObject.SignalFlags.RUN_FIRST, None, (object, str)),
+        "cancel-episode-download-requested": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, **kwargs):
@@ -243,7 +245,7 @@ class SeriesDetailView(Gtk.Box):
         self.trailer_button.connect("clicked", self._on_trailer_clicked)
         action_button_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=12, margin_top=10)
         action_button_box.append(self.trailer_button)
-        self.translate_btn = Gtk.Button(css_classes=["pill"])       
+        self.translate_btn = Gtk.Button(css_classes=["pill"], halign=Gtk.Align.CENTER, margin_top=10)      
         translate_box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER)
         trans_icon_path = os.path.join("resources", "icons", theme_folder, "translate.svg")
         if os.path.exists(trans_icon_path):
@@ -289,6 +291,9 @@ class SeriesDetailView(Gtk.Box):
         self.series_id_xtream = None
         self.clean_tmdb_title = None
         self.current_tmdb_season_data = None
+        self._episode_download_buttons = {}
+        self._is_downloading = False
+        self._active_download_episode_id = None
 
     def update_content(self, series_info, series_id=None):
         logging.debug(f"SERIES DETAIL: update_content STARTED.")
@@ -581,6 +586,7 @@ class SeriesDetailView(Gtk.Box):
             self.current_tmdb_season_data = tmdb_season_data
         elif self.current_tmdb_season_data:
             tmdb_season_data = self.current_tmdb_season_data
+        self._episode_download_buttons.clear()    
         while (child := self.episode_listbox.get_first_child()):
             self.episode_listbox.remove(child)
         if not episodes:
@@ -626,16 +632,32 @@ class SeriesDetailView(Gtk.Box):
                  overview_lbl._original_text = overview_text              
                  vbox.append(overview_lbl)
             main_hbox.append(vbox)
+            action_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=8)
+            action_box.set_halign(Gtk.Align.END)
+            action_box.set_hexpand(True)
+            action_box.set_valign(Gtk.Align.CENTER)
+            action_box.set_name("episode-action-box")
+            main_hbox.append(action_box)
             if is_watched:
                 watched_indicator = Gtk.Button(icon_name="object-select-symbolic")
                 watched_indicator.add_css_class("watched-button")
                 watched_indicator.add_css_class("watched")
                 watched_indicator.set_can_focus(False)
                 watched_indicator.set_focusable(False)
-                watched_indicator.set_valign(Gtk.Align.CENTER)
-                watched_indicator.set_halign(Gtk.Align.END)
-                watched_indicator.set_hexpand(True)
-                main_hbox.append(watched_indicator)
+                action_box.append(watched_indicator) 
+            download_btn = Gtk.Button(icon_name="folder-download-symbolic")
+            download_btn.add_css_class("flat")
+            download_btn.set_tooltip_text(_("Download Episode"))
+            download_btn.connect("clicked", lambda b, ep=episode: self._on_episode_download_clicked(b, ep))
+            ep_unique_id = str(episode.get('id')) or f"{episode.get('season')}_{episode.get('episode_num')}"
+            self._episode_download_buttons[ep_unique_id] = download_btn
+            if self._is_downloading:
+                if self._active_download_episode_id == ep_unique_id:
+                    download_btn.set_icon_name("process-stop-symbolic")
+                    download_btn.add_css_class("destructive-action")
+                else:
+                    download_btn.set_sensitive(False)                  
+            action_box.append(download_btn)
             row.set_child(main_hbox)
             self.episode_listbox.append(row)
 
@@ -759,10 +781,18 @@ class SeriesDetailView(Gtk.Box):
                 tmdb_ep = season_data[ep_num]
                 tmdb_ep_id = tmdb_ep.get('id')
                 ep_data['tmdb_id'] = tmdb_ep_id
-                box = row.get_child()
+                box = row.get_child()              
                 is_visually_watched = False
                 last_child = box.get_last_child()
-                if last_child and last_child.get_style_context().has_class("watched-button"):
+                action_container = last_child if last_child and last_child.get_name() == "episode-action-box" else None               
+                if action_container:
+                    child_widget = action_container.get_first_child()
+                    while child_widget:
+                        if child_widget.get_style_context().has_class("watched-button"):
+                            is_visually_watched = True
+                            break
+                        child_widget = child_widget.get_next_sibling()
+                elif last_child and last_child.get_style_context().has_class("watched-button"):
                     is_visually_watched = True
                 if not is_visually_watched and tmdb_ep_id and str(tmdb_ep_id) in trakt_cache:
                     database.save_playback_progress(str(ep_data.get('id')), position=0, is_finished=1)
@@ -771,10 +801,13 @@ class SeriesDetailView(Gtk.Box):
                     icon.add_css_class("watched")
                     icon.set_can_focus(False)
                     icon.set_focusable(False)
-                    icon.set_valign(Gtk.Align.CENTER)
-                    icon.set_halign(Gtk.Align.END)
-                    icon.set_hexpand(True)
-                    box.append(icon)
+                    icon.set_valign(Gtk.Align.CENTER)                   
+                    if action_container:
+                        action_container.prepend(icon) 
+                    else:
+                        icon.set_halign(Gtk.Align.END)
+                        icon.set_hexpand(True)
+                        box.append(icon)
                 vbox = box.get_first_child()
                 title_label = vbox.get_first_child()
                 new_title = tmdb_ep.get('name')
@@ -789,3 +822,32 @@ class SeriesDetailView(Gtk.Box):
                     overview_lbl._is_episode_overview = True
                     overview_lbl._original_text = overview_text                    
                     vbox.append(overview_lbl)
+                    
+    def _on_episode_download_clicked(self, button, episode_data):
+        ep_unique_id = str(episode_data.get('id')) or f"{episode_data.get('season')}_{episode_data.get('episode_num')}"       
+        if self._is_downloading and self._active_download_episode_id == ep_unique_id:
+            self.emit("cancel-episode-download-requested")
+        elif not self._is_downloading:
+            series_title = getattr(self, 'clean_tmdb_title', "Unknown Series")
+            self.emit("episode-download-requested", episode_data, series_title)
+
+    def set_download_state(self, is_downloading, active_episode_data=None):
+        self._is_downloading = is_downloading      
+        if is_downloading and active_episode_data:
+            self._active_download_episode_id = str(active_episode_data.get('id')) or f"{active_episode_data.get('season')}_{active_episode_data.get('episode_num')}"
+        elif not is_downloading:
+            self._active_download_episode_id = None
+        for ep_id, btn in self._episode_download_buttons.items():
+            if self._is_downloading:
+                if ep_id == self._active_download_episode_id:
+                    btn.set_icon_name("process-stop-symbolic")
+                    btn.add_css_class("destructive-action")
+                    btn.set_sensitive(True)
+                else:
+                    btn.set_icon_name("folder-download-symbolic")
+                    btn.remove_css_class("destructive-action")
+                    btn.set_sensitive(False)
+            else:
+                btn.set_icon_name("folder-download-symbolic")
+                btn.remove_css_class("destructive-action")
+                btn.set_sensitive(True)                    

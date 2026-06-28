@@ -103,39 +103,57 @@ def sanitize_xml(xml_string):
     return xml_string        
 
 def _load_from_url(url):
-    try:
-        headers = {
-            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/108.0.0.0 Safari/537.36",
-            "Accept-Encoding": "gzip, deflate"
-        }
-        response = requests.get(url, timeout=60, headers=headers)
-        response.raise_for_status()      
-        raw_bytes = response.content
-        if raw_bytes.startswith(b'\x1f\x8b'):
-            logging.info("EPG URL: GZIP format detected, decompressing...")
-            try:
-                raw_bytes = gzip.decompress(raw_bytes)
-            except Exception as e:
-                logging.error(f"EPG URL: Gzip decompress failed: {e}")
+    user_agents = [
+        "IPTVSmartersPro",    
+        "VLC/3.0.9 LibVLC/3.0.9", 
+        "curl/8.6.0",        
+        "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/114.0.0.0 Safari/537.36" 
+    ]
+    last_error = None
+    raw_bytes = None
+    for ua in user_agents:
         try:
-            xml_content = raw_bytes.decode('utf-8')
-            logging.info("EPG URL decoded successfully using standard UTF-8.")
-        except UnicodeDecodeError:
-            try:
-                prediction = charset_normalizer.detect(raw_bytes)
-                correct_encoding = prediction['encoding'] if prediction and prediction.get('encoding') else 'utf-8'
-                logging.info(f"EPG URL encoding auto-detected as: {correct_encoding}")
-                xml_content = raw_bytes.decode(correct_encoding, errors='replace')
-            except Exception as e:
-                logging.error(f"EPG URL decode error: {e}")
-                xml_content = raw_bytes.decode('utf-8', errors='replace')
-        cleaned_xml = sanitize_xml(xml_content)
-        if len(cleaned_xml) != len(xml_content):
-            logging.info(f"Sanitized garbage characters from XML URL. Original: {len(xml_content)}, Cleaned: {len(cleaned_xml)}")           
-        return cleaned_xml        
-    except requests.exceptions.RequestException as e:
-        logging.error(f"Failed to download EPG data from URL: {e}")
+            headers = {
+                "User-Agent": ua,
+                "Accept": "*/*",
+                "Accept-Encoding": "gzip, deflate"
+            }
+            logging.debug(f"Trying EPG download. Using User-Agent: {ua}")
+            response = requests.get(url, timeout=60, headers=headers)
+            if response.status_code == 200:
+                raw_bytes = response.content
+                logging.info(f"EPG downloaded successfully! Accepted User-Agent: {ua}")
+                break
+            elif response.status_code in [401, 403, 406]:
+                logging.warning(f"Server blocked the request (Code: {response.status_code}). User-Agent: {ua}. Moving to next...")
+                last_error = f"HTTP {response.status_code} ({ua})"
+                continue
+            else:
+                response.raise_for_status()
+        except requests.exceptions.RequestException as e:
+            logging.warning(f"Connection error (User-Agent: {ua}): {e}")
+            last_error = str(e)
+            continue
+    if not raw_bytes:
+        logging.error(f"All User-Agent attempts failed. Last Error: {last_error}")
         return None
+    if raw_bytes.startswith(b'\x1f\x8b'):
+        logging.info("EPG URL: GZIP format detected, decompressing in memory...")
+        try:
+            raw_bytes = gzip.decompress(raw_bytes)
+        except Exception as e:
+            logging.error(f"EPG URL: Gzip decompress failed: {e}")
+    try:
+        prediction = charset_normalizer.detect(raw_bytes)
+        correct_encoding = prediction['encoding'] if prediction and prediction.get('encoding') else 'utf-8'
+        xml_content = raw_bytes.decode(correct_encoding, errors='replace')
+    except Exception as e:
+        logging.error(f"EPG URL decode error: {e}")
+        xml_content = raw_bytes.decode('utf-8', errors='replace')
+    cleaned_xml = sanitize_xml(xml_content)
+    if len(cleaned_xml) != len(xml_content):
+        logging.info(f"Sanitized garbage characters from XML URL. Original: {len(xml_content)}, Cleaned: {len(cleaned_xml)}")           
+    return cleaned_xml        
 
 def _load_from_file(file_path):
     try:

@@ -1,6 +1,6 @@
 app-id: io.github.falldaemon.engplayer
 runtime: org.gnome.Platform
-runtime-version: '49'
+runtime-version: '50'
 sdk: org.gnome.Sdk
 command: engplayer
 finish-args:
@@ -17,15 +17,24 @@ finish-args:
   - --filesystem=/run/media
   - --filesystem=/media
 
+cleanup:
+  - /share/bash-completion
+  - /share/doc
+  - /share/fish
+  - /share/man
+  - /share/zsh
+
 modules:
-  - python3-requirements.json
+  - python3-requirements.yaml
 
   - name: engplayer
     buildsystem: simple
     build-commands:
       - make install prefix=/app
-
     sources:
-      - type: git
-        url: https://github.com/Falldaemon/EngPlayer.git
-        commit: 58850dfae2bc52d472b095f42b2b1e3690e93e25
+      - type: dir
+        path: .
+        x-checker-data:
+          type: git
+          tag-pattern: ^v([\d.]+)$
+          is-main-source: true

@@ -98,6 +98,7 @@ class BouquetList(Gtk.Box):
         row.set_child(hbox)
         label = Gtk.Label(label=name, xalign=0)
         label.set_ellipsize(Pango.EllipsizeMode.END)
+        label.set_tooltip_text(name)
         label.set_hexpand(True)
         hbox.append(label)
         theme_folder = get_icon_theme_folder()
@@ -212,12 +213,25 @@ class BouquetList(Gtk.Box):
         self.bouquet_listbox.invalidate_sort()
 
     def _sort_list_items(self, row1, row2):
+        name1 = getattr(row1, 'bouquet_name', "")
+        name2 = getattr(row2, 'bouquet_name', "")
+
+        def get_priority(name):
+            if "⭐" in name: 
+                return 1
+            if "🆕" in name: 
+                return 2
+            return 99
+        prio1 = get_priority(name1)
+        prio2 = get_priority(name2)
+        if prio1 != 99 or prio2 != 99:
+            return prio1 - prio2
         if self.current_sort_mode == "default":
-            return getattr(row1, 'original_index', 0) - getattr(row2, 'original_index', 0)          
-        name1 = getattr(row1, 'bouquet_name', "").lower()
-        name2 = getattr(row2, 'bouquet_name', "").lower()      
+            return getattr(row1, 'original_index', 0) - getattr(row2, 'original_index', 0)                 
+        name1_lower = name1.lower()
+        name2_lower = name2.lower()             
         if self.current_sort_mode == "asc":
-            return (name1 > name2) - (name1 < name2)
+            return (name1_lower > name2_lower) - (name1_lower < name2_lower)
         elif self.current_sort_mode == "desc":
-            return (name2 > name1) - (name2 < name1)
-        return 0            
+            return (name2_lower > name1_lower) - (name2_lower < name1_lower)           
+        return 0         

@@ -16,6 +16,7 @@ import threading
 import hashlib
 import subprocess
 import time
+import requests
 import shutil
 import tempfile
 import sqlite3
@@ -88,6 +89,13 @@ from ui.aspect_ratio_manager import AspectRatioManager
 from ui.timeshift_settings_dialog import TimeshiftSettingsDialog
 from ui.custom_visualizer import CustomVisualizer
 from ui.epg_grid_view import EpgGridView
+from ui.recently_added_view import RecentlyAddedView
+from ui.profile_manager_dialog import ProfileManagerDialog
+from ui.editor_view import EditorView
+from data_providers.favorites import FavoritesManager
+from ui.download_manager import DownloadManagerWidget
+from ui.media_grid_view import MediaItem
+from ui.pip_window import PipWindow
 
 _ = gettext.gettext
 
@@ -96,7 +104,7 @@ class MainWindow(Adw.ApplicationWindow):
         super().__init__(**kwargs)
         self.profile = kwargs.get("profile")
         self.set_title(_("Eng Player"))
-        self.set_default_size(1100, 700)
+        self.set_default_size(1130, 700)
         self.active_media_type = "video"
         self.is_immersive_fullscreen = False
         self.last_mouse_x = 0
@@ -303,7 +311,19 @@ class MainWindow(Adw.ApplicationWindow):
         ts_row.set_activatable(True)
         ts_row.add_suffix(Gtk.Image.new_from_icon_name("media-playback-pause-symbolic"))
         ts_row.connect("activated", lambda x: self.on_timeshift_settings_clicked(None))
-        system_list.append(ts_row)     
+        system_list.append(ts_row)      
+        profile_sync_row = Adw.ActionRow(title=_("Import / Export Profile"))
+        profile_sync_row.set_subtitle(_("Backup or restore your profile data"))
+        profile_sync_row.set_activatable(True)
+        profile_sync_row.add_suffix(Gtk.Image.new_from_icon_name("document-send-symbolic"))
+        profile_sync_row.connect("activated", lambda x: self.on_profile_manager_clicked(None))
+        system_list.append(profile_sync_row)       
+        editor_row = Adw.ActionRow(title=_("M3U Editor"))
+        editor_row.set_subtitle(_("Edit your channels and playlists"))
+        editor_row.set_activatable(True)
+        editor_row.add_suffix(Gtk.Image.new_from_icon_name("document-edit-symbolic"))
+        editor_row.connect("activated", lambda x: self.on_open_editor_clicked(None))
+        system_list.append(editor_row)            
         row = Adw.ActionRow(title=_("Change Recordings Folder"))
         row.set_activatable(True)
         row.add_suffix(Gtk.Image.new_from_icon_name("folder-open-symbolic"))
@@ -356,6 +376,11 @@ class MainWindow(Adw.ApplicationWindow):
         search_button.set_tooltip_text(_("Global Search"))
         search_button.connect("clicked", self.on_global_search_clicked)
         self.header.pack_start(search_button)        
+        self.download_manager_widget = DownloadManagerWidget()
+        self.download_manager_widget.connect("download-finished", self.on_download_finished)
+        self.download_manager_widget.connect("download-failed", self.on_download_failed)
+        self.download_manager_widget.connect("download-cancelled", self.on_download_cancelled)
+        self.header.pack_end(self.download_manager_widget)             
         self.toast_overlay.set_vexpand(True)
         root_box.append(self.toast_overlay)
         main_hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
@@ -368,14 +393,19 @@ class MainWindow(Adw.ApplicationWindow):
         self.nav_rail.set_halign(Gtk.Align.CENTER)
         self.nav_rail.set_vexpand(True)        
         self.nav_rail_container.append(self.nav_rail)
-        main_hbox.append(self.nav_rail_container)
+        main_hbox.append(self.nav_rail_container)       
         self.sidebar = NavigationSidebar()
-        self.sidebar.set_hexpand(False)
         if hasattr(self.sidebar, 'nav_buttons_box'):
-            self.sidebar.nav_buttons_box.set_visible(False)
-        main_hbox.append(self.sidebar)
+            self.sidebar.nav_buttons_box.set_visible(False)       
         self.main_content_stack = Gtk.Stack(transition_type=Gtk.StackTransitionType.CROSSFADE, transition_duration=200, hexpand=True)
-        main_hbox.append(self.main_content_stack)
+        self.main_paned = Gtk.Paned(orientation=Gtk.Orientation.HORIZONTAL)
+        self.main_paned.set_hexpand(True)
+        self.main_paned.set_start_child(self.sidebar)
+        self.main_paned.set_end_child(self.main_content_stack)
+        self.main_paned.set_position(300)
+        self.main_paned.set_property("resize-start-child", False)
+        self.main_paned.set_property("resize-end-child", True)
+        main_hbox.append(self.main_paned)       
         loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=10, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
         self.loading_spinner = Gtk.Spinner(); self.loading_spinner.set_size_request(48, 48)
         loading_box.append(self.loading_spinner)
@@ -492,7 +522,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.video_view.controls.time_label_duration.set_xalign(0.0)
         self.media_grid_view = MediaGridView()
         self.media_grid_view.connect("population-finished", self.on_media_grid_populated)
-        self.media_grid_view.connect("item-watched-toggled", self.on_media_item_watched_toggled)       
+        self.media_grid_view.connect("item-watched-toggled", self.on_media_item_watched_toggled)  
+        self.media_grid_view.connect("item-favorite-toggled", self.on_media_item_favorite_toggled)     
         self.back_button_box = Gtk.Box(halign=Gtk.Align.START, margin_start=12, margin_top=6)
         back_button = Gtk.Button()
         btn_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -515,6 +546,9 @@ class MainWindow(Adw.ApplicationWindow):
         library_view_container.append(self.media_grid_view)
         self.main_content_stack.add_titled(library_view_container, "library_view", "Library")
         self.collection_grid_view = CollectionGridView()
+        self.recently_added_view = RecentlyAddedView()
+        self.main_content_stack.add_named(self.recently_added_view, "recently_added_view")
+        self.recently_added_view.connect("timeframe-selected", self.on_recent_timeframe_selected)
         self.main_content_stack.add_named(self.collection_grid_view, "collection_view")
         self.collection_grid_view.connect("collection-activated", self.on_collection_selected)
         self.series_view_placeholder = Gtk.Box(
@@ -537,6 +571,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.series_detail_view.connect("back-requested", self.on_series_detail_back_requested)
         self.series_detail_view.connect("episode-activated", self.on_episode_activated)
         self.series_detail_view.connect("trailer-requested", self.on_trailer_requested)
+        self.series_detail_view.connect("episode-download-requested", self.on_episode_download_requested)
+        self.series_detail_view.connect("cancel-episode-download-requested", self.on_episode_cancel_download_requested)
         self.image_viewer = ImageViewer()
         self.main_content_stack.add_named(self.image_viewer, "image_viewer_view")
         self.main_content_stack.add_titled(Gtk.Box(), "placeholder_view", "Placeholder")
@@ -544,7 +580,10 @@ class MainWindow(Adw.ApplicationWindow):
         self.epg_grid_view.connect("close-requested", self._on_epg_grid_closed)
         self.epg_grid_view.connect("channel-selected", self._on_epg_channel_selected)
         self.epg_grid_view.connect("schedule-recording", self._on_epg_schedule_recording)
-        self.main_content_stack.add_named(self.epg_grid_view, "epg_grid_view")
+        self.main_content_stack.add_named(self.epg_grid_view, "epg_grid_view")       
+        self.m3u_editor_view = EditorView()
+        self.main_content_stack.add_named(self.m3u_editor_view, "editor_view")
+        self.apply_editor_overrides()       
         self.subtitle_manager = SubtitleManager(self.player, self.video_view.subtitle_label)
         self.bouquet_list.bouquet_listbox.connect("row-activated", self.on_bouquet_selected)
         self.vod_category_list.bouquet_listbox.connect("row-activated", self.on_vod_category_selected)
@@ -568,6 +607,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.detail_view.connect("play-requested", self.on_detail_view_play_requested)
         self.detail_view.connect("back-requested", self.on_detail_view_back_requested)
         self.detail_view.connect("trailer-requested", self.on_trailer_requested)
+        self.detail_view.connect("download-requested", self.on_detail_download_requested)
+        self.detail_view.connect("cancel-download-requested", self.on_detail_cancel_download_requested)
         handler_id = self.bouquet_list.show_locked_button.connect("toggled", self._on_show_locked_toggled)
         self.bouquet_list.show_locked_button.handler_block(handler_id)
         initial_show_locked_state = database.get_show_locked_bouquets_status()
@@ -578,6 +619,8 @@ class MainWindow(Adw.ApplicationWindow):
         self.vod_category_list.show_locked_button.set_active(initial_show_locked_state)
         self.vod_category_list.show_locked_button.handler_unblock(vod_handler_id)
         self.video_view.connect("epg-item-activated", self.on_epg_item_activated)
+        self.video_view.connect("back-clicked", self.on_player_back_clicked)
+        self.last_view_before_player = "placeholder_view"
         controls = self.video_view.controls
         controls.buttons["play-pause"].connect("clicked", self.on_play_pause_clicked)
         controls.connect("go-live-clicked", self.on_go_live_clicked)
@@ -592,6 +635,9 @@ class MainWindow(Adw.ApplicationWindow):
         controls.connect("seek-value-changed", self.on_seek_requested)
         self.channel_list.connect("pip-requested", self.on_pip_requested)
         self.favorites_view.favorite_channels_list.connect("pip-requested", self.on_pip_requested)
+        self.channel_list.connect("external-play-requested", self.on_external_play_requested)
+        self.favorites_view.favorite_channels_list.connect("external-play-requested", self.on_external_play_requested)
+        self.video_view.fullscreen_channel_list.connect("external-play-requested", self.on_external_play_requested)
         self.player.connect("tracks-changed", self.on_tracks_changed)
         self.player.connect("about-to-finish", self.on_music_track_finished)
         self.player.connect("playback-error", self.on_playback_error)
@@ -603,6 +649,7 @@ class MainWindow(Adw.ApplicationWindow):
         controls.connect("audio-track-selected", self.on_audio_track_selected)
         controls.connect("subtitle-button-clicked", self.on_subtitle_button_clicked)
         controls.connect("epg-button-clicked", self.on_epg_button_clicked)
+        controls.connect("series-episodes-clicked", self.on_series_episodes_clicked)
         self.video_view.next_episode_cancel_button.connect("clicked", self._on_cancel_auto_play_clicked)
         self.video_view.next_episode_skip_button.connect("clicked", self._on_skip_to_next_episode_clicked)
         self.current_subtitle_track = -1
@@ -637,8 +684,37 @@ class MainWindow(Adw.ApplicationWindow):
         self.timeshift_file_path = None
         self.timeshift_start_time = None
         self.ts_quota_timer = None
+        self.retry_timer_id = None
+        
+    def on_player_back_clicked(self, video_view):
+        logging.info("Player back button clicked. Exiting playback view.")
+        if self.is_fullscreen():
+            self.on_fullscreen_clicked(None)
+        self.player.shutdown()
+        self.video_view.controls.set_playing_state(False)
+        self.inhibitor.uninhibit()
+        if getattr(self, 'is_playing_trailer', False):
+            self.is_playing_trailer = False
+            self.video_view.controls.set_stop_trailer_button_visibility(False)
+            if getattr(self, 'return_view_after_trailer', None):
+                self.main_content_stack.set_visible_child_name(self.return_view_after_trailer)
+            else:
+                self.main_content_stack.set_visible_child_name("library_view")
+            self.return_view_after_trailer = None
+        else:
+            self.main_content_stack.set_visible_child_name("library_view")
+            if hasattr(self, 'series_detail_view'):
+                self.series_detail_view.refresh_current_season()           
+        self.current_playing_media_path = None 
+        self.check_resume_downloads()       
 
     def on_back_to_collections_clicked(self, button):
+        if getattr(self, 'library_back_target', None) == "recently_added_view":
+            self.main_content_stack.set_visible_child_name("recently_added_view")
+            self.back_button_box.set_visible(False)
+            self.library_back_target = None
+            self.media_search_entry.set_text("")
+            return
         self.main_content_stack.set_visible_child_name("collection_view")
         self.back_button_box.set_visible(False)
         self.media_search_entry.set_text("")
@@ -754,6 +830,9 @@ class MainWindow(Adw.ApplicationWindow):
             if self.vod_data:
                 logging.info("VOD data found in cache/memory. Populating from local data...")
                 category_names = [c for c in self.vod_data.keys() if c not in hidden_bouquets]
+                category_names.insert(0, _(" ⭐ VOD Favorites"))
+                if self.profile_data.get("type") == "xtream":
+                    category_names.insert(1, _(" 🆕 Recently Added Movies"))              
                 self.vod_category_list.populate_bouquets_async(category_names)
                 data_shown = True          
             if self.profile_data.get("type") == "xtream":
@@ -866,6 +945,31 @@ class MainWindow(Adw.ApplicationWindow):
         self.settings_popover.popdown()
         dialog = TimeshiftSettingsDialog(self)
         dialog.present()
+        
+    def on_profile_manager_clicked(self, button):
+        self.settings_popover.popdown()      
+        if hasattr(self, 'profile_data') and self.profile_data:
+            dialog = ProfileManagerDialog(self, self.profile_data)
+            dialog.present()
+        else:
+            self.show_toast(_("Error: No active profile found.")) 
+            
+    def on_open_editor_clicked(self, button):
+        self.settings_popover.popdown()
+        if self.player:
+            self.player.shutdown()
+        if hasattr(self, 'video_view'):
+            self.video_view.controls.set_playing_state(False)      
+        self.inhibitor.uninhibit() 
+        self.current_playing_media_path = None       
+        self.sidebar.set_visible(False)
+        if hasattr(self, 'bouquets_data') and self.bouquets_data:
+            self.m3u_editor_view.load_active_profile_data(self.bouquets_data)
+        else:
+            self.show_toast(_("No channels found to edit!"))
+        if hasattr(self.m3u_editor_view, 'reset_state'):
+            self.m3u_editor_view.reset_state()            
+        self.main_content_stack.set_visible_child_name("editor_view")            
 
     def on_recordings_folder_dialog_response(self, dialog, response_id):
         if response_id == Gtk.ResponseType.ACCEPT:
@@ -951,7 +1055,14 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             self.player.seek_backward()           
 
-    def _start_playback(self, url, media_type, channel_data=None, start_position=None, episode_data=None, is_trailer=False, correct_logo_path=None):
+    def _proceed_with_playback(self, url, media_type, channel_data=None, start_position=None, episode_data=None, is_trailer=False, correct_logo_path=None, is_catchup=False):
+        active_child = self.main_content_stack.get_visible_child_name()
+        if active_child and active_child not in ["player_view", "loading_view"]:
+            self.last_view_before_player = active_child          
+        self.video_view.current_media_type = media_type
+        if self.retry_timer_id:
+            GLib.source_remove(self.retry_timer_id)
+            self.retry_timer_id = None
         if hasattr(self, 'playback_speed_manager') and self.playback_speed_manager:
             self.playback_speed_manager.reset_speed()
             if media_type == 'iptv':
@@ -1065,6 +1176,10 @@ class MainWindow(Adw.ApplicationWindow):
             self.current_playing_media_path = None
         controls = self.video_view.controls
         controls.set_stop_trailer_button_visibility(is_trailer)
+        if episode_data:
+            controls.set_button_visibility("series-episodes", True)
+        else:
+            controls.set_button_visibility("series-episodes", False)
         db_key = None
         if media_type == 'media':
             db_key = url
@@ -1210,11 +1325,13 @@ class MainWindow(Adw.ApplicationWindow):
             else:
                 self.video_view.update_epg([])
                 if not is_iptv:
-                     controls.update_channel_icon(None)
-            if is_iptv and channel_data:
+                     controls.update_channel_icon(None)                                                     
+            if (is_iptv or is_catchup) and channel_data:
                 try:
                     archive_duration_str = channel_data.get("tv_archive_duration")
-                    if channel_data.get("tv_archive") == "1" and archive_duration_str:
+                    channel_id_for_check = channel_data.get("tvg-id") or channel_data.get("tvg-name") or channel_data.get("name")
+                    has_epg_data = self._find_epg_data_for_channel(channel_id_for_check) is not None
+                    if channel_data.get("tv_archive") and str(channel_data.get("tv_archive")) != "0" and archive_duration_str and has_epg_data:
                         self.current_channel_archive_duration = int(archive_duration_str)
                         controls.set_catchup_button_visibility(True)
                     else:
@@ -1223,10 +1340,10 @@ class MainWindow(Adw.ApplicationWindow):
                 except Exception as e:
                     logging.warning(f"Error processing catch-up info: {e}")
                     self.current_channel_archive_duration = 0
-                    controls.set_catchup_button_visibility(False)
+                    controls.set_catchup_button_visibility(False)                 
             else:
                  self.current_channel_archive_duration = 0
-                 controls.set_catchup_button_visibility(False)
+                 controls.set_catchup_button_visibility(False)              
         if self.player.player:
              self.player.player.set_property("flags", final_flags)
         if episode_data:
@@ -1240,6 +1357,83 @@ class MainWindow(Adw.ApplicationWindow):
         self.player.play()
         self._update_more_menu_content()
 
+    def _show_download_warning_dialog(self, url, media_type, channel_data=None, start_position=None, episode_data=None, is_trailer=False, correct_logo_path=None, is_catchup=False):
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Active Download Detected!"),
+            modal=True
+        )
+        dialog.add_css_class("download-warning-dialog")
+        content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        content_box.set_margin_top(12)       
+        warning_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=10)
+        warning_box.add_css_class("warning-box")
+        warn_icon = Gtk.Image.new_from_icon_name("dialog-warning-symbolic")
+        warn_icon.add_css_class("warning-icon")
+        warn_icon.set_valign(Gtk.Align.START)      
+        warn_text = _("Opening a stream while downloading may exceed your allowed connection limits (causing an account ban) and create network lag.")
+        warn_label = Gtk.Label(label=warn_text, wrap=True, xalign=0)
+        warn_label.add_css_class("caption")        
+        warning_box.append(warn_icon)
+        warning_box.append(warn_label)
+        content_box.append(warning_box)      
+        risk_checkbox = Gtk.CheckButton(label=_("I understand the risk of account suspension"))
+        risk_checkbox.add_css_class("risk-checkbox")
+        content_box.append(risk_checkbox)       
+        dialog.set_extra_child(content_box)
+        dialog.add_response("cancel", _("Cancel Playback"))
+        dialog.add_response("play_anyway", _("Risk it & Play Anyway"))
+        dialog.add_response("pause_play", _("Safe Play (Pause Download)"))
+        dialog.set_response_appearance("play_anyway", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_response_appearance("pause_play", Adw.ResponseAppearance.SUGGESTED)     
+        dialog.set_default_response("pause_play")
+        dialog.set_close_response("cancel")
+        dialog.set_response_enabled("play_anyway", False)
+        
+        def on_checkbox_toggled(cb):
+            dialog.set_response_enabled("play_anyway", cb.get_active())         
+        risk_checkbox.connect("toggled", on_checkbox_toggled)
+
+        def _do_playback():
+            self._proceed_with_playback(url, media_type, channel_data, start_position, episode_data, is_trailer, correct_logo_path, is_catchup)
+            return GLib.SOURCE_REMOVE
+
+        def _on_response(d, response_id):
+            if response_id == "pause_play":
+                logging.info("User chose to pause download and proceed with playback.")
+                self.download_manager_widget.cancel_download(user_cancelled=False)
+                self.download_manager_widget.set_visible(False)
+                GLib.timeout_add(800, _do_playback)                
+            elif response_id == "play_anyway":
+                logging.warning("User chose to bypass warning and play anyway.")
+                GLib.timeout_add(100, _do_playback)         
+            d.close()          
+        dialog.connect("response", _on_response)
+        dialog.present()
+
+    def _start_playback(self, url, media_type, channel_data=None, start_position=None, episode_data=None, is_trailer=False, correct_logo_path=None, is_catchup=False):
+        is_provider_stream = media_type in ['iptv', 'vod'] and not is_trailer
+        if is_provider_stream and url:
+            is_external = False
+            if not str(url).startswith("http"):
+                is_external = True
+            else:
+                profile_type = self.profile_data.get("type", "") if hasattr(self, 'profile_data') and self.profile_data else ""
+                if profile_type == "xtream":
+                    host = self.profile_data.get("host", "")
+                    if host and host not in url:
+                        is_external = True
+                elif profile_type in ["m3u_url", "m3u_file"]:
+                    if url not in getattr(self, 'all_channels_map', {}):
+                        is_external = True
+            if is_external:
+                is_provider_stream = False
+        is_downloading = self.download_manager_widget.download_thread and self.download_manager_widget.download_thread.is_alive()
+        if is_downloading and is_provider_stream:
+            self._show_download_warning_dialog(url, media_type, channel_data, start_position, episode_data, is_trailer, correct_logo_path, is_catchup)
+            return
+        self._proceed_with_playback(url, media_type, channel_data, start_position, episode_data, is_trailer, correct_logo_path, is_catchup)     
+
     def on_spectrum_update(self, player, mags):
         if self.custom_visualizer.get_visible():
             self.custom_visualizer.update_magnitudes(mags)
@@ -1247,7 +1441,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_playback_finished(self, player):
         logging.debug("on_playback_finished called.")
         if self.current_media_type == 'iptv':
-            MAX_RETRIES = 12           
+            MAX_RETRIES = 2           
             if self.retry_count < MAX_RETRIES:
                 self.retry_count += 1
                 logging.warning(f"IPTV Stream finished unexpectedly. Retry attempt {self.retry_count}/{MAX_RETRIES}...")               
@@ -1256,8 +1450,17 @@ class MainWindow(Adw.ApplicationWindow):
                     if url:
                         if self.retry_count == 1:
                             self.show_toast(_("Connection lost. Reconnecting..."), duration=20)
-                        self.player.play_url(url, media_type='iptv')
-                        self.player.play()
+                        if self.retry_timer_id:
+                            GLib.source_remove(self.retry_timer_id)
+                            self.retry_timer_id = None
+                            
+                        def do_secure_retry_eos():
+                            if self.current_playing_channel_data and self.current_playing_channel_data.get('url') == url:
+                                saved_count = self.retry_count
+                                self._play_channel(self.current_playing_channel_data)
+                                self.retry_count = saved_count
+                            return False                     
+                        self.retry_timer_id = GLib.timeout_add(5000, do_secure_retry_eos)
                         return 
             else:
                 logging.error("Max retries reached. Stopping playback.")
@@ -1471,6 +1674,7 @@ class MainWindow(Adw.ApplicationWindow):
         self.show_toast(_("Channels loaded successfully!"))
         self.on_nav_button_clicked(self.top_buttons["vod"], "vod")
         self.on_nav_button_clicked(self.top_buttons["iptv"], "iptv")
+        self.check_resume_downloads()
 
     def _start_trakt_sync(self):
         token = database.get_trakt_token()
@@ -1552,7 +1756,7 @@ class MainWindow(Adw.ApplicationWindow):
     def on_playback_error(self, player, error_message):
         logging.error(f"Playback Error: {error_message}")
         if self.current_media_type == 'iptv':
-             MAX_RETRIES = 12              
+             MAX_RETRIES = 2             
              if self.retry_count < MAX_RETRIES:
                  self.retry_count += 1
                  logging.warning(f"IPTV Error detected. Retry attempt {self.retry_count}/{MAX_RETRIES}...")               
@@ -1561,13 +1765,19 @@ class MainWindow(Adw.ApplicationWindow):
                     if url:
                         if self.retry_count == 1:
                             self.show_toast(_("Connection lost. Reconnecting..."), duration=20)                        
+                        if self.retry_timer_id:
+                            GLib.source_remove(self.retry_timer_id)
+                            self.retry_timer_id = None
+
                         def do_secure_retry():
-                            saved_count = self.retry_count 
-                            self._play_channel(self.current_playing_channel_data)
-                            self.retry_count = saved_count
-                            logging.debug(f"Retry counter restored to {self.retry_count}")
+                            if self.current_playing_channel_data and self.current_playing_channel_data.get('url') == url:
+                                saved_count = self.retry_count 
+                                self._play_channel(self.current_playing_channel_data)
+                                self.retry_count = saved_count
+                                logging.debug(f"Retry counter restored to {self.retry_count}")
                             return False 
-                        GLib.timeout_add(1500, do_secure_retry)
+                        
+                        self.retry_timer_id = GLib.timeout_add(5000, do_secure_retry)
                         return
              else:
                  logging.error("Max retries reached. Stopping.")
@@ -1650,7 +1860,13 @@ class MainWindow(Adw.ApplicationWindow):
             return
         self.vod_category_list.search_entry.set_text("")
         self.player.pause()
-        category_name = row.bouquet_name
+        category_name = row.bouquet_name      
+        if category_name in [_("⭐ VOD Favorites"), _(" ⭐ VOD Favorites")]:
+            self._show_vod_favorites()
+            return
+        if category_name in [_("🆕 Recently Added Movies"), _(" 🆕 Recently Added Movies")]:
+            self._show_recently_added("vod")
+            return         
         password_is_set = database.get_config_value('app_password') is not None
         is_locked = database.get_bouquet_lock_status(category_name)
         if password_is_set and is_locked:
@@ -1660,6 +1876,48 @@ class MainWindow(Adw.ApplicationWindow):
             prompt.present()
             return
         self._show_vod_category(category_name)
+        
+    def _show_vod_favorites(self):
+        logging.info("Showing VOD Favorites...")
+        fav_items = database.get_all_vod_favorites()
+        formatted_list = []
+        for f in fav_items:
+            formatted_list.append({
+                'stream_id': f['stream_id'],
+                'url': f['stream_id'], 
+                'name': f['name'],
+                'stream_icon': f['poster_path'],
+                'logo': f['poster_path'] 
+            })          
+        self.media_search_entry.set_text("")
+        self.media_grid_view.populate_async(formatted_list, media_type="vod")
+        self.main_content_stack.set_visible_child_name("library_view")
+        self.back_button_box.set_visible(False)     
+        count = len(formatted_list)
+        if count == 0:
+            self.show_toast(_("Your favorites list is empty."))
+        else:
+            self.show_toast(_("{} favorite items listed.").format(count))  
+            
+    def _show_series_favorites(self):
+        logging.info("Showing Series Favorites...")
+        fav_items = database.get_all_series_favorites()
+        formatted_list = []
+        for f in fav_items:
+            formatted_list.append({
+                'series_id': f['series_id'],
+                'name': f['name'],
+                'cover': f['poster_path']
+            })         
+        self.media_search_entry.set_text("")
+        self.media_grid_view.populate_async(formatted_list, media_type="series")
+        self.main_content_stack.set_visible_child_name("library_view")
+        self.back_button_box.set_visible(False)       
+        count = len(formatted_list)
+        if count == 0:
+            self.show_toast(_("Your favorites list is empty."))
+        else:
+            self.show_toast(_("{} favorite items listed.").format(count))                  
 
     def on_password_prompt_response_vod(self, dialog, response_id, category_name):
         if response_id == "ok":
@@ -1961,6 +2219,10 @@ class MainWindow(Adw.ApplicationWindow):
             )
             return
         channel_id = self.current_playing_channel_data.get("tvg-id")
+        if not channel_id:
+            channel_id = self.current_playing_channel_data.get("tvg-name")
+        if not channel_id:
+            channel_id = self.current_playing_channel_data.get("name")
         archive_days = self.current_channel_archive_duration
         if not channel_id:
             logging.error("Channel tvg-id not found for catch-up!")
@@ -1969,11 +2231,13 @@ class MainWindow(Adw.ApplicationWindow):
             )
             return
         logging.info(f"Creating CatchupDialog. Channel ID: {channel_id}, Duration: {archive_days} days")
+        channel_programs = self._find_epg_data_for_channel(channel_id)
+        mock_epg_data = {channel_id: channel_programs} if channel_programs else {}
         dialog = CatchupDialog(
             parent=self,
             channel_id=channel_id,
             archive_duration_days=archive_days,
-            all_epg_data=self.epg_data
+            all_epg_data=mock_epg_data
         )
         dialog.connect('program-selected', self.on_catchup_program_selected)
         dialog.present()
@@ -2009,16 +2273,24 @@ class MainWindow(Adw.ApplicationWindow):
                 self.show_toast(_("Error: Profile information missing."))
                 return
         elif self.profile_data.get("type") in ["m3u_url", "m3u_file"]:
-            logging.warning("Standard Catch-up URL format for M3U profiles is unknown. Playback may fail.")
-            self.show_toast(
-                _("Catch-up playback for M3U profiles is not yet fully supported.")
-            )
-            return
+            channel_url = self.current_playing_channel_data.get("url")
+            archive_type = self.current_playing_channel_data.get("tv_archive")         
+            start_ts = int(program_start_time.timestamp())
+            stop_ts = int(program_stop_time.timestamp())
+            duration_seconds = stop_ts - start_ts         
+            if archive_type and archive_type.lower() == "flussonic":
+                separator = "&" if "?" in channel_url else "?"
+                catchup_url = channel_url.replace(".m3u8", f"-{start_ts}-{abs(duration_seconds)}.m3u8") 
+                logging.info(f"Flussonic catchup URL generated: {catchup_url}")
+            else:
+                logging.warning(f"Unsupported M3U catch-up type: {archive_type}. Playback may fail.")
+                self.show_toast(_("Catch-up format not supported yet."))
+                return
         else:
              logging.error(f"Attempted Catch-up for unsupported profile type: {self.profile_data.get('type')}")
              return
         if catchup_url:
-            self._start_playback(url=catchup_url, media_type='vod', channel_data=self.current_playing_channel_data)
+            self._start_playback(url=catchup_url, media_type='vod', channel_data=self.current_playing_channel_data, is_catchup=True)
         else:
              logging.error("Playback could not be started because catch-up URL could not be created.")
              self.show_toast(_("Error: Could not create catch-up URL."))
@@ -2353,7 +2625,6 @@ class MainWindow(Adw.ApplicationWindow):
         if hasattr(self, 'seek_toast') and self.seek_toast:
             self.seek_toast.set_title(msg)
         else:
-            from gi.repository import Adw
             self.seek_toast = Adw.Toast.new(msg)
             self.seek_toast.set_timeout(5)             
             def on_dismissed(toast):
@@ -2795,6 +3066,9 @@ class MainWindow(Adw.ApplicationWindow):
             self.is_timeshift_active = False
             self.video_view.controls.set_go_live_button_visibility(False)
         url = channel_data.get("url")
+        if url and database.get_channel_external_player_status(url):
+            self.on_external_play_requested(None, channel_data)
+            return
         if url:
             is_locked = database.get_channel_lock_status(url)
             if not is_locked:
@@ -2808,7 +3082,7 @@ class MainWindow(Adw.ApplicationWindow):
             self._start_playback(url=url, media_type='iptv', channel_data=channel_data, correct_logo_path=correct_logo_path)
             if self.is_immersive_fullscreen and hasattr(self.video_view, 'fullscreen_channel_list'):
                 self._sync_fullscreen_list_selection(url)
-            self._sync_sidebar_list_selection(url)   
+            self._sync_sidebar_list_selection(url)    
 
     def on_password_prompt_response(self, dialog, response_id, channel_data, correct_logo_path=None):
         if response_id == "ok":
@@ -2849,13 +3123,14 @@ class MainWindow(Adw.ApplicationWindow):
                 for cat in self.vod_categories_data
                 if cat.get('category_name') not in hidden_bouquets
             ]
+            category_names.insert(0, _(" ⭐ VOD Favorites"))
+            category_names.insert(1, _(" 🆕 Recently Added Movies")) 
             self.vod_category_list.populate_bouquets_async(category_names)
         else:
             if self.vod_data:
                  visible_cats = [c for c in self.vod_data.keys() if c not in hidden_bouquets]
+                 visible_cats.insert(0, _(" ⭐ VOD Favorites"))
                  self.vod_category_list.populate_bouquets_async(visible_cats)
-            else:
-                self.vod_category_list.populate_bouquets_async([])
 
     def _on_show_locked_toggled(self, button):
         is_active = button.get_active()
@@ -3380,6 +3655,23 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_volume_changed(self, scale):
         self.player.set_volume(scale.get_value())
+        
+    def on_download_finished(self, widget, file_path):
+        file_name = os.path.basename(file_path)
+        self.show_toast(_("Download complete: {}").format(file_name))
+        if self.main_content_stack.get_visible_child_name() == "recordings_view":
+            self.load_recorded_videos()
+            self.detail_view.set_download_state(False)
+
+    def on_download_failed(self, widget, error_msg):
+        self.show_toast(_("Download failed: {}").format(error_msg)) 
+        self.detail_view.set_download_state(False)
+        
+    def on_detail_cancel_download_requested(self, view):
+        self.download_manager_widget._on_cancel_clicked(None)
+
+    def on_download_cancelled(self, widget):
+        self.detail_view.set_download_state(False)              
 
     def on_close_request(self, window):
         logging.info("Close request received. Stopping GStreamer safely before destroying the window...")
@@ -3404,7 +3696,6 @@ class MainWindow(Adw.ApplicationWindow):
             except Exception as e:
                 logging.error(f"Error while shutting down the player: {e}")
             self.player = None
-        import time
         time.sleep(0.3)
         logging.info("GStreamer cleanup finished. Proceeding with window destruction.")
         return False
@@ -3461,6 +3752,174 @@ class MainWindow(Adw.ApplicationWindow):
             dialog.present()
         else:
             self._start_playback(url=final_url, media_type=media_type)
+            
+    def on_detail_download_requested(self, view, stream_id_or_path, media_type, title):
+        final_url = stream_id_or_path
+        if media_type == 'vod' and self.profile_data and self.profile_data.get("type") == "xtream":
+            self.show_toast(_("Resolving download link..."))
+            info_data = xtream_client.get_vod_info(self.profile_data, stream_id_or_path)
+            if not info_data:
+                self.show_toast(_("Error: Could not retrieve movie info for download."))
+                return
+            movie_data = info_data.get('movie_data', {})
+            final_url = movie_data.get('direct_source')         
+            if not final_url:
+                container_extension = movie_data.get('container_extension', 'mp4')
+                host = self.profile_data.get('host')
+                username = self.profile_data.get('username')
+                password = self.profile_data.get('password')
+                final_url = f"{host}/movie/{username}/{password}/{stream_id_or_path}.{container_extension}"
+        if not final_url:
+            self.show_toast(_("Error: Invalid download URL."))
+            return
+        self.show_toast(_("Calculating file size..."))
+        thread = threading.Thread(
+            target=self._fetch_download_size_thread,
+            args=(final_url, title),
+            daemon=True
+        )
+        thread.start()
+
+    def _fetch_download_size_thread(self, final_url, title):
+        size_in_bytes = None
+        headers = {
+            'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+        }
+        try:
+            response = requests.head(final_url, headers=headers, timeout=5, allow_redirects=True)
+            if response.status_code == 200 and 'Content-Length' in response.headers:
+                size_in_bytes = int(response.headers['Content-Length'])
+            else:
+                response = requests.get(final_url, headers=headers, stream=True, timeout=5, allow_redirects=True)
+                if 'Content-Length' in response.headers:
+                    size_in_bytes = int(response.headers['Content-Length'])
+                response.close() 
+        except Exception as e:
+            logging.warning(f"Could not fetch file size for {final_url}: {e}")
+        GLib.idle_add(self._on_download_size_fetched, final_url, title, size_in_bytes)
+
+    def _on_download_size_fetched(self, final_url, title, size_in_bytes):
+        size_str = _("Unknown")
+        if size_in_bytes:
+            if size_in_bytes >= 1024 * 1024 * 1024:
+                size_str = f"{size_in_bytes / (1024 * 1024 * 1024):.2f} GB"
+            elif size_in_bytes >= 1024 * 1024:
+                size_str = f"{size_in_bytes / (1024 * 1024):.2f} MB"
+            else:
+                size_str = f"{size_in_bytes / 1024:.2f} KB"
+        dialog_body = _("Limiting the download speed prevents network stuttering while watching Live TV or VODs.\n\nFile Size: {size}\n\nPlease select a maximum speed:").format(size=size_str)
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Select Download Speed"),
+            body=dialog_body,
+            modal=True
+        )
+        dialog.add_css_class("download-speed-dialog")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("speed_1", "1 MB/s")
+        dialog.add_response("speed_3", "3 MB/s")
+        dialog.add_response("speed_5", "5 MB/s")
+        dialog.add_response("speed_10", "10 MB/s")
+        dialog.add_response("unlimited", _("Unlimited 🚀"))
+        dialog.set_response_appearance("unlimited", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("unlimited")
+        dialog.set_close_response("cancel")
+
+        def _on_speed_response(d, response_id):
+            if response_id == "cancel":
+                d.close()
+                return
+            speed_limit = None 
+            if response_id == "speed_1": speed_limit = 1 * 1024 * 1024
+            elif response_id == "speed_3": speed_limit = 3 * 1024 * 1024
+            elif response_id == "speed_5": speed_limit = 5 * 1024 * 1024
+            elif response_id == "speed_10": speed_limit = 10 * 1024 * 1024           
+            d.close()
+            self._open_download_file_chooser(final_url, title, speed_limit)
+        dialog.connect("response", _on_speed_response)
+        dialog.present()
+
+    def _open_download_file_chooser(self, final_url, title, speed_limit):
+        safe_title = "".join(c if c.isalnum() or c in " .-_" else "_" for c in title).strip()
+        default_name = f"{safe_title}.mp4"
+        dialog = Gtk.FileChooserDialog(
+            title=_("Save Video As..."),
+            transient_for=self,
+            action=Gtk.FileChooserAction.SAVE
+        )
+        dialog.add_buttons(
+            _("Cancel"), Gtk.ResponseType.CANCEL,
+            _("Save"), Gtk.ResponseType.ACCEPT
+        )
+        downloads_dir = GLib.get_user_special_dir(GLib.UserDirectory.DIRECTORY_DOWNLOAD)
+        if downloads_dir:
+            os.makedirs(downloads_dir, exist_ok=True)
+        if downloads_dir and os.path.isdir(downloads_dir):
+            try:
+                gfile = Gio.File.new_for_path(downloads_dir)
+                dialog.set_current_folder(gfile)
+            except Exception as e:
+                logging.error(f"Error setting default downloads folder: {e}")
+        dialog.set_current_name(default_name)
+
+        def on_response(dialog_window, response_id):
+            if response_id == Gtk.ResponseType.ACCEPT:
+                file_info = dialog_window.get_file()
+                if file_info:
+                    output_path = file_info.get_path()
+                    logging.info(f"Download started: {output_path} (Speed Limit: {speed_limit})")
+                    self.download_manager_widget.start_download(final_url, output_path, speed_limit)
+                    current_view = self.main_content_stack.get_visible_child_name()
+                    if current_view == "detail_view" and hasattr(self, 'detail_view'):
+                        self.detail_view.set_download_state(True)
+                    elif current_view == "series_detail_view" and hasattr(self, 'series_detail_view'):
+                        active_ep = getattr(self, '_active_episode_data', None)
+                        self.series_detail_view.set_download_state(True, active_ep)
+            else:
+                self._active_episode_data = None         
+            dialog_window.destroy()          
+        dialog.connect("response", on_response)
+        dialog.show()
+        
+    def check_resume_downloads(self):
+        active_downloads = database.get_active_downloads()
+        for download in active_downloads:
+            logging.info(f"Resuming unfinished download: {download['output_path']}")
+            saved_speed = download.get('speed_limit')
+            self.download_manager_widget.start_download(
+                download['url'], 
+                download['output_path'], 
+                speed_limit=saved_speed
+            )
+            break
+            
+    def on_episode_download_requested(self, view, episode_data, series_title):
+        if self.download_manager_widget.get_visible():
+            self.show_toast(_("An episode is already downloading. Please wait."))
+            return
+        self._active_episode_data = episode_data
+        final_url = episode_data.get('direct_source')
+        if not final_url:
+            episode_stream_id = episode_data.get('id') or episode_data.get('stream_id')
+            container_extension = episode_data.get('container_extension', 'mp4')
+            if episode_stream_id:
+                host = self.profile_data.get('host')
+                username = self.profile_data.get('username')
+                password = self.profile_data.get('password')
+                final_url = f"{host}/series/{username}/{password}/{episode_stream_id}.{container_extension}"      
+        season_num = str(episode_data.get('season', '1')).zfill(2)
+        ep_num = str(episode_data.get('episode_num', '1')).zfill(2)
+        safe_title = f"{series_title} - S{season_num}E{ep_num}"
+        self.show_toast(_("Calculating file size..."))
+        thread = threading.Thread(
+            target=self._fetch_download_size_thread,
+            args=(final_url, safe_title),
+            daemon=True
+        )
+        thread.start()
+
+    def on_episode_cancel_download_requested(self, view):
+        self.download_manager_widget._on_cancel_clicked(None)                          
 
     def _on_resume_dialog_response(self, dialog, response_id, url, media_type, position):
         if response_id == "resume":
@@ -3580,10 +4039,16 @@ class MainWindow(Adw.ApplicationWindow):
             self._change_volume(-0.05)
             return True
         elif key_name == "Up":
-            self._play_previous_channel()
-            return True
+            if self.current_media_type == 'music':
+                self.play_previous_track()
+            else:
+                self._play_previous_channel()
+            return True          
         elif key_name == "Down":
-            self._play_next_channel()
+            if self.current_media_type == 'music':
+                self.play_next_track()
+            else:
+                self._play_next_channel()
             return True
         elif key_name == "m":
             self._toggle_mute()
@@ -3771,7 +4236,7 @@ class MainWindow(Adw.ApplicationWindow):
             dialog.add_response("delete", _("Delete"))
             dialog.set_response_appearance("delete", Adw.ResponseAppearance.DESTRUCTIVE)
             dialog.connect("response", self._on_clear_cache_confirm_response)
-            dialog.present()
+            dialog.present()          
 
     def _on_clear_cache_password_response(self, dialog, response_id):
         if response_id == "ok":
@@ -3793,6 +4258,8 @@ class MainWindow(Adw.ApplicationWindow):
                 for cat in categories
                 if cat.get('category_name') not in hidden_bouquets
             ]          
+            category_names.insert(0, _(" ⭐ Series Favorites"))
+            category_names.insert(1, _(" 🆕 Recently Added Series"))          
             self.series_sidebar.populate_bouquets_async(category_names)
             self.show_toast(
                 _("{} series categories found!").format(len(category_names))
@@ -3817,6 +4284,12 @@ class MainWindow(Adw.ApplicationWindow):
         self.series_sidebar.search_entry.set_text("")
         self.player.pause()
         category_name = row.bouquet_name
+        if category_name in [_("⭐ Series Favorites"), _(" ⭐ Series Favorites")]:
+            self._show_series_favorites()
+            return           
+        if category_name in [_("🆕 Recently Added Series"), _(" 🆕 Recently Added Series")]:
+            self._show_recently_added("series")
+            return               
         category_id = next(
             (cat.get('category_id') for cat in self.series_categories_data
              if cat.get('category_name', '').strip() == category_name.strip()),
@@ -3939,7 +4412,10 @@ class MainWindow(Adw.ApplicationWindow):
                 cat.get('category_name', _('Unknown')) 
                 for cat in categories
                 if cat.get('category_name') not in hidden_bouquets
-            ]           
+            ] 
+            category_names.insert(0, _(" ⭐ VOD Favorites"))
+            category_names.insert(1, _(" 🆕 Recently Added Movies")) 
+         
             self.vod_category_list.populate_bouquets_async(category_names)
             self.show_toast(
                 _("{} VOD categories found!").format(len(categories))
@@ -4219,9 +4695,50 @@ class MainWindow(Adw.ApplicationWindow):
 
     def on_pip_requested(self, channel_list_widget, url):
         logging.info(f"PiP requested via signal for URL: {url}")
-        if self.pip_window:
-            self.stop_pip()
-        self.start_pip(url)
+        hide_warning = database.get_config_value('hide_pip_warning')       
+        if hide_warning == '1':
+            if self.pip_window:
+                self.stop_pip()
+            self.start_pip(url)
+        else:
+            self._show_pip_warning_dialog(url)
+            
+    def _show_pip_warning_dialog(self, url):
+        dialog = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Important Warning: Ban Risk!"),
+            body=_("Opening Picture-in-Picture (PiP) mode will send a second simultaneous stream request to your provider.\n\n"
+                   "If your IPTV subscription only allows a single connection at a time, "
+                   "doing this may cause your account to be automatically banned by the provider.\n\n"
+                   "Do you accept this risk and wish to continue?"),
+            modal=True
+        )
+        dialog.add_css_class("pip-warning-dialog")
+        check_button = Gtk.CheckButton(label=_("Do not show this warning again"))
+        check_button.set_margin_top(12)
+        check_button.set_halign(Gtk.Align.CENTER)     
+        dialog.set_extra_child(check_button)
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("continue", _("Open Anyway"))        
+        dialog.set_response_appearance("continue", Adw.ResponseAppearance.DESTRUCTIVE)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+        dialog.set_size_request(420, -1)
+        dialog.connect("response", self._on_pip_warning_response, url, check_button)
+        dialog.present()
+
+    def _on_pip_warning_response(self, dialog, response_id, url, check_button):
+        if response_id == "continue":
+            if check_button.get_active():
+                database.set_config_value('hide_pip_warning', '1')
+                logging.info("User accepted the PiP ban risk and hid the warning permanently.")
+            else:
+                logging.info("User bypassed the PiP warning (checkbox not checked).")
+            if self.pip_window:
+                self.stop_pip()
+            self.start_pip(url)
+        else:
+            logging.info("PiP opening cancelled by user due to ban risk.")            
 
     def start_pip(self, url):
         if not url:
@@ -4229,7 +4746,6 @@ class MainWindow(Adw.ApplicationWindow):
             return
         if not self.pip_window:
             try:
-                from ui.pip_window import PipWindow
                 self.pip_window = PipWindow()
                 logging.info("PipWindow: set_transient_for(self) called.")
                 def on_pip_close_request(win):
@@ -4282,6 +4798,58 @@ class MainWindow(Adw.ApplicationWindow):
             self.pip_player.set_volume(0.0)
         else:
             logging.warning("_on_pip_stream_started called for unexpected player.")
+            
+    def on_external_play_requested(self, widget, channel_data, force_ask=False):
+        if hasattr(self, 'player') and self.player:
+            logging.info("External player triggered: Completely stopping the internal background player (GStreamer)...")
+            if hasattr(self.player, 'stop'):
+                self.player.stop()
+            else:
+                self.player.shutdown()
+            if hasattr(self, 'is_timeshift_active') and self.is_timeshift_active:
+                if hasattr(self, 'active_recorder') and self.active_recorder:
+                    self.active_recorder.stop()
+                self.is_timeshift_active = False
+            self.video_view.controls.set_playing_state(False)
+            if hasattr(self.video_view, 'stop_playback_ui'):
+                 self.video_view.stop_playback_ui()
+            if hasattr(self, 'update_timer') and self.update_timer:
+                GLib.source_remove(self.update_timer)
+                self.update_timer = None              
+        self._launch_external_player(channel_data, force_ask=force_ask)
+
+    def _launch_external_player(self, channel_data, force_ask=False):
+        url = channel_data.get("url")
+        name = channel_data.get("name", "Stream")
+        if not url:
+            return          
+        try:
+            clean_name = "".join([c for c in name if c.isalnum() or c in (" ", "_", "-")]).strip()
+            clean_name = clean_name.replace(" ", "_")
+            if not clean_name:
+                clean_name = "stream"
+            temp_dir = database.get_cache_path() 
+            temp_file_path = os.path.join(temp_dir, f"engplayer_{clean_name}.m3u")           
+            with open(temp_file_path, "w", encoding="utf-8") as f:
+                f.write("#EXTM3U\n")
+                f.write(f"#EXTINF:-1,{name}\n")
+                f.write(f"{url}\n")
+            gio_file = Gio.File.new_for_path(temp_file_path)
+            launcher = Gtk.FileLauncher.new(gio_file)
+            launcher.set_always_ask(force_ask)         
+            launcher.launch(self, None, self._on_external_player_launched)
+            logging.info(f"External player portal triggered for: {name} (force_ask={force_ask})")
+        except Exception as e:
+            logging.exception(f"Failed to initialize external player launch: {e}")
+            self.show_toast(_("Could not launch external player"))
+
+    def _on_external_player_launched(self, launcher, result):
+        try:
+            success = launcher.launch_finish(result)
+            if success:
+                logging.info("External player portal processed successfully.")
+        except Exception as e:
+            logging.error(f"XDG Portal application selection error or dismissed: {e}")            
 
     def on_collection_item_right_clicked(self, grid_view, item, widget):
         menu_model = Gio.Menu()
@@ -4520,7 +5088,7 @@ class MainWindow(Adw.ApplicationWindow):
         logging.info("Restarting application to apply changes...")
         try:
             logging.info("Shutting down current resources...")
-            self.on_destroy(self)
+            self.on_close_request(self)
         except Exception as e:
             logging.error(f"Error during pre-restart cleanup: {e}")          
         python_executable = sys.executable
@@ -4571,6 +5139,35 @@ class MainWindow(Adw.ApplicationWindow):
         else:
             database.delete_playback_position(path_or_id)
             
+    def on_media_item_favorite_toggled(self, grid_view, item, is_favorite):
+        path_or_id = item.props.path_or_url
+        if not path_or_id: return       
+        media_type = self.media_grid_view.current_media_type       
+        if is_favorite:
+            if media_type == "series":
+                database.add_series_favorite(path_or_id, item.props.title, item.props.poster_path)
+            else:
+                database.add_vod_favorite(path_or_id, item.props.title, item.props.poster_path)
+            self.show_toast(_("Added to favorites."))
+        else:
+            if media_type == "series":
+                database.remove_series_favorite(path_or_id)
+            else:
+                database.remove_vod_favorite(path_or_id)
+            self.show_toast(_("Removed from favorites."))            
+            model = self.media_grid_view.model
+            ok, pos = model.find(item)           
+            if media_type == "vod":
+                selected_row = self.vod_category_list.bouquet_listbox.get_selected_row()
+                if selected_row and hasattr(selected_row, 'bouquet_name') and selected_row.bouquet_name in [_("⭐ VOD Favorites"), _(" ⭐ VOD Favorites")]:
+                    if ok: model.remove(pos)
+                    if model.get_n_items() == 0: self.show_toast(_("Your favorites list is empty."))                       
+            elif media_type == "series":
+                selected_row = self.series_sidebar.bouquet_listbox.get_selected_row()
+                if selected_row and hasattr(selected_row, 'bouquet_name') and selected_row.bouquet_name in [_("⭐ Series Favorites"), _(" ⭐ Series Favorites")]:
+                    if ok: model.remove(pos)
+                    if model.get_n_items() == 0: self.show_toast(_("Your favorites list is empty."))         
+            
     def apply_accent_color(self, color_str):
         if not color_str: return
         css_provider = Gtk.CssProvider()
@@ -4597,8 +5194,7 @@ class MainWindow(Adw.ApplicationWindow):
                 self.font_css_provider = None
             except Exception as e:
                 logging.warning(f"Error removing old font provider: {e}")
-        font_desc_str = database.get_config_value("app_font_desc")
-        
+        font_desc_str = database.get_config_value("app_font_desc")       
         if not font_desc_str:
             return
         try:
@@ -4669,6 +5265,9 @@ class MainWindow(Adw.ApplicationWindow):
                  c.get('category_name') for c in self.series_categories_data
                  if c.get('category_name') not in hidden_bouquets
              ]
+             cats.insert(0, _(" ⭐ Series Favorites"))
+             if self.profile_data.get("type") == "xtream":
+                 cats.insert(1, _(" 🆕 Recently Added Series"))
              self.series_sidebar.populate_bouquets_async(cats)
         if self.is_immersive_fullscreen:
              self._populate_fullscreen_categories()         
@@ -5154,8 +5753,7 @@ class MainWindow(Adw.ApplicationWindow):
             return
         show_locked = database.get_show_locked_bouquets_status()
         hidden_bouquets = database.get_hidden_bouquets()
-        display_items = []
-        
+        display_items = []      
         if is_favorites_mode:
             target_list.set_header("", show_back=False)
             items = database.get_all_favorite_lists()            
@@ -5307,7 +5905,6 @@ class MainWindow(Adw.ApplicationWindow):
         dialog.present()
 
     def show_vod_details_from_search(self, item_data):
-        from ui.media_grid_view import MediaItem
         path_or_url = item_data.get('stream_id') or item_data.get('url')     
         title = item_data.get('name')
         item = MediaItem(path_or_url=str(path_or_url), title=title)
@@ -5324,7 +5921,155 @@ class MainWindow(Adw.ApplicationWindow):
             args=(str(series_id),),
             daemon=True
         )
-        thread.start()                                                                                                             
+        thread.start() 
+        
+    def _show_recently_added(self, media_type):
+        self.media_search_entry.set_text("")
+        self.main_content_stack.set_visible_child_name("loading_view")
+        self.loading_spinner.start()
+        loading_view = self.main_content_stack.get_child_by_name("loading_view")
+        if loading_view:
+            def update_loading_text(widget):
+                if isinstance(widget, Gtk.Label):
+                    if media_type == "vod":
+                        widget.set_text(_("Updating VOD list... Please wait."))
+                    else:
+                        widget.set_text(_("Updating Series list... Please wait."))
+                    return True
+                child = widget.get_first_child()
+                while child:
+                    if update_loading_text(child):
+                        return True
+                    child = child.get_next_sibling()
+                return False
+            update_loading_text(loading_view)
+
+        def fetch_and_cache_data():
+            current_profile_id = str(self.profile_data.get('id', 'default'))
+            config_key = f"last_cache_update_{media_type}_{current_profile_id}"
+            last_update = database.get_config_value(config_key)
+            now = int(time.time())
+            if not last_update or (now - int(last_update)) > 86400:
+                logging.info(f"Fetching {media_type.upper()} list from API and caching to SQLite...")
+                if media_type == "vod":
+                    raw_data = xtream_client.get_vod_streams(self.profile_data)
+                else:
+                    raw_data = xtream_client.get_series_streams(self.profile_data, "all")               
+                database.update_recent_media_cache(media_type, raw_data)
+                database.set_config_value(config_key, str(now))
+            else:
+                logging.info(f"{media_type.upper()} list is up-to-date. Reading directly from SQLite cache.")
+            GLib.idle_add(self._on_recently_added_data_ready, media_type)
+        thread = threading.Thread(target=fetch_and_cache_data, daemon=True)
+        thread.start()
+
+    def _on_recently_added_data_ready(self, media_type):
+        self.loading_spinner.stop()
+        current_profile_id = self.profile_data.get('id', 'default_profile')
+        self.recently_added_view.populate(media_type=media_type, profile_id=current_profile_id)       
+        self.main_content_stack.set_visible_child_name("recently_added_view")
+        self.back_button_box.set_visible(False)
+
+    def on_recent_timeframe_selected(self, view, media_list, title, media_type):
+        logging.info(f"Timeframe '{title}' selected. Populating {len(media_list)} items.")
+        self.media_search_entry.set_text("")
+        self.media_grid_view.populate_async(media_list, media_type=media_type)
+        self.main_content_stack.set_visible_child_name("library_view")
+        self.back_button_box.set_visible(True)
+        self.library_back_target = "recently_added_view"   
+        
+    def on_series_episodes_clicked(self, controls):
+        if not self.currently_playing_episode_data or not hasattr(self, 'series_detail_view'):
+            return       
+        current_season = str(self.currently_playing_episode_data.get('season', '1'))
+        episodes = self.series_detail_view.episodes_data.get(current_season, [])      
+        if not episodes:
+            self.show_toast(_("No other episodes found."))
+            return
+        popover = Gtk.Popover()
+        popover.set_autohide(True)
+        popover.add_css_class("menu")
+        popover.set_parent(controls.buttons["series-episodes"])
+        vbox = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        vbox.set_margin_top(12)
+        vbox.set_margin_bottom(12)
+        vbox.set_size_request(320, -1) 
+        title_label = Gtk.Label(label=_("Episodes"), xalign=0, css_classes=["title-4"])
+        title_label.set_margin_start(12)
+        vbox.append(title_label)
+        season_label = Gtk.Label(label=f"{_('Season')} {current_season}", xalign=0, css_classes=["dim-label", "caption"])
+        season_label.set_margin_start(12)
+        season_label.set_margin_bottom(6)
+        vbox.append(season_label)
+        scroll = Gtk.ScrolledWindow()
+        scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        scroll.set_min_content_height(200)
+        scroll.set_max_content_height(400)
+        scroll.set_propagate_natural_width(False)       
+        listbox = Gtk.ListBox()
+        listbox.set_selection_mode(Gtk.SelectionMode.NONE)
+        listbox.add_css_class("navigation-sidebar")       
+        try:
+            sorted_episodes = sorted(episodes, key=lambda x: int(x.get('episode_num', 0)))
+        except:
+            sorted_episodes = episodes          
+        current_playing_id = str(self.currently_playing_episode_data.get('id'))          
+        for ep in sorted_episodes:
+            ep_num = ep.get('episode_num', '?')
+            raw_title = ep.get('title') or ep.get('name', _('Unknown Episode'))
+            clean_title = raw_title
+            match = re.search(r'(S\d{1,2}E\d{1,3}.*)', raw_title, re.IGNORECASE)
+            if match:
+                clean_title = match.group(1).strip(" -")
+            else:
+                parts = raw_title.split(' - ')
+                if len(parts) >= 3:
+                    clean_title = " - ".join(parts[-2:]).strip()            
+            row = Adw.ActionRow(title=f"{ep_num}. {clean_title}")
+            row.set_activatable(True)
+            row.set_title_lines(1)          
+            is_current = str(ep.get('id')) == current_playing_id          
+            if is_current:
+                row.set_subtitle(_("Now playing"))
+                row.set_subtitle_lines(1)
+                icon = Gtk.Image.new_from_icon_name("media-playback-start-symbolic")
+                icon.add_css_class("accent") 
+                row.add_prefix(icon)
+            else:
+                icon = Gtk.Image.new_from_icon_name("video-x-generic-symbolic")
+                icon.add_css_class("dim-label")
+                row.add_prefix(icon)
+            
+            def on_row_activated(r, bound_ep=ep):
+                popover.popdown()
+                if str(bound_ep.get('id')) != current_playing_id:
+                    self.player.shutdown()
+                    self.play_next_series_episode(bound_ep)                  
+            row.connect("activated", on_row_activated)
+            listbox.append(row)          
+        scroll.set_child(listbox)
+        vbox.append(scroll)
+        popover.set_child(vbox)
+        popover.popup() 
+        
+    def apply_editor_overrides(self):
+        edits = database.get_all_custom_channel_edits()      
+        if hasattr(self, 'bouquets_data') and self.bouquets_data:
+            logging.info(f"Applying custom channel edits...")
+            for bouquet_name, channels in list(self.bouquets_data.items()):
+                for ch in channels:
+                    url = ch.get("url")                  
+                    if url in edits:
+                        custom = edits[url]
+                        if custom.get("name"):
+                            ch["name"] = custom["name"]
+                        if custom.get("logo"):
+                            ch["logo"] = custom["logo"]
+                            ch["tvg-logo"] = custom["logo"]
+                        if custom.get("epg_id"):
+                            ch["tvg-id"] = custom["epg_id"]
+                            ch["stream_id"] = custom["epg_id"]
+                                                                                                                              
 
     def on_show_about_clicked(self, button):
         self.settings_popover.popdown()

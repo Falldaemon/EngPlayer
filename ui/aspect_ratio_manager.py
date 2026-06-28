@@ -14,8 +14,7 @@ class AspectRatioManager:
         self.main_window = main_window
         self.current_mode = "contain"
         variant_type = GLib.VariantType.new("s")
-        initial_state = GLib.Variant("s", "contain")
-        
+        initial_state = GLib.Variant("s", "contain")      
         self.ar_action = Gio.SimpleAction.new_stateful(
             "set_aspect_ratio", 
             variant_type, 

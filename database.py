@@ -34,8 +34,25 @@ def get_profile_db_connection():
         logging.error("CRITICAL ERROR: Profile database path is not set. set_active_profile_db must be called first.")
         raise Exception("Database path not set. Call set_active_profile_db first.")
     conn = sqlite3.connect(CURRENT_PROFILE_DB_FILE, timeout=10)
-    conn.row_factory = sqlite3.Row
-    conn.execute("PRAGMA foreign_keys = ON")
+    conn.row_factory = sqlite3.Row   
+    try:
+        conn.execute("""
+            CREATE TABLE IF NOT EXISTS custom_channel_edits (
+                url TEXT PRIMARY KEY,
+                custom_name TEXT,
+                custom_group TEXT,
+                custom_logo TEXT,
+                custom_epg_id TEXT
+            )
+        """)
+        try:
+            conn.execute("SELECT custom_epg_id FROM custom_channel_edits LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'custom_channel_edits': adding 'custom_epg_id' column.")
+            conn.execute("ALTER TABLE custom_channel_edits ADD COLUMN custom_epg_id TEXT")          
+        conn.commit()
+    except Exception as e:
+        logging.error(f"SQLite Migration Error (custom_channel_edits): {e}")       
     return conn
 
 def _initialize_config_db():
@@ -156,6 +173,16 @@ def _initialize_profile_db():
                 is_locked INTEGER DEFAULT 0
             )
         """)
+        try:
+            cursor.execute("SELECT is_hidden FROM channel_properties LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'channel_properties': adding 'is_hidden' column.")
+            cursor.execute("ALTER TABLE channel_properties ADD COLUMN is_hidden INTEGER DEFAULT 0")
+        try:
+            cursor.execute("SELECT use_external_player FROM channel_properties LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'channel_properties': adding 'use_external_player' column.")
+            cursor.execute("ALTER TABLE channel_properties ADD COLUMN use_external_player INTEGER DEFAULT 0")    
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS favorite_lists (
                 list_id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -168,7 +195,6 @@ def _initialize_profile_db():
         except sqlite3.OperationalError:
             logging.info("Migrating 'favorite_lists' table: adding 'sort_order' column.")
             cursor.execute("ALTER TABLE favorite_lists ADD COLUMN sort_order INTEGER DEFAULT 0")
-
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS favorite_channels (
                 channel_url TEXT NOT NULL,
@@ -236,6 +262,44 @@ def _initialize_profile_db():
                 last_watched INTEGER NOT NULL
             )
         """)
+        
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS cache_recent_media (
+                media_type TEXT,
+                stream_id TEXT,
+                added_ts INTEGER,
+                data_json TEXT,
+                PRIMARY KEY(media_type, stream_id)
+            )
+        """)
+        cursor.execute("CREATE INDEX IF NOT EXISTS idx_cache_recent_time ON cache_recent_media (media_type, added_ts)")       
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vod_favorites (
+                stream_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                poster_path TEXT,
+                added_at INTEGER NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS series_favorites (
+                series_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                poster_path TEXT,
+                added_at INTEGER NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS active_downloads (
+                url TEXT PRIMARY KEY,
+                output_path TEXT NOT NULL
+            )
+        """)
+        try:
+            cursor.execute("SELECT speed_limit FROM active_downloads LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'active_downloads': adding 'speed_limit' column.")
+            cursor.execute("ALTER TABLE active_downloads ADD COLUMN speed_limit INTEGER")
         conn.commit()
         conn.close()
         logging.info(f"Profile database ('{CURRENT_PROFILE_DB_FILE}') initialized successfully.")
@@ -606,6 +670,25 @@ def get_channel_lock_status(channel_url):
     props = conn.cursor().execute("SELECT is_locked FROM channel_properties WHERE channel_url = ?", (channel_url,)).fetchone()
     conn.close()
     return bool(props["is_locked"]) if props else False
+    
+def set_channel_external_player_status(channel_url, use_external):
+    conn = get_profile_db_connection()
+    try:
+        conn.execute("""
+            INSERT INTO channel_properties (channel_url, use_external_player) VALUES (?, ?)
+            ON CONFLICT(channel_url) DO UPDATE SET use_external_player = excluded.use_external_player
+        """, (channel_url, int(use_external)))
+        conn.commit()
+    except sqlite3.Error as e:
+        logging.error(f"Failed to set external player status for channel '{channel_url}': {e}")
+    finally:
+        conn.close()
+
+def get_channel_external_player_status(channel_url):
+    conn = get_profile_db_connection()
+    props = conn.cursor().execute("SELECT use_external_player FROM channel_properties WHERE channel_url = ?", (channel_url,)).fetchone()
+    conn.close()
+    return bool(props["use_external_player"]) if props else False    
 
 def is_channel_in_any_favorite(channel_url):
     conn = get_profile_db_connection()
@@ -1297,10 +1380,8 @@ def get_epg_programs(channel_id, start_ts=None, end_ts=None):
     except sqlite3.OperationalError as e:
         logging.warning(f"EPG table not found or not ready yet. Skipping: {e}")
         conn.close()
-        return []
-        
-    conn.close() 
-     
+        return []       
+    conn.close()     
     programs = []
     for r in rows:
         programs.append({
@@ -1341,4 +1422,294 @@ def save_epg_mapping(raw_key, mapped_key):
             conn.execute("INSERT OR REPLACE INTO epg_key_mappings (raw_key, mapped_key) VALUES (?, ?)", (raw_key, mapped_key))
         conn.close()
     except sqlite3.Error as e:
-        logging.error(f"Error saving EPG mapping: {e}")        
+        logging.error(f"Error saving EPG mapping: {e}")      
+        
+def add_vod_favorite(stream_id, name, poster_path):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO vod_favorites (stream_id, name, poster_path, added_at) VALUES (?, ?, ?, ?)",
+                (str(stream_id), name, poster_path, int(time.time()))
+            )
+        logging.info(f"VOD favorite added: {name}")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to add VOD favorite: {e}")
+        return False
+    finally:
+        conn.close()
+
+def remove_vod_favorite(stream_id):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM vod_favorites WHERE stream_id = ?", (str(stream_id),))
+        logging.info(f"VOD favorite removed: {stream_id}")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to remove VOD favorite: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_all_vod_favorites():
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT stream_id, name, poster_path FROM vod_favorites ORDER BY added_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]
+
+def is_vod_favorite(stream_id):
+    if not stream_id:
+        return False
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT 1 FROM vod_favorites WHERE stream_id = ? LIMIT 1", (str(stream_id),))
+    result = cursor.fetchone()
+    conn.close()
+    return result is not None     
+    
+def add_series_favorite(series_id, name, poster_path):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute(
+                "INSERT OR IGNORE INTO series_favorites (series_id, name, poster_path, added_at) VALUES (?, ?, ?, ?)",
+                (str(series_id), name, poster_path, int(time.time()))
+            )
+        logging.info(f"Series favorite added: {name}")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to add Series favorite: {e}")
+        return False
+    finally:
+        conn.close()
+
+def remove_series_favorite(series_id):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM series_favorites WHERE series_id = ?", (str(series_id),))
+        logging.info(f"Series favorite removed: {series_id}")
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to remove Series favorite: {e}")
+        return False
+    finally:
+        conn.close()
+
+def get_all_series_favorites():
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT series_id, name, poster_path FROM series_favorites ORDER BY added_at DESC")
+    rows = cursor.fetchall()
+    conn.close()
+    return [dict(row) for row in rows]    
+    
+def update_recent_media_cache(media_type, raw_data):
+    if not raw_data: return
+    conn = get_profile_db_connection()
+    try:
+        flat_list = []
+        if isinstance(raw_data, dict):
+            for items in raw_data.values():
+                if isinstance(items, list): flat_list.extend(items)
+        elif isinstance(raw_data, list):
+            flat_list = raw_data
+        with conn:
+            conn.execute("DELETE FROM cache_recent_media WHERE media_type = ?", (media_type,))           
+            data_tuples = []
+            for item in flat_list:
+                ts = 0
+                for key in ("added", "date_added", "last_modified", "updated"):
+                    val = item.get(key)
+                    if val:
+                        try:
+                            ts = int(float(val))
+                            break
+                        except:
+                            if isinstance(val, str):
+                                try:
+                                    ts = int(datetime.fromisoformat(val.replace("Z", "+00:00")).timestamp())
+                                    break
+                                except: pass             
+                if ts > 0:
+                    stream_id = str(item.get('stream_id') or item.get('series_id') or item.get('id') or '')
+                    data_json = json.dumps(item)
+                    data_tuples.append((media_type, stream_id, ts, data_json))
+            conn.executemany("""
+                INSERT INTO cache_recent_media (media_type, stream_id, added_ts, data_json)
+                VALUES (?, ?, ?, ?)
+            """, data_tuples)
+        logging.info(f"SQLite Cache: {len(data_tuples)} {media_type} records saved safely to database.")
+    except Exception as e:
+        logging.error(f"SQLite Cache Error: {e}")
+    finally:
+        conn.close()
+
+def get_recent_media_from_cache(media_type, days):
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    time_limit = int(time.time()) - (days * 86400)   
+    cursor.execute("""
+        SELECT data_json FROM cache_recent_media 
+        WHERE media_type = ? AND added_ts >= ? 
+        ORDER BY added_ts DESC
+    """, (media_type, time_limit))  
+    rows = cursor.fetchall()
+    conn.close()
+    return [json.loads(row['data_json']) for row in rows]
+
+def get_recent_media_count_from_cache(media_type, days):
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    time_limit = int(time.time()) - (days * 86400)  
+    cursor.execute("""
+        SELECT COUNT(*) as cnt FROM cache_recent_media 
+        WHERE media_type = ? AND added_ts >= ?
+    """, (media_type, time_limit))   
+    row = cursor.fetchone()
+    conn.close()
+    return row['cnt'] if row else 0         
+    
+def save_custom_channel_edit(url, custom_name, custom_group, custom_logo, custom_epg_id):
+    conn = get_profile_db_connection()
+    try:
+        conn.execute("""
+            INSERT OR REPLACE INTO custom_channel_edits (url, custom_name, custom_group, custom_logo, custom_epg_id)
+            VALUES (?, ?, ?, ?, ?)
+        """, (url, custom_name, custom_group, custom_logo, custom_epg_id))
+        conn.commit()
+    except Exception as e:
+        logging.error(f"SQLite Error saving channel edit: {e}")
+    finally:
+        conn.close()
+
+def get_all_custom_channel_edits():
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    edits = {}
+    try:
+        cursor.execute("SELECT url, custom_name, custom_group, custom_logo, custom_epg_id FROM custom_channel_edits")
+        rows = cursor.fetchall()
+        for row in rows:
+            edits[row['url']] = {
+                "name": row['custom_name'],
+                "group": row['custom_group'],
+                "logo": row['custom_logo'],
+                "epg_id": row['custom_epg_id']
+            }
+    except Exception as e:
+        logging.error(f"SQLite Error fetching channel edits: {e}")
+    finally:
+        conn.close()
+    return edits   
+    
+def save_editor_favorites_to_db(fav_data):
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT list_id, list_name FROM favorite_lists")
+        existing_lists = {row['list_name']: row['list_id'] for row in cursor.fetchall()}
+        editor_list_names = [name for name in fav_data.keys() if name != "Default"]
+        for list_name, list_id in existing_lists.items():
+            if list_name not in editor_list_names:
+                cursor.execute("DELETE FROM favorite_lists WHERE list_id = ?", (list_id,))
+                cursor.execute("DELETE FROM favorite_channels WHERE list_id = ?", (list_id,))
+        for list_order, bucket_name in enumerate(editor_list_names):
+            channels = fav_data[bucket_name]
+            if bucket_name in existing_lists:
+                list_id = existing_lists[bucket_name]
+                cursor.execute("UPDATE favorite_lists SET sort_order = ? WHERE list_id = ?", (list_order, list_id))
+            else:
+                cursor.execute("INSERT INTO favorite_lists (list_name, sort_order) VALUES (?, ?)", (bucket_name, list_order))
+                list_id = cursor.lastrowid
+                existing_lists[bucket_name] = list_id
+            cursor.execute("DELETE FROM favorite_channels WHERE list_id = ?", (list_id,))
+            for channel_order, ch in enumerate(channels):
+                url = ch.get("url")
+                if url:
+                    cursor.execute(
+                        "INSERT INTO favorite_channels (list_id, channel_url, sort_order) VALUES (?, ?, ?)",
+                        (list_id, url, channel_order) 
+                    )     
+        conn.commit()
+        logging.info("Editor favorites successfully synced to database.")
+    except Exception as e:
+        logging.error(f"SQLite Error saving editor favorites: {e}")
+    finally:
+        conn.close()   
+        
+def set_channel_hidden_status(channel_url, is_hidden):
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT is_locked FROM channel_properties WHERE channel_url = ?", (channel_url,))
+        row = cursor.fetchone()
+        current_lock = row['is_locked'] if row else 0
+        conn.execute("""
+            INSERT INTO channel_properties (channel_url, is_locked, is_hidden)
+            VALUES (?, ?, ?)
+            ON CONFLICT(channel_url) DO UPDATE SET is_hidden = excluded.is_hidden
+        """, (channel_url, current_lock, int(is_hidden)))
+        conn.commit()
+    finally:
+        conn.close()
+
+def get_channel_hidden_status(channel_url):
+    conn = get_profile_db_connection()
+    props = conn.cursor().execute("SELECT is_hidden FROM channel_properties WHERE channel_url = ?", (channel_url,)).fetchone()
+    conn.close()
+    return bool(props["is_hidden"]) if props else False
+
+def get_hidden_channels():
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("SELECT channel_url FROM channel_properties WHERE is_hidden = 1")
+        rows = cursor.fetchall()
+        return {row['channel_url'] for row in rows}
+    except sqlite3.Error:
+        return set()
+    finally:
+        conn.close() 
+        
+def save_active_download(url, output_path, speed_limit=None):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("""
+                INSERT INTO active_downloads (url, output_path, speed_limit)
+                VALUES (?, ?, ?)
+                ON CONFLICT(url) DO UPDATE SET 
+                    output_path=excluded.output_path,
+                    speed_limit=excluded.speed_limit
+            """, (url, output_path, speed_limit))
+    except sqlite3.Error as e:
+        logging.error(f"Failed to save active download: {e}")
+    finally:
+        conn.close()
+
+def remove_active_download(url):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM active_downloads WHERE url = ?", (url,))
+    except sqlite3.Error as e:
+        logging.error(f"Failed to remove active download: {e}")
+    finally:
+        conn.close()
+
+def get_active_downloads():
+    try:
+        conn = get_profile_db_connection()
+        cursor = conn.cursor()
+        cursor.execute("SELECT url, output_path, speed_limit FROM active_downloads")
+        rows = cursor.fetchall()
+        conn.close()
+        return [dict(row) for row in rows]
+    except Exception as e:
+        logging.error(f"Failed to get active downloads: {e}")
+        return []           

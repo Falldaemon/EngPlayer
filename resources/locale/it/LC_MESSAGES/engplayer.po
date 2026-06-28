@@ -1970,6 +1970,436 @@ msgstr "Impossibile scaricare i sottotitoli (errore sconosciuto)."
 msgid "Could not retrieve subtitle content."
 msgstr "Impossibile recuperare il contenuto dei sottotitoli."
 
+msgid "Important Warning: Ban Risk!"
+msgstr "Avviso Importante: Rischio di Ban!"
+
+msgid "Opening Picture-in-Picture (PiP) mode will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
+msgstr "L'apertura della modalità Picture-in-Picture (PiP) invierà una seconda richiesta di streaming simultanea al tuo provider.\n\nSe il tuo abbonamento IPTV consente solo una singola connessione alla volta, questo potrebbe causare il blocco (ban) automatico del tuo account da parte del provider.\n\nAccetti questo rischio e desideri continuare?"
+
+msgid "Do not show this warning again"
+msgstr "Non mostrare più questo avviso"
+
+msgid "Open Anyway"
+msgstr "Apri comunque"
+
+msgid "IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned."
+msgstr "IMPORTANTE: Se una registrazione inizia mentre l'applicazione è aperta e si sta guardando uno streaming, verrà inviata una seconda richiesta di connessione al tuo provider. Se hai un abbonamento per un singolo dispositivo, ciò potrebbe comportare il ban del tuo account."
+
+msgid "I understand the risk of account suspension"
+msgstr "Comprendo il rischio di sospensione dell'account"
+
+msgid "⭐ VOD Favorites"
+msgstr "⭐ Preferiti VOD"
+
+msgid " ⭐ VOD Favorites"
+msgstr " ⭐ Preferiti VOD"
+
+msgid "⭐ Series Favorites"
+msgstr "⭐ Preferiti Serie"
+
+msgid " ⭐ Series Favorites"
+msgstr " ⭐ Preferiti Serie"
+
+msgid "Your favorites list is empty."
+msgstr "La tua lista dei preferiti è vuota."
+
+msgid "{} favorite items listed."
+msgstr "{} elementi preferiti elencati."
+
+msgid "Added to favorites."
+msgstr "Aggiunto ai preferiti."
+
+msgid "Removed from favorites."
+msgstr "Rimosso dai preferiti."
+
+msgid "Remove from Favorites"
+msgstr "Rimuovi dai preferiti"
+
+# --- Profile Loading Progress ---
+msgid "Loading profile '{}'..."
+msgstr "Caricamento profilo '{}'..."
+
+msgid "Fetching live channel categories..."
+msgstr "Recupero categorie canali live..."
+
+msgid "Fetching live streams..."
+msgstr "Recupero canali live..."
+
+msgid "Fetching VOD categories..."
+msgstr "Recupero categorie VOD..."
+
+msgid "Fetching VOD streams..."
+msgstr "Recupero stream VOD..."
+
+msgid "Fetching series and episodes..."
+msgstr "Recupero serie ed episodi..."
+
+msgid "Downloading EPG data... (This might take a while)"
+msgstr "Download dati EPG... (Potrebbe volerci un po')"
+
+msgid "Saving EPG data to cache..."
+msgstr "Salvataggio dati EPG nella cache..."
+
+msgid "Processing EPG database..."
+msgstr "Elaborazione database EPG..."
+
+msgid "Loading complete. Preparing player..."
+msgstr "Caricamento completato. Preparazione del lettore..."
+
+# --- Recently Added (New Features) ---
+msgid "Recently Added"
+msgstr "Aggiunti di recente"
+
+msgid "Recently Added Movies"
+msgstr "Film aggiunti di recente"
+
+msgid "Recently Added Series"
+msgstr "Serie aggiunte di recente"
+
+msgid "Select a time period to view the latest additions."
+msgstr "Seleziona un periodo di tempo per visualizzare gli ultimi arrivi."
+
+msgid "Last 24 Hours"
+msgstr "Ultime 24 ore"
+
+msgid "Last 7 Days"
+msgstr "Ultimi 7 giorni"
+
+msgid "Last 30 Days"
+msgstr "Ultimi 30 giorni"
+
+msgid "Movies"
+msgstr "Film"
+
+msgid "Fetching data from database..."
+msgstr "Recupero dei dati dal database..."
+
+msgid "Updating VOD list... Please wait."
+msgstr "Aggiornamento dell'elenco VOD... Attendere prego."
+
+msgid "Updating Series list... Please wait."
+msgstr "Aggiornamento dell'elenco delle serie... Attendere prego."
+
+msgid "🆕 Recently Added Movies"
+msgstr "🆕 Film aggiunti di recente"
+
+msgid " 🆕 Recently Added Movies"
+msgstr " 🆕 Film aggiunti di recente"
+
+msgid "🆕 Recently Added Series"
+msgstr "🆕 Serie aggiunte di recente"
+
+msgid " 🆕 Recently Added Series"
+msgstr " 🆕 Serie aggiunte di recente"
+
+msgid "No other episodes found."
+msgstr "Nessun altro episodio trovato."
+
+msgid "Now playing"
+msgstr "In riproduzione"
+
+msgid "Profile Management"
+msgstr "Gestione profilo"
+
+msgid "Backup your current profile or restore a previously saved one."
+msgstr "Esegui il backup del profilo corrente o ripristina uno salvato in precedenza."
+
+msgid "Select the format to export your current profile '{}':"
+msgstr "Seleziona il formato per esportare il profilo corrente '{}':"
+
+msgid "M3U Playlist URL (.m3u)"
+msgstr "URL playlist M3U (.m3u)"
+
+msgid "Xtream Codes Details (.txt)"
+msgstr "Dettagli Xtream Codes (.txt)"
+
+msgid "Export to File"
+msgstr "Esporta su file"
+
+msgid "Export Profile"
+msgstr "Esporta profilo"
+
+msgid "Choose a previously exported backup file (.m3u or .txt) to import it as a new profile."
+msgstr "Scegli un file di backup esportato in precedenza (.m3u o .txt) per importarlo come nuovo profilo."
+
+msgid "Import from File"
+msgstr "Importa da file"
+
+msgid "Import Profile"
+msgstr "Importa profilo"
+
+msgid "Playlist & Backup Files (.m3u, .txt)"
+msgstr "File playlist e backup (.m3u, .txt)"
+
+msgid "Profile imported successfully! You can switch to it from the profile menu."
+msgstr "Profilo importato con successo! Puoi passare ad esso dal menu profilo."
+
+msgid "Error: Could not import profile. {}"
+msgstr "Errore: impossibile importare il profilo. {}"
+
+msgid "Import / Export Profile"
+msgstr "Importa / Esporta profilo"
+
+msgid "Backup or restore your profile data"
+msgstr "Esegui il backup o ripristina i dati del profilo"
+
+msgid "M3U Editor"
+msgstr "Editor M3U"
+
+msgid "Edit your channels and playlists"
+msgstr "Modifica i tuoi canali e le tue playlist"
+
+msgid "No channels found to edit!"
+msgstr "Nessun canale trovato da modificare!"
+
+msgid "Error: No active profile found."
+msgstr "Errore: Nessun profilo attivo trovato."
+
+msgid "Catch-up format not supported yet."
+msgstr "Formato Catch-up non ancora supportato."
+
+msgid "Edit Channel"
+msgstr "Modifica canale"
+
+msgid "Logo URL or Local File:"
+msgstr "URL del logo o file locale:"
+
+msgid "Select Image from Device"
+msgstr "Seleziona immagine dal dispositivo"
+
+msgid "Channel Name:"
+msgstr "Nome del canale:"
+
+msgid "Stream URL / ID:"
+msgstr "URL / ID streaming:"
+
+msgid "e.g. 813294 or beIN.Sports.1"
+msgstr "es. 813294 o beIN.Sports.1"
+
+msgid "EPG ID (tvg-id / stream_id):"
+msgstr "ID EPG (tvg-id / stream_id):"
+
+msgid "Saved in Favorites:"
+msgstr "Salvato nei preferiti:"
+
+msgid "Lock Channel:"
+msgstr "Blocca canale:"
+
+msgid "Hide Channel:"
+msgstr "Nascondi canale:"
+
+msgid "Delete Channel"
+msgstr "Elimina canale"
+
+msgid "Save Changes"
+msgstr "Salva le modifiche"
+
+msgid "To lock items, you must first set a master password for the application from the settings menu."
+msgstr "Per bloccare gli elementi, devi prima impostare una password principale per l'applicazione dal menu delle impostazioni."
+
+msgid "This channel is hidden in the main app"
+msgstr "Questo canale è nascosto nell'app principale"
+
+msgid "This channel is locked"
+msgstr "Questo canale è bloccato"
+
+msgid "Save modifications to database"
+msgstr "Salva le modifiche nel database"
+
+msgid "Please import an M3U file to start."
+msgstr "Importa un file M3U per iniziare."
+
+msgid "Search categories..."
+msgstr "Cerca categorie..."
+
+msgid "Sort Categories"
+msgstr "Ordina categorie"
+
+msgid "Sort By:"
+msgstr "Ordina per:"
+
+msgid "Search channels..."
+msgstr "Cerca canali..."
+
+msgid "Loading channels from active profile..."
+msgstr "Caricamento dei canali dal profilo attivo..."
+
+msgid "Export M3U"
+msgstr "Esporta M3U"
+
+msgid "Export Successful"
+msgstr "Esportazione riuscita"
+
+msgid "Your favorites have been successfully exported to the M3U file."
+msgstr "I tuoi preferiti sono stati esportati correttamente nel file M3U."
+
+msgid "Export Error"
+msgstr "Errore di esportazione"
+
+msgid "Your playlist edits and favorites have been successfully saved. The application needs to restart to apply them."
+msgstr "Le modifiche alla playlist e i preferiti sono stati salvati correttamente. L'applicazione deve essere riavviata per applicarle."
+
+msgid "Save Error"
+msgstr "Errore di salvataggio"
+
+msgid "Reading file..."
+msgstr "Lettura file in corso..."
+
+msgid "Parsing channels..."
+msgstr "Analisi canali in corso..."
+
+msgid "Organizing categories..."
+msgstr "Organizzazione categorie in corso..."
+
+msgid "Uncategorized"
+msgstr "Senza categoria"
+
+msgid "Building interface..."
+msgstr "Creazione interfaccia in corso..."
+
+msgid "+ New Favorite Bucket"
+msgstr "+ Nuovo gruppo di preferiti"
+
+msgid "Move Channel Up (Alt+Up)"
+msgstr "Sposta canale su (Alt+Su)"
+
+msgid "Move Channel Down (Alt+Down)"
+msgstr "Sposta canale giù (Alt+Giù)"
+
+msgid "New Favorite Bucket"
+msgstr "Nuovo gruppo di preferiti"
+
+msgid "Enter a name for the new favorite bucket:"
+msgstr "Inserisci un nome per il nuovo gruppo di preferiti:"
+
+msgid "Text Files"
+msgstr "File di testo"
+
+msgid "No URL found."
+msgstr "Nessun URL trovato."
+
+msgid "(Imported)"
+msgstr "(Importato)"
+
+msgid "Imported M3U Profile"
+msgstr "Profilo M3U importato"
+
+msgid "Unrecognized file format. Please select a valid backup file."
+msgstr "Formato di file non riconosciuto. Si prega di selezionare un file di backup valido."
+
+# --- VOD Download Manager ---
+msgid "Resolving download link..."
+msgstr "Risoluzione del link di download..."
+
+msgid "Error: Could not retrieve movie info for download."
+msgstr "Errore: Impossibile recuperare le informazioni del film per il download."
+
+msgid "Error: Invalid download URL."
+msgstr "Errore: URL di download non valido."
+
+msgid "Calculating file size..."
+msgstr "Calcolo delle dimensioni del file..."
+
+msgid "Limiting the download speed prevents network stuttering while watching Live TV or VODs.\n\nFile Size: {size}\n\nPlease select a maximum speed:"
+msgstr "Limitare la velocità di download previene i rallentamenti di rete durante la visione di Live TV o VOD.\n\nDimensioni del file: {size}\n\nSeleziona una velocità massima:"
+
+msgid "Select Download Speed"
+msgstr "Seleziona velocità di download"
+
+msgid "Unlimited 🚀"
+msgstr "Illimitato 🚀"
+
+msgid "Save Video As..."
+msgstr "Salva video con nome..."
+
+msgid "Cancel Download?"
+msgstr "Annullare il download?"
+
+msgid "The download will be stopped and the incomplete file will be permanently deleted from your disk.\n\nAre you sure you want to cancel?"
+msgstr "Il download verrà interrotto e il file incompleto sarà eliminato definitivamente dal disco.\n\nSei sicuro di voler annullare?"
+
+msgid "Resume Download"
+msgstr "Riprendi il download"
+
+msgid "Cancel & Delete"
+msgstr "Annulla ed elimina"
+
+# --- Download vs Playback Warning ---
+msgid "Active Download Detected!"
+msgstr "Download attivo rilevato!"
+
+msgid "Opening a stream while downloading may exceed your allowed connection limits (causing an account ban) and create network lag."
+msgstr "L'apertura di uno streaming durante il download potrebbe superare i limiti di connessione consentiti (causando il blocco dell'account) e creare ritardi di rete."
+
+msgid "Cancel Playback"
+msgstr "Annulla riproduzione"
+
+msgid "Risk it & Play Anyway"
+msgstr "Rischia e riproduci comunque"
+
+msgid "Safe Play (Pause Download)"
+msgstr "Riproduzione sicura (Metti in pausa il download)"
+
+msgid "Download"
+msgstr "Scarica"
+
+msgid "Invalid Xtream VOD information."
+msgstr "Informazioni VOD Xtream non valide."
+
+msgid "Detailed information could not be retrieved."
+msgstr "Impossibile recuperare le informazioni dettagliate."
+
+msgid "Detailed information not found (TMDb search failed)."
+msgstr "Informazioni dettagliate non trovate (ricerca TMDb non riuscita)."
+
+msgid "Director/Creator"
+msgstr "Regista/Creatore"
+
+msgid "Download Episode"
+msgstr "Scarica episodio"
+
+msgid "Cancel Download"
+msgstr "Annulla download"
+
+msgid "Connecting..."
+msgstr "Connessione in corso..."
+
+msgid "Download complete: {}"
+msgstr "Download completato: {}"
+
+msgid "Download failed: {}"
+msgstr "Download non riuscito: {}"
+
+msgid "An episode is already downloading. Please wait."
+msgstr "Un episodio è già in fase di download. Si prega di attendere."
+
+msgid "Open in External Player"
+msgstr "Apri nel lettore esterno"
+
+msgid "External Player"
+msgstr "Lettore esterno"
+
+msgid "How would you like to open this channel in the external player?"
+msgstr "Come desideri aprire questo canale nel lettore esterno?"
+
+msgid "Just Once"
+msgstr "Solo una volta"
+
+msgid "Always Open Externally"
+msgstr "Apri sempre esternamente"
+
+msgid "Reset External Player Default"
+msgstr "Ripristina lettore esterno predefinito"
+
+msgid "External player default cleared."
+msgstr "Lettore esterno predefinito cancellato."
+
+msgid "Could not launch external player"
+msgstr "Impossibile avviare il lettore esterno"
+
+msgid "Change External Player"
+msgstr "Cambia lettore esterno"
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Questo prodotto utilizza l'API TMDb ma non è supportato né certificato da TMDb."
 

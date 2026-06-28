@@ -85,6 +85,21 @@
   </content_rating>
   
   <releases>
+	  <release version="0.1.7" date="2026-06-28">
+      <description>
+        <p>This release brings new content management features, UI enhancements, and under-the-hood Flatpak modernizations, with special thanks to our contributors</p>
+        <ul>
+          <li>New Feature: Added import and export functionality for Xtream Codes and M3U URLs</li>
+          <li>New Feature: Added channel and favorites editor functionality</li>
+          <li>New Feature: Added an option to select an external player directly from the channel list for DVB and Teletext</li>
+          <li>New Feature: Added download functionality for VOD and series content (Thanks to @ycderman)</li>
+          <li>New Feature: Added the ability to add VOD and series to favorites</li>
+          <li>New Feature: Added a "Recently Added" section for VOD and series (Thanks to @Eslamasabry)</li>
+          <li>UI: Various user interface (UI) updates and overall improvements</li>
+          <li>Maintenance: Updated the Flatpak runtime to version 50, migrated configuration to YAML format, and integrated FEDC (Thanks to @yakushabb)</li>
+        </ul>
+      </description>
+    </release>
 	  <release version="0.1.6.1" date="2026-04-06">
       <description>
         <p>This hotfix resolves a critical application crash during channel playback.</p>

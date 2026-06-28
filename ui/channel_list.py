@@ -44,11 +44,14 @@ class ChannelList(Gtk.Box):
         'channel-selected': (GObject.SignalFlags.RUN_FIRST, None, (object,)),
         'back-clicked': (GObject.SignalFlags.RUN_FIRST, None, ()),
         'pip-requested': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        'switcher-changed': (GObject.SignalFlags.RUN_FIRST, None, (str,))
+        'switcher-changed': (GObject.SignalFlags.RUN_FIRST, None, (str,)),
+        'external-play-requested': (GObject.SignalFlags.RUN_FIRST, None, (object,))
     }
 
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, spacing=6, **kwargs)
+        self.set_vexpand(True) 
+        self.set_hexpand(True)  
         self._failed_epg_searches = set()
         self.active_list_id = None
         self.header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
@@ -119,10 +122,11 @@ class ChannelList(Gtk.Box):
         self.channel_listbox.add_controller(key_controller)
         scrolled_window.set_child(self.channel_listbox)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
-        scrolled_window.set_vexpand(True)
+        scrolled_window.set_vexpand(True)      
         scrolled_window.set_size_request(300, -1)
         self.view_stack = Gtk.Stack()
-        self.view_stack.add_named(scrolled_window, "list")
+        self.view_stack.set_vexpand(True)
+        self.view_stack.add_named(scrolled_window, "list")      
         self.view_stack.add_named(self.spinner, "loading")
         self.append(self.view_stack)
         self.active_row = None
@@ -188,10 +192,13 @@ class ChannelList(Gtk.Box):
 
     def _populate_chunk(self, channel_generator, logo_map, favorite_urls, locked_urls, epg_data, epg_clean_map):
         chunk_size = 5
+        hidden_channels = database.get_hidden_channels()
         try:
             for _ in range(chunk_size):
                 channel = next(channel_generator)              
-                is_fav = False
+                if channel.get("url") in hidden_channels:
+                    continue
+                is_fav = False               
                 is_locked = False
                 epg_info = None
                 if 'url' in channel:
@@ -240,6 +247,7 @@ class ChannelList(Gtk.Box):
         label_vbox.set_valign(Gtk.Align.CENTER)
         name_label = Gtk.Label(label=channel["name"], xalign=0)
         name_label.set_ellipsize(Pango.EllipsizeMode.END)
+        name_label.set_tooltip_text(channel["name"])
         label_vbox.append(name_label)
         row.epg_label = None
         row.epg_progress = None
@@ -358,6 +366,22 @@ class ChannelList(Gtk.Box):
             play_pip_action = Gio.SimpleAction.new("play_pip", None)
             play_pip_action.connect("activate", self._on_play_pip_activated)
             action_group.add_action(play_pip_action)
+        main_menu.append_section(None, Gio.Menu())                    
+        is_external_default = database.get_channel_external_player_status(url)              
+        if is_external_default:
+            main_menu.append(_("Reset External Player Default"), "row.reset_external")
+            reset_ext_action = Gio.SimpleAction.new("reset_external", None)
+            reset_ext_action.connect("activate", self._on_reset_external_activated)
+            action_group.add_action(reset_ext_action)
+        else:
+            main_menu.append(_("Open in External Player"), "row.open_external")
+            open_external_action = Gio.SimpleAction.new("open_external", None)
+            open_external_action.connect("activate", self._on_open_external_activated)
+            action_group.add_action(open_external_action)            
+        main_menu.append(_("Change External Player"), "row.change_external")
+        change_ext_action = Gio.SimpleAction.new("change_external", None)
+        change_ext_action.connect("activate", self._on_change_external_activated)
+        action_group.add_action(change_ext_action)                   
         if parent_widget:
              parent_widget.insert_action_group("row", action_group)
         return main_menu
@@ -372,6 +396,56 @@ class ChannelList(Gtk.Box):
             self.emit("pip-requested", channel_url)
         else:
             logging.warning("PiP requested but channel URL is missing.")
+            
+    def _on_open_external_activated(self, action, value):
+        if not self.active_row or not self.active_row.channel_data:
+            return
+        channel_url = self.active_row.channel_data.get("url")
+        if not channel_url:
+            return          
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_ancestor(Gtk.Window),
+            heading=_("External Player"),
+            body=_("How would you like to open this channel in the external player?"),
+            modal=True
+        )
+        dialog.add_css_class("external-player-dialog")      
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("once", _("Just Once"))
+        dialog.add_response("always", _("Always Open Externally"))      
+        dialog.set_response_appearance("always", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("once")
+        dialog.set_close_response("cancel")      
+        dialog.connect("response", self._on_external_player_dialog_response, self.active_row.channel_data)
+        dialog.present()
+        
+    def _on_reset_external_activated(self, action, value):
+        if not self.active_row or not self.active_row.channel_data:
+            return
+        channel_url = self.active_row.channel_data.get("url")
+        if channel_url:
+            database.set_channel_external_player_status(channel_url, False)
+            main_window = self.get_ancestor(Gtk.Window)
+            if hasattr(main_window, 'toast_overlay') and main_window.toast_overlay:
+                main_window.toast_overlay.add_toast(Adw.Toast.new(_("External player default cleared."))) 
+                
+    def _on_change_external_activated(self, action, value):
+        if not self.active_row or not self.active_row.channel_data:
+            return           
+        main_window = self.get_ancestor(Gtk.Window)
+        if main_window and hasattr(main_window, 'on_external_play_requested'):
+            if hasattr(main_window, 'toast_overlay') and main_window.toast_overlay:
+                main_window.toast_overlay.add_toast(Adw.Toast.new(_("Please choose your new default media player.")))
+            main_window.on_external_play_requested(None, self.active_row.channel_data, force_ask=True)                       
+
+    def _on_external_player_dialog_response(self, dialog, response_id, channel_data):
+        if response_id == "cancel":
+            return          
+        if response_id == "always":
+            channel_url = channel_data.get("url")
+            if channel_url:
+                database.set_channel_external_player_status(channel_url, True)               
+        self.emit("external-play-requested", channel_data)            
 
     def _clean_key(self, text):
         if not text:

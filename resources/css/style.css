@@ -169,6 +169,14 @@
 .subtitle-settings-dialog,
 .delete-profile-dialog,
 .sleep-warning-dialog,
+.pip-warning-dialog,
+.profile-manager-dialog,
+.new-bucket-dialog,
+.editor-save-dialog,
+.download-warning-dialog,
+.download-speed-dialog,
+.download-cancel-dialog,
+.external-player-dialog,
 .source-selection-dialog {
     background-color: alpha(@theme_bg_color, 0.90); 
     color: @theme_fg_color;

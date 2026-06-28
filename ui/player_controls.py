@@ -21,7 +21,8 @@ class PlayerControls(Gtk.Box):
         "seek-value-changed": (GObject.SignalFlags.RUN_FIRST, None, (float,)),
         "stop-trailer-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "go-live-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "epg-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "epg-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "series-episodes-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, **kwargs):
@@ -96,6 +97,7 @@ class PlayerControls(Gtk.Box):
         right_box.set_valign(Gtk.Align.CENTER)
         controls_center_box.set_end_widget(right_box)
         right_icons = {
+            "series-episodes": "series.svg",
             "equalizer": "equalizer.svg",
             "audio-track": "language.svg",
             "epg": "epg-list.svg",
@@ -109,6 +111,9 @@ class PlayerControls(Gtk.Box):
             self.buttons[key] = btn
             right_box.append(btn)
         self.buttons["equalizer"].set_tooltip_text(_("Audio Equalizer"))
+        self.buttons["series-episodes"].set_tooltip_text(_("Episodes"))
+        self.buttons["series-episodes"].set_visible(False)
+        self.buttons["series-episodes"].connect("clicked", lambda btn: self.emit("series-episodes-clicked"))
         self.buttons["audio-track"].set_tooltip_text(_("Select Audio Track"))
         self.buttons["epg"].set_tooltip_text(_("Advanced EPG"))
         self.buttons["subtitles"].set_tooltip_text(_("Subtitle Options"))

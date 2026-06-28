@@ -72,7 +72,7 @@ install-manual: all
 	cp -r . $(LOCAL_INSTALL_DIR)/
 	$(PYTHON) -m venv $(LOCAL_INSTALL_DIR)/venv
 	$(LOCAL_INSTALL_DIR)/venv/bin/pip install --upgrade pip wheel
-	$(LOCAL_INSTALL_DIR)/venv/bin/pip install -r requirements.txt || $(LOCAL_INSTALL_DIR)/venv/bin/pip install requests pygobject mutagen yt-dlp fuzzywuzzy python-Levenshtein wheel guessit protobuf deep-translator
+	$(LOCAL_INSTALL_DIR)/venv/bin/pip install -r requirements.txt PyGObject wheel
 	install -m 755 engplayer.sh $(LOCAL_BIN_DIR)/engplayer
 	sed -i "s|/app/share/engplayer|$(LOCAL_INSTALL_DIR)|g" $(LOCAL_BIN_DIR)/engplayer
 	sed -i "s|exec python3|exec $(LOCAL_INSTALL_DIR)/venv/bin/python3|g" $(LOCAL_BIN_DIR)/engplayer

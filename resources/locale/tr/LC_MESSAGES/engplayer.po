@@ -1971,6 +1971,436 @@ msgstr "Altyazı indirilemedi (bilinmeyen hata)."
 msgid "Could not retrieve subtitle content."
 msgstr "Altyazı içeriği alınamadı."
 
+msgid "Important Warning: Ban Risk!"
+msgstr "Önemli Uyarı: Ban Riski!"
+
+msgid "Opening Picture-in-Picture (PiP) mode will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
+msgstr "Picture-in-Picture (PiP) modunu açmak, sağlayıcınıza aynı anda ikinci bir yayın isteği gönderecektir.\n\nEğer IPTV aboneliğiniz aynı anda sadece tek bir bağlantıya izin veriyorsa, bu durum hesabınızın sağlayıcı tarafından otomatik olarak yasaklanmasına (banlanmasına) neden olabilir.\n\nBu riski kabul edip devam etmek istiyor musunuz?"
+
+msgid "Do not show this warning again"
+msgstr "Bu uyarıyı bir daha gösterme"
+
+msgid "Open Anyway"
+msgstr "Yine de Aç"
+
+msgid "IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned."
+msgstr "ÖNEMLİ: Uygulama açıkken ve bir yayın izleniyorken kayıt başlarsa, sağlayıcınıza ikinci bir bağlantı isteği gönderilir. Tek cihaz aboneliğiniz varsa, bu durum hesabınızın engellenmesine neden olabilir."
+
+msgid "I understand the risk of account suspension"
+msgstr "Hesabın askıya alınma riskini anlıyorum ve kabul ediyorum"
+
+msgid "⭐ VOD Favorites"
+msgstr "⭐ Favori Filmler"
+
+msgid " ⭐ VOD Favorites"
+msgstr " ⭐ Favori Filmler"
+
+msgid "⭐ Series Favorites"
+msgstr "⭐ Favori Diziler"
+
+msgid " ⭐ Series Favorites"
+msgstr " ⭐ Favori Diziler"
+
+msgid "Your favorites list is empty."
+msgstr "Favori listeniz boş."
+
+msgid "{} favorite items listed."
+msgstr "{} favori öğe listelendi."
+
+msgid "Added to favorites."
+msgstr "Favorilere eklendi."
+
+msgid "Removed from favorites."
+msgstr "Favorilerden çıkarıldı."
+
+msgid "Remove from Favorites"
+msgstr "Favorilerden Çıkar"
+
+# --- Profile Loading Progress ---
+msgid "Loading profile '{}'..."
+msgstr "Profil yükleniyor: '{}'..."
+
+msgid "Fetching live channel categories..."
+msgstr "Canlı kanal kategorileri alınıyor..."
+
+msgid "Fetching live streams..."
+msgstr "Canlı kanallar alınıyor..."
+
+msgid "Fetching VOD categories..."
+msgstr "VOD kategorileri alınıyor..."
+
+msgid "Fetching VOD streams..."
+msgstr "VOD içerikleri alınıyor..."
+
+msgid "Fetching series and episodes..."
+msgstr "Diziler ve bölümler alınıyor..."
+
+msgid "Downloading EPG data... (This might take a while)"
+msgstr "EPG verileri indiriliyor... (Bu biraz zaman alabilir)"
+
+msgid "Saving EPG data to cache..."
+msgstr "EPG verileri önbelleğe kaydediliyor..."
+
+msgid "Processing EPG database..."
+msgstr "EPG veritabanı işleniyor..."
+
+msgid "Loading complete. Preparing player..."
+msgstr "Yükleme tamamlandı. Oynatıcı hazırlanıyor..."
+
+# --- Recently Added (New Features) ---
+msgid "Recently Added"
+msgstr "Yeni Eklenenler"
+
+msgid "Recently Added Movies"
+msgstr "Yeni Eklenen Filmler"
+
+msgid "Recently Added Series"
+msgstr "Yeni Eklenen Diziler"
+
+msgid "Select a time period to view the latest additions."
+msgstr "Son eklenenleri görmek için bir zaman dilimi seçin."
+
+msgid "Last 24 Hours"
+msgstr "Son 24 Saat"
+
+msgid "Last 7 Days"
+msgstr "Son 7 Gün"
+
+msgid "Last 30 Days"
+msgstr "Son 30 Gün"
+
+msgid "Movies"
+msgstr "Filmler"
+
+msgid "Fetching data from database..."
+msgstr "Veriler veritabanından çekiliyor..."
+
+msgid "Updating VOD list... Please wait."
+msgstr "VOD listesi güncelleniyor... Lütfen bekleyin."
+
+msgid "Updating Series list... Please wait."
+msgstr "Dizi listesi güncelleniyor... Lütfen bekleyin."
+
+msgid "🆕 Recently Added Movies"
+msgstr "🆕 Yeni Eklenen Filmler"
+
+msgid " 🆕 Recently Added Movies"
+msgstr " 🆕 Yeni Eklenen Filmler"
+
+msgid "🆕 Recently Added Series"
+msgstr "🆕 Yeni Eklenen Diziler"
+
+msgid " 🆕 Recently Added Series"
+msgstr " 🆕 Yeni Eklenen Diziler"
+
+msgid "No other episodes found."
+msgstr "Başka bölüm bulunamadı."
+
+msgid "Now playing"
+msgstr "Şu an oynatılıyor"
+
+msgid "Profile Management"
+msgstr "Profil Yönetimi"
+
+msgid "Backup your current profile or restore a previously saved one."
+msgstr "Mevcut profilinizi yedekleyin veya daha önce kaydedilmiş olanı geri yükleyin."
+
+msgid "Select the format to export your current profile '{}':"
+msgstr "Mevcut '{}' profilinizi dışa aktarmak için formatı seçin:"
+
+msgid "M3U Playlist URL (.m3u)"
+msgstr "M3U Oynatma Listesi URL'si (.m3u)"
+
+msgid "Xtream Codes Details (.txt)"
+msgstr "Xtream Codes Detayları (.txt)"
+
+msgid "Export to File"
+msgstr "Dosyaya Aktar"
+
+msgid "Export Profile"
+msgstr "Profili Dışa Aktar"
+
+msgid "Choose a previously exported backup file (.m3u or .txt) to import it as a new profile."
+msgstr "Yeni bir profil olarak içe aktarmak için daha önce dışa aktarılmış bir yedekleme dosyası (.m3u veya .txt) seçin."
+
+msgid "Import from File"
+msgstr "Dosyadan İçe Aktar"
+
+msgid "Import Profile"
+msgstr "Profili İçe Aktar"
+
+msgid "Playlist & Backup Files (.m3u, .txt)"
+msgstr "Oynatma Listesi ve Yedekleme Dosyaları (.m3u, .txt)"
+
+msgid "Profile imported successfully! You can switch to it from the profile menu."
+msgstr "Profil başarıyla içe aktarıldı! Profil menüsünden geçiş yapabilirsiniz."
+
+msgid "Error: Could not import profile. {}"
+msgstr "Hata: Profil içe aktarılamadı. {}"
+
+msgid "Import / Export Profile"
+msgstr "Profili İçe / Dışa Aktar"
+
+msgid "Backup or restore your profile data"
+msgstr "Profil verilerinizi yedekleyin veya geri yükleyin"
+
+msgid "M3U Editor"
+msgstr "M3U Editörü"
+
+msgid "Edit your channels and playlists"
+msgstr "Kanallarınızı ve çalma listelerinizi düzenleyin"
+
+msgid "No channels found to edit!"
+msgstr "Düzenlenecek kanal bulunamadı!"
+
+msgid "Error: No active profile found."
+msgstr "Hata: Aktif profil bulunamadı."
+
+msgid "Catch-up format not supported yet."
+msgstr "Catch-up (Tekrar İzle) formatı henüz desteklenmiyor."
+
+msgid "Edit Channel"
+msgstr "Kanalı Düzenle"
+
+msgid "Logo URL or Local File:"
+msgstr "Logo URL'si veya Yerel Dosya:"
+
+msgid "Select Image from Device"
+msgstr "Cihazdan Resim Seç"
+
+msgid "Channel Name:"
+msgstr "Kanal Adı:"
+
+msgid "Stream URL / ID:"
+msgstr "Yayın URL / ID:"
+
+msgid "e.g. 813294 or beIN.Sports.1"
+msgstr "örn. 813294 veya beIN.Sports.1"
+
+msgid "EPG ID (tvg-id / stream_id):"
+msgstr "EPG ID (tvg-id / stream_id):"
+
+msgid "Saved in Favorites:"
+msgstr "Favorilere Kaydedildi:"
+
+msgid "Lock Channel:"
+msgstr "Kanalı Kilitle:"
+
+msgid "Hide Channel:"
+msgstr "Kanalı Gizle:"
+
+msgid "Delete Channel"
+msgstr "Kanalı Sil"
+
+msgid "Save Changes"
+msgstr "Değişiklikleri Kaydet"
+
+msgid "To lock items, you must first set a master password for the application from the settings menu."
+msgstr "Öğeleri kilitlemek için öncelikle ayarlar menüsünden uygulama için bir ana şifre belirlemelisiniz."
+
+msgid "This channel is hidden in the main app"
+msgstr "Bu kanal ana uygulamada gizlenmiştir"
+
+msgid "This channel is locked"
+msgstr "Bu kanal kilitlidir"
+
+msgid "Save modifications to database"
+msgstr "Değişiklikleri veritabanına kaydet"
+
+msgid "Please import an M3U file to start."
+msgstr "Başlamak için lütfen bir M3U dosyası içe aktarın."
+
+msgid "Search categories..."
+msgstr "Kategorilerde ara..."
+
+msgid "Sort Categories"
+msgstr "Kategorileri Sırala"
+
+msgid "Sort By:"
+msgstr "Sıralama Ölçütü:"
+
+msgid "Search channels..."
+msgstr "Kanallarda ara..."
+
+msgid "Loading channels from active profile..."
+msgstr "Aktif profilden kanallar yükleniyor..."
+
+msgid "Export M3U"
+msgstr "M3U Dışa Aktar"
+
+msgid "Export Successful"
+msgstr "Dışa Aktarma Başarılı"
+
+msgid "Your favorites have been successfully exported to the M3U file."
+msgstr "Favorileriniz M3U dosyasına başarıyla aktarıldı."
+
+msgid "Export Error"
+msgstr "Dışa Aktarma Hatası"
+
+msgid "Your playlist edits and favorites have been successfully saved. The application needs to restart to apply them."
+msgstr "Çalma listesi düzenlemeleriniz ve favorileriniz başarıyla kaydedildi. Uygulamak için uygulamanın yeniden başlatılması gerekiyor."
+
+msgid "Save Error"
+msgstr "Kaydetme Hatası"
+
+msgid "Reading file..."
+msgstr "Dosya okunuyor..."
+
+msgid "Parsing channels..."
+msgstr "Kanallar ayrıştırılıyor..."
+
+msgid "Organizing categories..."
+msgstr "Kategoriler düzenleniyor..."
+
+msgid "Uncategorized"
+msgstr "Kategorisiz"
+
+msgid "Building interface..."
+msgstr "Arayüz oluşturuluyor..."
+
+msgid "+ New Favorite Bucket"
+msgstr "+ Yeni Favori Grubu"
+
+msgid "Move Channel Up (Alt+Up)"
+msgstr "Kanalı Yukarı Taşı (Alt+Yukarı)"
+
+msgid "Move Channel Down (Alt+Down)"
+msgstr "Kanalı Aşağı Taşı (Alt+Aşağı)"
+
+msgid "New Favorite Bucket"
+msgstr "Yeni Favori Grubu"
+
+msgid "Enter a name for the new favorite bucket:"
+msgstr "Yeni favori grubu için bir ad girin:"
+
+msgid "Text Files"
+msgstr "Metin Dosyaları"
+
+msgid "No URL found."
+msgstr "URL bulunamadı."
+
+msgid "(Imported)"
+msgstr "(İçe Aktarıldı)"
+
+msgid "Imported M3U Profile"
+msgstr "İçe Aktarılan M3U Profili"
+
+msgid "Unrecognized file format. Please select a valid backup file."
+msgstr "Bilinmeyen dosya biçimi. Lütfen geçerli bir yedekleme dosyası seçin."
+
+# --- VOD Download Manager ---
+msgid "Resolving download link..."
+msgstr "İndirme bağlantısı çözümleniyor..."
+
+msgid "Error: Could not retrieve movie info for download."
+msgstr "Hata: İndirme için film bilgisi alınamadı."
+
+msgid "Error: Invalid download URL."
+msgstr "Hata: Geçersiz indirme bağlantısı."
+
+msgid "Calculating file size..."
+msgstr "Dosya boyutu hesaplanıyor..."
+
+msgid "Limiting the download speed prevents network stuttering while watching Live TV or VODs.\n\nFile Size: {size}\n\nPlease select a maximum speed:"
+msgstr "İndirme hızını sınırlamak, Canlı TV veya VOD izlerken ağ takılmalarını önler.\n\nDosya Boyutu: {size}\n\nLütfen maksimum bir hız seçin:"
+
+msgid "Select Download Speed"
+msgstr "İndirme Hızını Seç"
+
+msgid "Unlimited 🚀"
+msgstr "Sınırsız 🚀"
+
+msgid "Save Video As..."
+msgstr "Videoyu Farklı Kaydet..."
+
+msgid "Cancel Download?"
+msgstr "İndirme İptal Edilsin mi?"
+
+msgid "The download will be stopped and the incomplete file will be permanently deleted from your disk.\n\nAre you sure you want to cancel?"
+msgstr "İndirme işlemi durdurulacak ve tamamlanmamış dosya diskinizden kalıcı olarak silinecektir.\n\nİptal etmek istediğinize emin misiniz?"
+
+msgid "Resume Download"
+msgstr "İndirmeye Devam Et"
+
+msgid "Cancel & Delete"
+msgstr "İptal Et ve Sil"
+
+# --- Download vs Playback Warning ---
+msgid "Active Download Detected!"
+msgstr "Aktif İndirme Tespit Edildi!"
+
+msgid "Opening a stream while downloading may exceed your allowed connection limits (causing an account ban) and create network lag."
+msgstr "Bir indirme işlemi devam ederken yayın açmak, izin verilen bağlantı sınırlarınızı aşabilir (hesabınızın yasaklanmasına neden olabilir) ve ağda gecikmelere yol açabilir."
+
+msgid "Cancel Playback"
+msgstr "Oynatmayı İptal Et"
+
+msgid "Risk it & Play Anyway"
+msgstr "Riski Kabul Et ve Oynat"
+
+msgid "Safe Play (Pause Download)"
+msgstr "Güvenli Oynat (İndirmeyi Duraklat)"
+
+msgid "Download"
+msgstr "İndir"
+
+msgid "Invalid Xtream VOD information."
+msgstr "Geçersiz Xtream VOD bilgisi."
+
+msgid "Detailed information could not be retrieved."
+msgstr "Detaylı bilgi alınamadı."
+
+msgid "Detailed information not found (TMDb search failed)."
+msgstr "Detaylı bilgi bulunamadı (TMDb araması başarısız)."
+
+msgid "Director/Creator"
+msgstr "Yönetmen/Yaratıcı"
+
+msgid "Download Episode"
+msgstr "Bölümü İndir"
+
+msgid "Cancel Download"
+msgstr "İndirmeyi İptal Et"
+
+msgid "Connecting..."
+msgstr "Bağlanıyor..."
+
+msgid "Download complete: {}"
+msgstr "İndirme tamamlandı: {}"
+
+msgid "Download failed: {}"
+msgstr "İndirme başarısız oldu: {}"
+
+msgid "An episode is already downloading. Please wait."
+msgstr "Bir bölüm zaten indiriliyor. Lütfen bekleyin."
+
+msgid "Open in External Player"
+msgstr "Harici Oynatıcıda Aç"
+
+msgid "External Player"
+msgstr "Harici Oynatıcı"
+
+msgid "How would you like to open this channel in the external player?"
+msgstr "Bu kanalı harici oynatıcıda nasıl açmak istersiniz?"
+
+msgid "Just Once"
+msgstr "Sadece Bir Kez"
+
+msgid "Always Open Externally"
+msgstr "Her Zaman Harici Aç"
+
+msgid "Reset External Player Default"
+msgstr "Harici Oynatıcı Varsayılanını Sıfırla"
+
+msgid "External player default cleared."
+msgstr "Harici oynatıcı varsayılanı temizlendi."
+
+msgid "Could not launch external player"
+msgstr "Harici oynatıcı başlatılamadı"
+
+msgid "Change External Player"
+msgstr "Harici Oynatıcıyı Değiştir"
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Bu ürün TMDb API'sini kullanır ancak TMDb tarafından onaylanmamış veya sertifikalandırılmamıştır."
 

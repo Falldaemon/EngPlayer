@@ -1,11 +1,10 @@
-PyGObject
 requests
 yt-dlp
 mutagen
 guessit
+protobuf
+rapidfuzz
+Levenshtein
 thefuzz
-fuzzywuzzy
-python-Levenshtein
-wheel
 deep-translator
 

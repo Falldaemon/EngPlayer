@@ -1,20 +1,25 @@
-# data_providers/m3u_provider.py
-
 import re
 from collections import defaultdict
 import logging
-
 import gettext
+
 _ = gettext.gettext
 
 def parse_m3u_content(lines):
     bouquets = defaultdict(list)
     vods = defaultdict(list)
     VOD_EXTENSIONS = {'.mkv', '.mp4', '.avi', '.mov'}
+    extracted_epg_url = None
     try:
         line_num = 0
         while line_num < len(lines):
             line = lines[line_num].strip()
+            if line.startswith("#EXTM3U"):
+                epg_match = re.search(r'(?:url-tvg|x-tvg-url)="([^"]+)"', line, re.IGNORECASE)
+                if epg_match:
+                    extracted_epg_url = epg_match.group(1)
+                line_num += 1
+                continue
             if line.startswith("#EXTINF:"):
                 channel_info = line
                 next_line_num = line_num + 1
@@ -34,8 +39,8 @@ def parse_m3u_content(lines):
                     tvg_id_match = re.search(r'tvg-id="([^"]+)"', channel_info, re.IGNORECASE)
                     tvg_id = tvg_id_match.group(1) if tvg_id_match else None
                     is_vod = any(url_line.lower().endswith(ext) for ext in VOD_EXTENSIONS)
-                    archive_match = re.search(r'tv_archive="([^"]+)"', channel_info, re.IGNORECASE)
-                    duration_match = re.search(r'tv_archive_duration="([^"]+)"', channel_info, re.IGNORECASE)
+                    archive_match = re.search(r'(?:catchup-type|catchup|tv_archive)="([^"]+)"', channel_info, re.IGNORECASE)
+                    duration_match = re.search(r'(?:catchup-days|tv_archive_duration)="([^"]+)"', channel_info, re.IGNORECASE)
                     item_data = {
                         "name": channel_name,
                         "url": url_line,
@@ -56,10 +61,10 @@ def parse_m3u_content(lines):
             else:
                 line_num += 1
         logging.info(f"Successfully parsed {len(bouquets)} bouquets and {len(vods)} VOD categories.")
-        return dict(bouquets), dict(vods)
+        return dict(bouquets), dict(vods), extracted_epg_url
     except Exception as e:
         logging.error(f"An error occurred while parsing M3U content: {e}")
-        return {}, {}
+        return {}, {}, None
 
 def load_from_file(filepath):
     try:
@@ -68,5 +73,4 @@ def load_from_file(filepath):
         return parse_m3u_content(lines)
     except Exception as e:
         logging.error(f"Error loading M3U from file '{filepath}': {e}")
-        return {}, {}
-
+        return {}, {}, None

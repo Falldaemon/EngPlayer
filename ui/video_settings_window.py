@@ -39,18 +39,15 @@ class VideoSettingsWindow(Gtk.Window):
         box_contrast, self.scale_contrast = create_slider_row(
             _("Contrast"), 0.0, 2.0, 1.0, "video_contrast", "contrast"
         )
-        main_box.append(box_contrast)
-        
+        main_box.append(box_contrast)      
         box_brightness, self.scale_brightness = create_slider_row(
             _("Brightness"), -1.0, 1.0, 0.0, "video_brightness", "brightness"
         )
-        main_box.append(box_brightness)
-        
+        main_box.append(box_brightness)      
         box_saturation, self.scale_saturation = create_slider_row(
             _("Saturation"), 0.0, 2.0, 1.0, "video_saturation", "saturation"
         )
-        main_box.append(box_saturation)
-        
+        main_box.append(box_saturation)      
         box_hue, self.scale_hue = create_slider_row(
             _("Hue"), -1.0, 1.0, 0.0, "video_hue", "hue"
         )

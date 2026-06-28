@@ -1,0 +1,237 @@
+# Generated with flatpak-pip-generator --runtime=org.gnome.Sdk//50 --yaml --checker-data --requirements-file=requirements.txt --prefer-wheels=rapidfuzz,Levenshtein
+name: python3-requirements
+buildsystem: simple
+build-commands: []
+modules:
+  - name: python3-requests
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "requests" --no-build-isolation
+    sources:
+      - &id003
+        type: file
+        url: https://files.pythonhosted.org/packages/59/8c/57e832b7af6d7c5abe66eb3fbe3a3a32f4d11ea23a1aa7131371035be991/certifi-2026.5.20-py3-none-any.whl
+        sha256: 3c52e209ba0a4ad7aebe60436a4ab349c39e1e602e8c134221e546902ad25897
+        x-checker-data:
+          type: pypi
+          name: certifi
+          packagetype: bdist_wheel
+      - &id004
+        type: file
+        url: https://files.pythonhosted.org/packages/db/8f/61959034484a4a7c527811f4721e75d02d653a35afb0b6054474d8185d4c/charset_normalizer-3.4.7-py3-none-any.whl
+        sha256: 3dce51d0f5e7951f8bb4900c257dad282f49190fdbebecd4ba99bcc41fef404d
+        x-checker-data:
+          type: pypi
+          name: charset-normalizer
+          packagetype: bdist_wheel
+      - &id005
+        type: file
+        url: https://files.pythonhosted.org/packages/1e/5e/d4e9f1a599fb8e573b7b87160658329fbf28d19eac2718f51fc3def3aa5a/idna-3.18-py3-none-any.whl
+        sha256: 7f952cbe720b688055e3f87de14f5c3e5fdaa8bc3928985c4077ca689de849a2
+        x-checker-data:
+          type: pypi
+          name: idna
+          packagetype: bdist_wheel
+      - &id006
+        type: file
+        url: https://files.pythonhosted.org/packages/a0/f4/c67b0b3f1b9245e8d266f0f112c500d50e5b4e83cb6f3b71b6528104182a/requests-2.34.2-py3-none-any.whl
+        sha256: 2a0d60c172f83ac6ab31e4554906c0f3b3588d37b5cb939b1c061f4907e278e0
+        x-checker-data:
+          type: pypi
+          name: requests
+          packagetype: bdist_wheel
+      - &id007
+        type: file
+        url: https://files.pythonhosted.org/packages/7f/3e/5db95bcf282c52709639744ca2a8b149baccf648e39c8cc87553df9eae0c/urllib3-2.7.0-py3-none-any.whl
+        sha256: 9fb4c81ebbb1ce9531cce37674bbc6f1360472bc18ca9a553ede278ef7276897
+        x-checker-data:
+          type: pypi
+          name: urllib3
+          packagetype: bdist_wheel
+  - name: python3-yt-dlp
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "yt-dlp" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/f3/ee/188a3dadf9dfdac713243521f919feca1cd091d4358c9ea7e8ebb710a7cc/yt_dlp-2026.6.9-py3-none-any.whl
+        sha256: 442ba4c75724b9496144c8434b617962ee08d0ee7c26ec663848fe9b78d5a3e4
+        x-checker-data:
+          type: pypi
+          name: yt-dlp
+          packagetype: bdist_wheel
+  - name: python3-mutagen
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "mutagen" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/b0/7a/620f945b96be1f6ee357d211d5bf74ab1b7fe72a9f1525aafbfe3aee6875/mutagen-1.47.0-py3-none-any.whl
+        sha256: edd96f50c5907a9539d8e5bba7245f62c9f520aef333d13392a79a4f70aca719
+        x-checker-data:
+          type: pypi
+          name: mutagen
+          packagetype: bdist_wheel
+  - name: python3-guessit
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "guessit" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/95/a1/bd4f759db13cd8beb9c9f68682aced5d966781b9d7380cf514a306f56762/babelfish-0.6.1-py3-none-any.whl
+        sha256: 512f1501d4c8f7d38f0921f48660be7542de1a7b24abb6a6a65324a670150293
+        x-checker-data:
+          type: pypi
+          name: babelfish
+          packagetype: bdist_wheel
+      - type: file
+        url: https://files.pythonhosted.org/packages/b8/9b/924a8f9709c3143d4c9a301a88042cbce37e09789378217284b19d4f8132/guessit-3.8.0-py3-none-any.whl
+        sha256: eb5747b1d0fbca926562c1e5894dbc3f6507c35e8c0bd9e38148401cd9579d83
+        x-checker-data:
+          type: pypi
+          name: guessit
+          packagetype: bdist_wheel
+      - type: file
+        url: https://files.pythonhosted.org/packages/ec/57/56b9bcc3c9c6a792fcbaf139543cee77261f3651ca9da0c93f5c1221264b/python_dateutil-2.9.0.post0-py2.py3-none-any.whl
+        sha256: a8b2bc7bffae282281c8140a97d3aa9c14da0b136dfe83f850eea9a5f7470427
+        x-checker-data:
+          type: pypi
+          name: python-dateutil
+          packagetype: bdist_wheel
+      - type: file
+        url: https://files.pythonhosted.org/packages/84/4d/df073d593f7e7e4a5a7e19148b2e9b4ae63b4ddcbb863f1e7bb2b6f19c62/rebulk-3.2.0-py3-none-any.whl
+        sha256: 6bc31ae4b37200623c5827d2f539f9ec3e52b50431322dad8154642a39b0a53e
+        x-checker-data:
+          type: pypi
+          name: rebulk
+          packagetype: bdist_wheel
+      - type: file
+        url: https://files.pythonhosted.org/packages/b7/ce/149a00dd41f10bc29e5921b496af8b574d8413afcd5e30dfa0ed46c2cc5e/six-1.17.0-py2.py3-none-any.whl
+        sha256: 4721f391ed90541fddacab5acf947aa0d3dc7d27b2e1e8eda2be8970586c3274
+        x-checker-data:
+          type: pypi
+          name: six
+          packagetype: bdist_wheel
+  - name: python3-protobuf
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "protobuf" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/19/c7/5f7c636ec43e0c545e28d1f1db71990108306f7bdcb89f069ba97e428e7f/protobuf-7.35.1-py3-none-any.whl
+        sha256: 4bc97768d8fe4ad6743c8a19403e314511ed9f6d13205b687e52421c023ac1b9
+        x-checker-data:
+          type: pypi
+          name: protobuf
+          packagetype: bdist_wheel
+  - name: python3-rapidfuzz
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "rapidfuzz" --no-build-isolation
+    sources:
+      - &id001
+        type: file
+        url: https://files.pythonhosted.org/packages/90/79/2fc252a63bc91d3c3b234d0a3a6ad4ebc460037a23cdcdaf9285f986e6c9/rapidfuzz-3.14.5-cp313-cp313-manylinux_2_27_x86_64.manylinux_2_28_x86_64.whl
+        sha256: 17a34330cd2a538c1ce5d400b61ba358c5b72c654b928ff87b362e88f8b864c7
+        only-arches:
+          - x86_64
+        x-checker-data:
+          type: pypi
+          name: rapidfuzz
+          packagetype: bdist_wheel
+      - &id002
+        type: file
+        url: https://files.pythonhosted.org/packages/a3/31/7aa7e62c4c516a7af322ed0c4f0774208b72d457d0cfec808bad0df12f4a/rapidfuzz-3.14.5-cp313-cp313-manylinux_2_26_aarch64.manylinux_2_28_aarch64.whl
+        sha256: b002c7994cc9f2bc9d9856f0fbaee6e8072c983873846c92f25cefba5b2a925f
+        only-arches:
+          - aarch64
+        x-checker-data:
+          type: pypi
+          name: rapidfuzz
+          packagetype: bdist_wheel
+  - name: python3-Levenshtein
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "Levenshtein" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/73/60/7138e98884ca105c76ef192f5b43165d6eac6f32b432853ebe9f09ee50c9/levenshtein-0.27.3-cp313-cp313-manylinux_2_24_x86_64.manylinux_2_28_x86_64.whl
+        sha256: ffdca6989368cc64f347f0423c528520f12775b812e170a0eb0c10e4c9b0f3ff
+        only-arches:
+          - x86_64
+        x-checker-data:
+          type: pypi
+          name: levenshtein
+          packagetype: bdist_wheel
+      - type: file
+        url: https://files.pythonhosted.org/packages/5e/87/85433cb1e51c45016f061d96fea3106b6969f700e2cbb56c15de82d0deeb/levenshtein-0.27.3-cp313-cp313-manylinux_2_24_aarch64.manylinux_2_28_aarch64.whl
+        sha256: d18659832567ee387b266be390da0de356a3aa6cf0e8bc009b6042d8188e131f
+        only-arches:
+          - aarch64
+        x-checker-data:
+          type: pypi
+          name: levenshtein
+          packagetype: bdist_wheel
+      - *id001
+      - *id002
+  - name: python3-thefuzz
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "thefuzz" --no-build-isolation
+    sources:
+      - *id001
+      - *id002
+      - type: file
+        url: https://files.pythonhosted.org/packages/82/4f/1695e70ceb3604f19eda9908e289c687ea81c4fecef4d90a9d1d0f2f7ae9/thefuzz-0.22.1-py3-none-any.whl
+        sha256: 59729b33556850b90e1093c4cf9e618af6f2e4c985df193fdf3c5b5cf02ca481
+        x-checker-data:
+          type: pypi
+          name: thefuzz
+          packagetype: bdist_wheel
+  - name: python3-deep-translator
+    buildsystem: simple
+    build-commands:
+      - pip3 install --verbose --exists-action=i --no-index --find-links="file://${PWD}"
+        --prefix=${FLATPAK_DEST} "deep-translator" --no-build-isolation
+    sources:
+      - type: file
+        url: https://files.pythonhosted.org/packages/88/c6/92fcd42f1ba33e1184263f25bfabf3d27c383410470f169e4b8163bf9c17/beautifulsoup4-4.15.0-py3-none-any.whl
+        sha256: d6f88de62e1d4e38ecb1077eb9724cd0eff29d2a08ca16a401e9b9e93f117cf9
+        x-checker-data:
+          type: pypi
+          name: beautifulsoup4
+          packagetype: bdist_wheel
+      - *id003
+      - *id004
+      - type: file
+        url: https://files.pythonhosted.org/packages/38/3f/61a8ef73236dbea83a1a063a8af2f8e1e41a0df64f122233938391d0f175/deep_translator-1.11.4-py3-none-any.whl
+        sha256: d635df037e23fa35d12fd42dab72a0b55c9dd19e6292009ee7207e3f30b9e60a
+        x-checker-data:
+          type: pypi
+          name: deep-translator
+          packagetype: bdist_wheel
+      - *id005
+      - *id006
+      - type: file
+        url: https://files.pythonhosted.org/packages/5e/f5/0c41cb68dcae6b7de4fac4188a3a9589e21fb31df21ea3a2e888db95e6c9/soupsieve-2.8.4-py3-none-any.whl
+        sha256: e7e6b0769c8f51ed59acab6e994b00621096cfb1c640a7509295987388fbaf65
+        x-checker-data:
+          type: pypi
+          name: soupsieve
+          packagetype: bdist_wheel
+      - type: file
+        url: https://files.pythonhosted.org/packages/18/67/36e9267722cc04a6b9f15c7f3441c2363321a3ea07da7ae0c0707beb2a9c/typing_extensions-4.15.0-py3-none-any.whl
+        sha256: f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548
+        x-checker-data:
+          type: pypi
+          name: typing-extensions
+          packagetype: bdist_wheel
+      - *id007
