@@ -68,7 +68,7 @@ class SubtitleSettingsDialog(Adw.PreferencesWindow):
         self.bg_color.alpha = self.bg_opacity
 
     def _on_font_change_clicked(self, button):
-        font_dialog = Gtk.FontChooserDialog(title=_("Select Font"), transient_for=self)
+        font_dialog = Gtk.FontChooserDialog(title=_("Select Font"), transient_for=self, modal=True)
         font_dialog.set_font(self.font_setting_str)
         font_dialog.connect("response", self._on_font_dialog_response)
         font_dialog.present()

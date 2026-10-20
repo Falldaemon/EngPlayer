@@ -8,19 +8,26 @@ from .placeholder_icon import PlaceholderIcon
 from .password_prompt_dialog import PasswordPromptDialog
 from .password_dialog import PasswordDialog
 from .move_channel_dialog import MoveChannelDialog
+from .backup_link_dialog import BackupLinkDialog
 import gettext
 import re
 import unicodedata
 import threading
 import urllib.request
+import urllib.error
 import logging
 import os
 import database
+from core.config import APP_USER_AGENT
 from datetime import datetime, timezone
 from utils.theme_utils import get_icon_theme_folder
 from background import image_download_pool
 from urllib.parse import urlparse 
 _failed_logo_hosts = set()
+_failed_logo_urls = set()
+_logo_host_errors = {}
+_logo_fail_lock = threading.Lock()
+_LOGO_HOST_MAX_ERRORS = 3
 try:
     from thefuzz import fuzz, process
     logging.info("Loaded 'thefuzz' library for smart searching.")
@@ -37,6 +44,7 @@ except ImportError:
         fuzz = None
         process = None
         FUZZ_AVAILABLE = False
+        
 _ = gettext.gettext
 
 class ChannelList(Gtk.Box):
@@ -77,11 +85,16 @@ class ChannelList(Gtk.Box):
         self.btn_bouquets = Gtk.ToggleButton(label=_("Bouquets"))
         self.btn_favorites = Gtk.ToggleButton(label=_("Favorites"))
         self.btn_history = Gtk.ToggleButton(label=_("History"))
+        self.btn_catchup = Gtk.ToggleButton(label=_("Catch-up"))
+        self.btn_catchup.set_visible(False)
         self.btn_favorites.set_group(self.btn_bouquets)
         self.btn_history.set_group(self.btn_bouquets)
+        self.btn_catchup.set_group(self.btn_bouquets)
         self.switcher_box.append(self.btn_bouquets)
         self.switcher_box.append(self.btn_favorites)
         self.switcher_box.append(self.btn_history)
+        self.switcher_box.append(self.btn_catchup)
+        self.btn_catchup.connect("toggled", self._on_switcher_toggled, "catchup")
         self.btn_bouquets.connect("toggled", self._on_switcher_toggled, "bouquets")
         self.btn_favorites.connect("toggled", self._on_switcher_toggled, "favorites")
         self.btn_history.connect("toggled", self._on_switcher_toggled, "history")
@@ -113,9 +126,15 @@ class ChannelList(Gtk.Box):
             act.connect("activate", self._on_sort_mode_changed, mode)
             sort_action_group.add_action(act)
         self.insert_action_group("sort", sort_action_group)
-        self.spinner = Gtk.Spinner(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, vexpand=True)
-        self.spinner.set_size_request(48, 48)
+        if hasattr(Adw, "Spinner"):
+            self.spinner = Adw.Spinner(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, vexpand=True,
+                                       width_request=48, height_request=48)
+            self.spinner.start = self.spinner.stop = lambda: None
+        else:
+            self.spinner = Gtk.Spinner(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, vexpand=True)
+            self.spinner.set_size_request(48, 48)
         self.channel_listbox = Gtk.ListBox()
+        self.channel_listbox.add_css_class("sidebar-scroll-list")
         scrolled_window = Gtk.ScrolledWindow()
         key_controller = Gtk.EventControllerKey()
         key_controller.connect("key-released", self._on_list_key_released)
@@ -133,6 +152,9 @@ class ChannelList(Gtk.Box):
         self.current_sort_mode = "default"
         self.channel_listbox.set_sort_func(self._sort_list_items)
         
+    def is_loading(self):
+        return self.view_stack.get_visible_child_name() == "loading"
+
     def enable_fullscreen_mode(self):
         self.is_fullscreen_mode = True
         self.title_label.set_visible(False)
@@ -148,7 +170,12 @@ class ChannelList(Gtk.Box):
         elif mode == "favorites":
             self.btn_favorites.set_active(True)
         elif mode == "history":
-            self.btn_history.set_active(True)        
+            self.btn_history.set_active(True)
+        elif mode == "catchup" and self.btn_catchup.get_visible():
+            self.btn_catchup.set_active(True)
+
+    def set_catchup_available(self, available):
+        self.btn_catchup.set_visible(bool(available))        
         
     def populate_channels_async(self, channels, icon_path=""):
         self._failed_epg_searches.clear()
@@ -175,6 +202,7 @@ class ChannelList(Gtk.Box):
                 epg_clean_map = main_window.epg_clean_map
         self._epg_available = bool(epg_data)
         channel_generator = (channel for channel in channels)
+        
         def _delayed_start():
             GLib.idle_add(
                 self._populate_chunk,
@@ -356,13 +384,26 @@ class ChannelList(Gtk.Box):
             move_action = Gio.SimpleAction.new("move_interactive", None)
             move_action.connect("activate", self._on_move_interactive_activated)
             action_group.add_action(move_action)
+        main_menu.append_section(None, Gio.Menu())
+        has_backup_link = bool(database.get_channel_backup_url(url))
+        if has_backup_link:
+            main_menu.append(_("Change Backup Link"), "row.add_backup_link")
+            main_menu.append(_("Remove Backup Link"), "row.remove_backup_link")
+            remove_backup_action = Gio.SimpleAction.new("remove_backup_link", None)
+            remove_backup_action.connect("activate", lambda a, p, ch=channel_data: self._on_remove_backup_link_activated(ch))
+            action_group.add_action(remove_backup_action)
+        else:
+            main_menu.append(_("Add Backup Link"), "row.add_backup_link")
+        add_backup_action = Gio.SimpleAction.new("add_backup_link", None)
+        add_backup_action.connect("activate", lambda a, p, ch=channel_data: self._on_add_backup_link_activated(ch))
+        action_group.add_action(add_backup_action)
         main_window = self.get_ancestor(Gtk.Window)
         is_video_active = False
         if main_window and getattr(main_window, 'current_media_type', None) is not None:
             is_video_active = True
         if is_video_active:
             main_menu.append_section(None, Gio.Menu())
-            main_menu.append(_("Play as Picture-in-Picture"), "row.play_pip")
+            main_menu.append(_("Watch in Multiview"), "row.play_pip")
             play_pip_action = Gio.SimpleAction.new("play_pip", None)
             play_pip_action.connect("activate", self._on_play_pip_activated)
             action_group.add_action(play_pip_action)
@@ -385,6 +426,24 @@ class ChannelList(Gtk.Box):
         if parent_widget:
              parent_widget.insert_action_group("row", action_group)
         return main_menu
+
+    def _on_add_backup_link_activated(self, channel_data):
+        main_window = self.get_ancestor(Gtk.Window)
+        if not main_window:
+            return
+        dialog = BackupLinkDialog(main_window, channel_data)
+        dialog.present()
+
+    def _on_remove_backup_link_activated(self, channel_data):
+        url = channel_data.get("url")
+        if not url:
+            return
+        database.remove_channel_backup_url(url)
+        main_window = self.get_ancestor(Gtk.Window)
+        if main_window:
+            main_window.show_toast(_("Backup link removed."))
+            if hasattr(main_window, "_update_backup_link_button_visibility"):
+                main_window._update_backup_link_button_visibility()
 
     def _on_play_pip_activated(self, action, value):
         if not self.active_row or not self.active_row.channel_data:
@@ -652,44 +711,50 @@ class ChannelList(Gtk.Box):
     def _load_logo_and_replace(self, url, placeholder_widget):
         try:
             host = urlparse(url).netloc
-            if host in _failed_logo_hosts:
-                return
-        except:
-            pass
+        except ValueError:
+            host = ""
+        if host in _failed_logo_hosts or url in _failed_logo_urls:
+            return
         if not placeholder_widget or not placeholder_widget.get_ancestor(Gtk.ListBoxRow):
-             return
+            return
         def thread_func():
-            try:
-                host = urlparse(url).netloc
-                if host in _failed_logo_hosts:
-                    return
-            except:
-                pass
+            if host in _failed_logo_hosts or url in _failed_logo_urls:
+                return
             pixbuf = None
             try:
                 if url.lower().startswith("http"):
-                    headers = {"User-Agent": "Mozilla/5.0"}
+                    headers = {"User-Agent": APP_USER_AGENT}
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req, timeout=3) as resp:
                         data = resp.read()
                 else:
                     if os.path.exists(url):
-                         with open(url, "rb") as f: data = f.read()
+                        with open(url, "rb") as f: data = f.read()
                     else: data = None
                 if data:
                     loader = GdkPixbuf.PixbufLoader.new()
                     loader.write(data)
                     loader.close()
                     pixbuf = loader.get_pixbuf()
+                if host:
+                    with _logo_fail_lock:
+                        _logo_host_errors.pop(host, None)
+            except (urllib.error.HTTPError, GLib.Error) as e:
+                _failed_logo_urls.add(url)
+                logging.debug(f"Channel logo skipped '{url}': {e}")
             except Exception as e:
-                 try:
-                     bad_host = urlparse(url).netloc
-                     if bad_host not in _failed_logo_hosts:
-                         _failed_logo_hosts.add(bad_host)
-                         logging.warning(f"🛑 LOGO SERVER BLOCKED: {bad_host} - No more requests will be sent to this address.")
-                 except:
-                     pass
-                 logging.warning(f"Failed to load channel logo '{url}': {e}")
+                _failed_logo_urls.add(url)
+                blocked_now = False
+                if host:
+                    with _logo_fail_lock:
+                        count = _logo_host_errors.get(host, 0) + 1
+                        _logo_host_errors[host] = count
+                        if count >= _LOGO_HOST_MAX_ERRORS and host not in _failed_logo_hosts:
+                            _failed_logo_hosts.add(host)
+                            blocked_now = True
+                if blocked_now:
+                    logging.warning(f"🛑 LOGO SERVER BLOCKED: {host} - {_LOGO_HOST_MAX_ERRORS} connection errors in a row, no more requests will be sent to this address.")
+                logging.warning(f"Failed to load channel logo '{url}': {e}")
             if pixbuf:
                 GLib.idle_add(self._check_and_replace_placeholder, placeholder_widget, pixbuf)
         image_download_pool.submit(thread_func)
@@ -738,7 +803,7 @@ class ChannelList(Gtk.Box):
         current_row = self.channel_listbox.get_first_child()
         while current_row:
             if hasattr(current_row, 'channel_data'):
-                channel_name = current_row.channel_data.get("name", "")
+                channel_name = current_row.channel_data.get("name") or ""
                 row_text = channel_name.lower()
                 current_row.set_visible(search_text in row_text)
             current_row = current_row.get_next_sibling()

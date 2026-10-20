@@ -759,7 +759,13 @@ msgstr ""
 msgid "Unknown List"
 msgstr ""
 
-msgid "Play as Picture-in-Picture"
+msgid "Watch in Multiview"
+msgstr ""
+
+msgid "Picture-in-Picture"
+msgstr ""
+
+msgid "Multiview"
 msgstr ""
 
 msgid "Remove Library"
@@ -960,6 +966,9 @@ msgid "Next Channel"
 msgstr ""
 
 msgid "Previous Channel"
+msgstr ""
+
+msgid "Last Watched Channel"
 msgstr ""
 
 msgid "General Controls"
@@ -1968,7 +1977,7 @@ msgstr ""
 msgid "Important Warning: Ban Risk!"
 msgstr ""
 
-msgid "Opening Picture-in-Picture (PiP) mode will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
+msgid "Opening Multiview will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
 msgstr ""
 
 msgid "Do not show this warning again"
@@ -2395,24 +2404,358 @@ msgstr ""
 msgid "Change External Player"
 msgstr ""
 
+
+# --- Profile: EPG Multi-Source & External Logos (New in this session) ---
+msgid "Manual EPG Sources"
+msgstr ""
+
+msgid "Optional, max 3 — provider EPG always has priority"
+msgstr ""
+
+msgid "+ Add EPG Source"
+msgstr ""
+
+msgid "External EPG URL (XMLTV)"
+msgstr ""
+
+msgid "Downloading EPG source {}/{}..."
+msgstr ""
+
+msgid "Merging EPG sources into the database..."
+msgstr ""
+
+msgid "External Channel Logos"
+msgstr ""
+
+msgid "Optional — use a local folder of logo images matched by channel name"
+msgstr ""
+
+# --- Profile Window: Pre-existing strings missing from this template ---
+msgid "Critical Database Error"
+msgstr ""
+
+msgid "Could not set profile database: {e}"
+msgstr ""
+
+msgid "An unexpected error occurred while loading profile '{}'.\n\nReason: {}"
+msgstr ""
+
+msgid "Unknown Profile"
+msgstr ""
+
+msgid "Other"
+msgstr ""
+
+msgid "e.g., http://server.com:8080"
+msgstr ""
+
+msgid "http://example.com/list.m3u"
+msgstr ""
+
+
+# --- Provider Test Feature (New) ---
+msgid "Provider Test"
+msgstr ""
+
+msgid "Testing provider..."
+msgstr ""
+
+msgid "This may take a few seconds."
+msgstr ""
+
+msgid "Unsupported profile type for testing."
+msgstr ""
+
+msgid "Could not connect to the provider. Check your credentials and connection."
+msgstr ""
+
+msgid "Unlimited / Unknown"
+msgstr ""
+
+msgid "Could not access the M3U source."
+msgstr ""
+
+msgid "Test Failed"
+msgstr ""
+
+msgid "Unknown error."
+msgstr ""
+
+msgid "Response Time"
+msgstr ""
+
+msgid "Account Status"
+msgstr ""
+
+msgid "Expiration Date"
+msgstr ""
+
+msgid "Connections"
+msgstr ""
+
+msgid "{} categories, {} channels"
+msgstr ""
+
+msgid "Movies (VOD)"
+msgstr ""
+
+msgid "{} categories, {} movies"
+msgstr ""
+
+msgid "{} categories, {} series"
+msgstr ""
+
+msgid "VOD Files"
+msgstr ""
+
+msgid "Categories"
+msgstr ""
+
+# --- Backup Link Feature (New) ---
+msgid "Add Backup Link — {}"
+msgstr ""
+
+msgid "Backup link added: {} – {}"
+msgstr ""
+
+msgid "Could not build a playable URL for this channel."
+msgstr ""
+
+msgid "Could not load channels from this profile."
+msgstr ""
+
+msgid "Loading channels..."
+msgstr ""
+
+msgid "No other profiles found."
+msgstr ""
+
+msgid "Which profile do you want to add this from?"
+msgstr ""
+
+msgid "Change Backup Link"
+msgstr ""
+
+msgid "Remove Backup Link"
+msgstr ""
+
+msgid "Add Backup Link"
+msgstr ""
+
+msgid "Backup link removed."
+msgstr ""
+
+msgid "Primary stream failed. Trying backup link..."
+msgstr ""
+
+# --- Backup Link Feature: Manual Switch Button (New) ---
+msgid "Play Backup Link"
+msgstr ""
+
+msgid "Switching to backup link..."
+msgstr ""
+
+
+# --- Full Backup/Restore Feature (New) ---
+msgid "Full Backup"
+msgstr ""
+
+msgid "Back up all profiles and settings to a folder"
+msgstr ""
+
+msgid "Choose Backup Destination Folder"
+msgstr ""
+
+msgid "This will close the application and back up all your profiles and settings to:\n\n{}\n\nThe app will close now and reopen automatically once the backup is complete — this can take up to 1-2 minutes, so please be patient."
+msgstr ""
+
+msgid "Start Backup"
+msgstr ""
+
+msgid "Could not start backup."
+msgstr ""
+
+msgid "Closing to back up your data. The app will reopen automatically..."
+msgstr ""
+
+msgid "Full Restore"
+msgstr ""
+
+msgid "Backup completed successfully!"
+msgstr ""
+
+msgid "Restore completed successfully! Please select a profile."
+msgstr ""
+
+msgid "Backup failed:"
+msgstr ""
+
+msgid "Restore failed:"
+msgstr ""
+
+msgid "Select Backup File"
+msgstr ""
+
+msgid "EngPlayer Backup Files"
+msgstr ""
+
+msgid "This will DELETE ALL your current profiles and settings and replace them with the contents of:\n\n{}\n\nAny profiles or changes made after this backup was taken will be LOST.\n\nThis cannot be undone.\n\nThe app will close now and reopen automatically once the restore is complete — this can take up to 1-2 minutes, so please be patient."
+msgstr ""
+
+msgid "Yes, Delete Current Profiles and Restore Backup"
+msgstr ""
+
+msgid "Could not start restore."
+msgstr ""
+
+msgid "Closing to restore your data. The app will reopen automatically..."
+msgstr ""
+
+msgid "Version History"
+msgstr ""
+
+msgid "Current"
+msgstr ""
+
+
+# --- Downloaded Content Marker (New) ---
+msgid "Downloaded"
+msgstr ""
+
+msgid "Already Downloaded"
+msgstr ""
+
+msgid "This content has already been downloaded and the file is still on your disk. Do you want to download it again?"
+msgstr ""
+
+# --- Continue Watching (New) ---
+msgid " ⏯️ Continue Watching"
+msgstr ""
+
+msgid "Watched"
+msgstr ""
+
+
+# --- Dolby Digital Output (New) ---
+msgid "Dolby Digital Output"
+msgstr ""
+
+msgid "5.1 sound for AV receivers"
+msgstr ""
+
+msgid "Dolby Digital output enabled."
+msgstr ""
+
+msgid "Dolby Digital output disabled."
+msgstr ""
+
+msgid "Dolby Digital output enabled. Takes effect on next playback."
+msgstr ""
+
+msgid "Dolby Digital output disabled. Takes effect on next playback."
+msgstr ""
+
+msgid "Dolby Digital output is not available on this audio device. Using normal sound."
+msgstr ""
+
+# --- Catch-up Filter & Provider Test (New) ---
+msgid "Catch-up"
+msgstr ""
+
+msgid "{} channels, up to {} days"
+msgstr ""
+
+msgid "All Bouquets"
+msgstr ""
+
+msgid "Action"
+msgstr ""
+
+msgid "Adventure"
+msgstr ""
+
+msgid "Animation"
+msgstr ""
+
+msgid "Comedy"
+msgstr ""
+
+msgid "Crime"
+msgstr ""
+
+msgid "Documentary"
+msgstr ""
+
+msgid "Drama"
+msgstr ""
+
+msgid "Family"
+msgstr ""
+
+msgid "Fantasy"
+msgstr ""
+
+msgid "Science Fiction"
+msgstr ""
+
+msgid "Horror"
+msgstr ""
+
+msgid "Thriller"
+msgstr ""
+
+msgid "Mystery"
+msgstr ""
+
+msgid "Romance"
+msgstr ""
+
+msgid "Historical"
+msgstr ""
+
+msgid "War"
+msgstr ""
+
+msgid "Western"
+msgstr ""
+
+msgid "All"
+msgstr ""
+
+msgid "{} titles"
+msgstr ""
+
+msgid " 🎬 All Movies"
+msgstr ""
+
+msgid " 📺 All Series"
+msgstr ""
+
+msgid "No titles found."
+msgstr ""
+
 # --- License / Legal ---
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr ""
 
-msgid ""
-"EngPlayer Software License Agreement\n"
-"Copyright © 2025 Engin Eren. All Rights Reserved.\n\n"
-"By downloading, installing, or using this software (\"EngPlayer\"), you agree to the following terms:\n\n"
-"1. LICENSE GRANT\n"
-"This software is distributed as \"FREEWARE\". It may be downloaded, installed, and executed for personal use free of charge.\n\n"
-"2. RESTRICTIONS ON PORTING\n"
-"Without prior written permission from the copyright holder, it is STRICTLY PROHIBITED to port, adapt, or modify this software for use on other operating systems (Windows, macOS, Android, etc.).\n\n"
-"3. COMMERCIAL PROHIBITION\n"
-"This software may NOT be sold, rented, or included in any paid software bundle by any person or entity other than the copyright holder.\n\n"
-"4. NO CONTENT PROVIDED (DISCLAIMER)\n"
-"This software is a media player only. EngPlayer does NOT provide, include, or distribute any playlists, IPTV channels, video streams, or digital content.\n"
-"- Users are solely responsible for providing their own content (M3U files, Xtream codes, local files).\n"
-"- The developer assumes no liability for the content viewed by the user or for any copyright violations resulting from user-added content.\n\n"
-"5. DISCLAIMER OF WARRANTY\n"
-"This software is provided \"AS IS\". The copyright holder cannot be held responsible for any damages arising from the use of this software."
+# --- About window (GPL) ---
+msgid "EngPlayer is a media player only. It does not provide, include or distribute any playlists, IPTV channels, video streams or other content. Users are solely responsible for the content they add."
+msgstr ""
+
+msgid "Name and logo"
+msgstr ""
+
+msgid "The name \"EngPlayer\", the EngPlayer logo and the application icon are not covered by the GNU GPL. Modified versions must use a different name and icon. See ADDITIONAL-TERMS.md for the additional terms under Section 7 of the GPL."
+msgstr ""
+
+msgid "Other components"
+msgstr ""
+
+msgid "EngPlayer includes other open source components under their own licenses. The full list is in THIRD-PARTY-NOTICES.md: https://github.com/Falldaemon/EngPlayer/blob/main/THIRD-PARTY-NOTICES.md"
+msgstr ""
+
+msgid "Author attribution"
+msgstr ""
+
+msgid "You must preserve the copyright notice \"Copyright (C) 2025-2026 Engin Eren\" and the author attribution shown in the application's About window in all copies and in all modified versions."
 msgstr ""

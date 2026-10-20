@@ -2,6 +2,7 @@ import logging
 from gi.repository import Gtk, Pango, Gdk
 import database
 import gettext
+
 _ = gettext.gettext
 
 logger = logging.getLogger(__name__)

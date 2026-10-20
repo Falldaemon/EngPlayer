@@ -54,9 +54,11 @@ install: all
 	install -m 644 io.github.falldaemon.engplayer.metainfo.xml $(DESTDIR)$(metainfodir)/
 	install -m 644 io.github.falldaemon.engplayer.daemon.desktop $(DESTDIR)$(sysconfdir)/xdg/autostart/io.github.falldaemon.engplayer.desktop
 	install -m 644 LICENSE $(DESTDIR)$(sharedir)/licenses/io.github.falldaemon.engplayer/LICENSE
+	install -m 644 ADDITIONAL-TERMS.md $(DESTDIR)$(sharedir)/licenses/io.github.falldaemon.engplayer/ADDITIONAL-TERMS.md
+	install -m 644 THIRD-PARTY-NOTICES.md $(DESTDIR)$(sharedir)/licenses/io.github.falldaemon.engplayer/THIRD-PARTY-NOTICES.md
 
-	sed -i "s|Exec=.*|Exec=$(bindir)/engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
-	sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
+	sed -i "s|Exec=.*|Exec=$(bindir)/engplayer %f|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
+		sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(DESTDIR)$(applicationsdir)/io.github.falldaemon.engplayer.desktop
 
 install-manual: all
 	@echo "Starting manual user installation..."
@@ -67,12 +69,20 @@ install-manual: all
 	mkdir -p $(LOCAL_SYSTEMD_DIR)
 	
 	install -m 644 io.github.falldaemon.engplayer.desktop.in $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
-	sed -i "s|Exec=.*|Exec=$(LOCAL_INSTALL_DIR)/venv/bin/python3 $(LOCAL_INSTALL_DIR)/main.py|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
+	sed -i "s|Exec=.*|Exec=$(LOCAL_INSTALL_DIR)/venv/bin/python3 $(LOCAL_INSTALL_DIR)/main.py %f|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
 	sed -i "s|Icon=.*|Icon=io.github.falldaemon.engplayer|g" $(LOCAL_DESKTOP_DIR)/io.github.falldaemon.engplayer.desktop
 	cp -r . $(LOCAL_INSTALL_DIR)/
 	$(PYTHON) -m venv $(LOCAL_INSTALL_DIR)/venv
 	$(LOCAL_INSTALL_DIR)/venv/bin/pip install --upgrade pip wheel
 	$(LOCAL_INSTALL_DIR)/venv/bin/pip install -r requirements.txt PyGObject wheel
+	@SYS_OVR=$$($(PYTHON) -c "import gi.overrides, os; print(os.path.dirname(gi.overrides.__file__))" 2>/dev/null); \
+	VENV_OVR=$$($(LOCAL_INSTALL_DIR)/venv/bin/python3 -c "import gi.overrides, os; print(os.path.dirname(gi.overrides.__file__))" 2>/dev/null); \
+	if [ -n "$$SYS_OVR" ] && [ -n "$$VENV_OVR" ] && ls "$$SYS_OVR"/_gi_gst*.so >/dev/null 2>&1; then \
+		ln -sf "$$SYS_OVR"/Gst*.py "$$SYS_OVR"/_gi_gst*.so "$$VENV_OVR"/; \
+		echo "GStreamer Python bindings linked into the virtual environment."; \
+	else \
+		echo "GStreamer Python bindings (gst-python) not found; DVB subtitle workaround disabled."; \
+	fi
 	install -m 755 engplayer.sh $(LOCAL_BIN_DIR)/engplayer
 	sed -i "s|/app/share/engplayer|$(LOCAL_INSTALL_DIR)|g" $(LOCAL_BIN_DIR)/engplayer
 	sed -i "s|exec python3|exec $(LOCAL_INSTALL_DIR)/venv/bin/python3|g" $(LOCAL_BIN_DIR)/engplayer

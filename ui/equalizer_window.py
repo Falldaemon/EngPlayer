@@ -10,12 +10,12 @@ _ = gettext.gettext
 
 PRESETS = {
     "flat": [0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0],
-    "hiphop": [5.0, 4.0, 3.0, -1.0, -2.0, 1.0, 2.0, 1.5, 2.0, 2.5],
-    "pop": [3.0, 2.5, 1.5, 0.5, -1.0, -1.0, 0.5, 1.5, 2.5, 3.0],
-    "rock": [5.0, 4.0, 2.5, -1.0, -3.0, -3.0, -1.0, 2.0, 4.0, 5.0],
-    "jazz": [2.5, 2.0, 1.0, 0.5, -0.5, -0.5, 0.5, 1.5, 2.0, 2.0],
-    "classical": [2.0, 1.5, 0.5, -1.0, -1.5, -1.5, 0.5, 2.0, 3.0, 4.0],
-    "vocal": [-3.5, -3.0, -1.0, 2.0, 4.0, 4.5, 3.5, 1.0, -2.0, -3.0]
+    "hiphop": [2.0, 5.0, 4.5, 1.5, -2.0, -2.5, -1.0, 1.0, 1.5, 1.0],
+    "pop": [-1.0, 0.5, 1.0, 0.0, 0.5, 2.0, 3.0, 3.5, 2.5, 1.5],
+    "rock": [3.0, 4.0, 2.0, -1.0, -3.0, -1.0, 2.0, 4.0, 3.0, 1.5],
+    "jazz": [1.0, 2.0, 3.0, 3.0, 1.0, -0.5, -1.0, -1.5, -1.0, -0.5],
+    "classical": [0.0, 0.5, 0.5, 0.0, -0.5, -0.5, 0.0, 1.0, 2.0, 2.5],
+    "vocal": [-6.0, -4.0, -1.5, -1.0, 0.0, 1.5, 3.0, 3.5, 1.0, -1.0]
 }
 
 class EqualizerWindow(Gtk.Window):
@@ -23,6 +23,7 @@ class EqualizerWindow(Gtk.Window):
         super().__init__(transient_for=parent, **kwargs)
         self.player = player
         self.is_applying_preset = False
+        self._save_timers = {}
         self.set_title(_("Audio Equalizer"))
         self.set_default_size(500, 450)
         self.set_hide_on_close(True)
@@ -89,6 +90,9 @@ class EqualizerWindow(Gtk.Window):
         values = PRESETS.get(active_id)
         if not values:
             return
+        for pending in self._save_timers.values():
+            GLib.source_remove(pending)
+        self._save_timers.clear()
         self.is_applying_preset = True
         for i in range(10):
             val = values[i]
@@ -102,11 +106,22 @@ class EqualizerWindow(Gtk.Window):
             return
         value = slider.get_value()
         self.player.set_equalizer_band(band_index, value)
-        database.set_config_value(f"eq_band_{band_index}", f"{value:.2f}")
+        self._schedule_band_save(band_index, value)
         if self.preset_combo.get_active_id() != "custom":
             self.is_applying_preset = True
             self.preset_combo.set_active_id("custom")
             self.is_applying_preset = False
+
+    def _schedule_band_save(self, band_index, value):
+        pending = self._save_timers.pop(band_index, None)
+        if pending:
+            GLib.source_remove(pending)
+
+        def save():
+            self._save_timers.pop(band_index, None)
+            database.set_config_value(f"eq_band_{band_index}", f"{value:.2f}")
+            return GLib.SOURCE_REMOVE
+        self._save_timers[band_index] = GLib.timeout_add(400, save)
 
     def _on_reset_clicked(self, button):
         self.preset_combo.set_active_id("flat")

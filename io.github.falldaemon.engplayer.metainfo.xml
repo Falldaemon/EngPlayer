@@ -2,7 +2,7 @@
 <component type="desktop-application">
   <id>io.github.falldaemon.engplayer</id>
   <metadata_license>CC0-1.0</metadata_license>
-  <project_license>LicenseRef-proprietary</project_license>
+  <project_license>GPL-3.0-or-later</project_license>
   <name>EngPlayer</name>
   <summary>Modern IPTV and Media Center</summary>
   
@@ -85,6 +85,31 @@
   </content_rating>
   
   <releases>
+	  <release version="0.1.8" date="2026-10-20">
+      <description>
+        <p>EngPlayer 0.1.8 brings a Windows version, multiple EPG sources, backup streams, full backup and restore, Dolby Digital output and many improvements. EngPlayer is now free software under the GNU GPL v3 or later.</p>
+        <ul>
+          <li>New: Windows version (Beta) — EngPlayer now runs on Windows from the same code base as Linux.</li>
+          <li>New: Multiple EPG sources — add up to 3 extra EPG sources per profile. The provider's EPG stays first, extra sources fill in missing channels. EPG data is now stored per profile.</li>
+          <li>New: Provider Test — check server response time, account status and expiry date, connection limit and channel/movie/series counts with one click (Xtream and M3U).</li>
+          <li>New: Backup stream (failover) per channel — add a backup stream from another profile. EngPlayer switches automatically when the main stream fails, or manually with the player button.</li>
+          <li>New: Full backup and restore — save all profiles, settings and EPG data to one file and restore them later, even from the profile screen with no profiles.</li>
+          <li>New: Picture-in-Picture with the P key — moves the current stream to a small always-on-top window without opening a second provider connection.</li>
+          <li>New: Continue Watching — unfinished movies and series are listed in the VOD and Series menus (up to 30 items, per profile, included in full backup).</li>
+          <li>New: Downloaded content is marked, and you are asked before downloading the same item again.</li>
+          <li>New: Downloads reconnect automatically after a network or provider error (after 5, 10 and 20 seconds) and continue where they stopped.</li>
+          <li>New: Dolby Digital (AC-3) output — sends up to 5.1 sound to an AV receiver over HDMI or S/PDIF. Falls back to normal sound if the audio device does not support it.</li>
+          <li>New: Built-in DVB and Teletext subtitle support — subtitles are now shown directly in EngPlayer, no external player needed.</li>
+          <li>New: Genre filter — movie and series lists show genre buttons under the search bar when the provider sends genre information. Lists without genre data hide them automatically.</li>
+          <li>New: All Movies and All Series — browse and search the whole catalog in one list. Hidden, locked and adult categories are left out.</li>
+          <li>Improvement: EPG downloads are more reliable on slow or busy providers.</li>
+          <li>Improvement: Live channels that take a while to start at the provider now open automatically.</li>
+          <li>Improvement: User interface updates and minor bug fixes.</li>
+          <li>Fix: Scrolling the Settings menu no longer changes the Audio Visualizer, Theme and Stream Buffer values.</li>
+          <li>License: EngPlayer is now free software under the GNU General Public License v3 or later.</li>
+        </ul>
+      </description>
+    </release>
 	  <release version="0.1.7" date="2026-06-28">
       <description>
         <p>This release brings new content management features, UI enhancements, and under-the-hood Flatpak modernizations, with special thanks to our contributors</p>

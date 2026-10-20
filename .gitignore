@@ -14,3 +14,13 @@ repo/
 .vscode/
 .idea/
 .DS_Store
+*.mo
+*.m3u
+*.m3u8
+packaging/dist/
+packaging/build/
+packaging/msix/build/
+*.msix
+packaging/Output/
+packaging/build.log
+packaging/deno.exe

@@ -3,7 +3,7 @@
 import gi
 import threading
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GObject, Pango, GLib, GdkPixbuf
+from gi.repository import Gtk, GObject, Pango, GLib, GdkPixbuf, Adw
 from utils.image_loader import load_image_async
 import gettext
 
@@ -46,7 +46,11 @@ class PodcastDetailView(Gtk.Box):
         self.listbox.connect("row-activated", self._on_row_activated)
         self.listbox.add_css_class("navigation-sidebar")
         self.scrolled_window.set_child(self.listbox)        
-        self.loading_spinner = Gtk.Spinner()
+        if hasattr(Adw, "Spinner"):
+            self.loading_spinner = Adw.Spinner()
+            self.loading_spinner.start = self.loading_spinner.stop = lambda: None
+        else:
+            self.loading_spinner = Gtk.Spinner()
         self.loading_spinner.set_size_request(32, 32)
         self.loading_spinner.set_halign(Gtk.Align.CENTER)
         self.loading_spinner.set_valign(Gtk.Align.CENTER)

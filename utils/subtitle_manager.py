@@ -1,6 +1,6 @@
 # utils/subtitle_manager.py
 
-import re, logging
+import re, logging, bisect
 from gi.repository import GLib, Gst, Gdk, Pango
 import database
 import gettext
@@ -53,6 +53,48 @@ class SubtitleManager:
         self.last_markup = None
         self.delay_ms = 0
         self._debug_counter = 0
+        self._cue_keys = set()
+        if hasattr(self.player, "TELETEXT_TRACK_BASE"):
+            self.player.connect("teletext-cue", self._on_teletext_cue)
+            self.player.connect("embedded-cue", self._on_embedded_cue)
+            self.player.connect("live-subtitles-reset", self._on_live_subtitles_reset)
+
+    def _on_live_subtitles_reset(self, player):
+        if self.subtitles and self.subtitles[-1].get('live'):
+            self.clear()
+
+    def _on_embedded_cue(self, player, start_ms, end_ms, text, is_markup):
+        if self.subtitles and not self.subtitles[-1].get('live'):
+            return
+        key = (round(start_ms), text)
+        if key in self._cue_keys:
+            return
+        self._cue_keys.add(key)
+        markup = None
+        if is_markup:
+            text = re.sub(r"&(?!#?\w+;)", "&amp;", text)
+            try:
+                Pango.parse_markup(text, -1, "\0")
+                markup = text
+            except GLib.Error:
+                pass
+            text = re.sub(r"<[^>]*>", "", text)
+        cue = {'start': start_ms, 'end': end_ms, 'text': text, 'markup': markup, 'live': True}
+        index = bisect.bisect_right([sub['start'] for sub in self.subtitles], start_ms)
+        self.subtitles.insert(index, cue)
+        if not self.timer_id:
+            self.start()
+
+    def _on_teletext_cue(self, player, start_ms, text):
+        if self.subtitles and not self.subtitles[-1].get('live'):
+            return
+        if self.subtitles and self.subtitles[-1]['end'] == float('inf'):
+            self.subtitles[-1]['end'] = start_ms
+        if text:
+            self.subtitles.append({'start': start_ms, 'end': float('inf'), 'text': text, 'live': True})
+        self.subtitles = self.subtitles[-50:]
+        if self.subtitles and not self.timer_id:
+            self.start()
 
     def load_from_file(self, filepath):
         self.clear()
@@ -82,6 +124,7 @@ class SubtitleManager:
     def clear(self):
         self.stop()
         self.subtitles = []
+        self._cue_keys = set()
         if self.label:
             GLib.idle_add(self.label.set_markup, "")
             GLib.idle_add(self.label.hide)
@@ -103,8 +146,6 @@ class SubtitleManager:
             self.timer_id = None
 
     def _update(self):
-        self._debug_counter = (self._debug_counter + 1) % 10
-        log_this_time = (self._debug_counter == 0)
         if not self.subtitles or not self.player or not self.player.player:
              return False
         try:
@@ -117,13 +158,7 @@ class SubtitleManager:
              return False
         current_pos_ms = current_pos_ns / 1_000_000
         adjusted_pos_ms = current_pos_ms - self.delay_ms
-        if log_this_time:
-            logging.debug(f"SubtitleManager Update: Delay={self.delay_ms}ms | CurrentPos={current_pos_ms:.0f}ms | AdjustedPos={adjusted_pos_ms:.0f}ms")
         found_sub = next((sub for sub in self.subtitles if sub['start'] <= adjusted_pos_ms < sub['end']), None)
-        if log_this_time and found_sub:
-            logging.debug(f"  -> Sub Found: Start={found_sub['start']}ms | End={found_sub['end']}ms | Text='{found_sub['text'][:20]}...'")
-        elif log_this_time and not found_sub:
-            logging.debug(f"  -> Sub Not Found for AdjustedPos={adjusted_pos_ms:.0f}ms")
         if found_sub:
             try:
                 font_desc = database.get_config_value("subtitle_font") or "Sans 12"
@@ -136,25 +171,22 @@ class SubtitleManager:
                 try: bg_alpha_val = max(0.1, min(1.0, float(bgopacity_str)))
                 except ValueError: bg_alpha_val = 0.6
                 bg_color_hex = f'#{int(bg_rgba.red*255):02x}{int(bg_rgba.green*255):02x}{int(bg_rgba.blue*255):02x}{int(bg_alpha_val*255):02x}'
-                escaped_text = GLib.markup_escape_text(found_sub['text'])
+                escaped_text = found_sub.get('markup') or GLib.markup_escape_text(found_sub['text'])
                 markup = (f"<span font_desc='{font_desc}' "
                           f"foreground='{font_color_hex}' "
                           f"background='{bg_color_hex}'>"
                           f" {escaped_text} "
                           f"</span>")
                 if self.last_markup != markup:
-                    if log_this_time: logging.debug(f"  -> Updating Label (Markup Changed)")
                     self.label.set_markup(markup)
                     self.last_markup = markup
                 if not self.label.get_visible():
-                    if log_this_time: logging.debug(f"  -> Showing Label")
                     self.label.show()
             except Exception as label_err:
                  logging.error(f"Error setting subtitle label: {label_err}")
                  return False
         else:
             if self.label.get_visible():
-                if log_this_time: logging.debug(f"  -> Hiding Label")
                 self.label.hide()
             self.last_markup = None
         return True

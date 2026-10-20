@@ -9,9 +9,12 @@ import os
 import database
 import logging
 from utils.theme_utils import get_icon_theme_folder
+from utils import platform_utils
 from .password_prompt_dialog import PasswordPromptDialog
 from .password_dialog import PasswordDialog
+
 _ = gettext.gettext
+
 class BouquetList(Gtk.Box):
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.VERTICAL, **kwargs)
@@ -48,7 +51,16 @@ class BouquetList(Gtk.Box):
         self.show_locked_button.set_margin_start(12)
         self.show_locked_button.set_margin_end(12)
         self.append(self.show_locked_button)
+        self.catchup_button = Gtk.Button()
+        self.catchup_button.add_css_class("flat")
+        self.catchup_button.set_margin_start(12)
+        self.catchup_button.set_margin_end(12)
+        self.catchup_button.set_margin_bottom(6)
+        self.catchup_button.set_visible(False)
+        self.catchup_button.connect("clicked", self._on_catchup_button_clicked)
+        self.append(self.catchup_button)
         self.bouquet_listbox = Gtk.ListBox()
+        self.bouquet_listbox.add_css_class("sidebar-scroll-list")
         scrolled_window = Gtk.ScrolledWindow()
         scrolled_window.set_child(self.bouquet_listbox)
         scrolled_window.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
@@ -57,6 +69,9 @@ class BouquetList(Gtk.Box):
         self.active_row = None
         self.all_bouquet_names = []
         self.current_sort_mode = "default"
+        self.catchup_mode = False
+        self.catchup_bouquet_names = set()
+        self._update_catchup_button()
         self.bouquet_listbox.set_sort_func(self._sort_list_items)
 
     def clear_list(self):
@@ -64,6 +79,9 @@ class BouquetList(Gtk.Box):
             self.bouquet_listbox.remove(child)
 
     def populate_bouquets_async(self, bouquet_names):
+        if getattr(self, "_populate_source_id", None):
+            GLib.source_remove(self._populate_source_id)
+            self._populate_source_id = None
         self._item_counter = 0
         self.clear_list()
         self.all_bouquet_names = bouquet_names
@@ -75,8 +93,10 @@ class BouquetList(Gtk.Box):
                 name for name in bouquet_names
                 if not database.get_bouquet_lock_status(name)
             ]
-        bouquets_generator = (name for name in sorted(bouquets_to_display))
-        GLib.idle_add(self._populate_chunk, bouquets_generator)
+        if self.catchup_mode:
+            bouquets_to_display = [name for name in bouquets_to_display if name in self.catchup_bouquet_names]
+        bouquets_generator = (name for name in bouquets_to_display)
+        self._populate_source_id = GLib.idle_add(self._populate_chunk, bouquets_generator)
 
     def _populate_chunk(self, bouquets_generator):
         chunk_size = 20
@@ -87,6 +107,7 @@ class BouquetList(Gtk.Box):
             return True
         except StopIteration:
             logging.info("Incremental population of the bouquet list is complete.")
+            self._populate_source_id = None
             return False
 
     def _add_row_to_listbox(self, name):
@@ -96,9 +117,13 @@ class BouquetList(Gtk.Box):
         hbox = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6)
         hbox.set_margin_start(10); hbox.set_margin_end(10)
         row.set_child(hbox)
-        label = Gtk.Label(label=name, xalign=0)
+        display_name = name
+        label = Gtk.Label(label=display_name, xalign=0)
+        if platform_utils.IS_WINDOWS:
+            display_name = name.replace("\ufe0f", "")
+            label.set_markup(platform_utils.display_text(GLib.markup_escape_text(name)))
         label.set_ellipsize(Pango.EllipsizeMode.END)
-        label.set_tooltip_text(name)
+        label.set_tooltip_text(display_name)
         label.set_hexpand(True)
         hbox.append(label)
         theme_folder = get_icon_theme_folder()
@@ -119,6 +144,31 @@ class BouquetList(Gtk.Box):
         right_click_gesture.connect("pressed", self._on_row_right_clicked, row)
         row.add_controller(right_click_gesture)
         self.bouquet_listbox.append(row)
+
+    def set_catchup_bouquets(self, bouquet_names):
+        self.catchup_bouquet_names = set(bouquet_names)
+        self.catchup_button.set_visible(bool(self.catchup_bouquet_names))
+        if self.catchup_mode and not self.catchup_bouquet_names:
+            self.catchup_mode = False
+            self._update_catchup_button()
+
+    def _update_catchup_button(self):
+        if self.catchup_mode:
+            content = Adw.ButtonContent(icon_name="go-previous-symbolic", label=_("All Bouquets"))
+        else:
+            content = Adw.ButtonContent(icon_name="media-seek-backward-symbolic", label=_("Catch-up"))
+        self.catchup_button.set_child(content)
+
+    def exit_catchup_mode(self):
+        if self.catchup_mode:
+            self._on_catchup_button_clicked(self.catchup_button)
+
+    def _on_catchup_button_clicked(self, button):
+        self.catchup_mode = not self.catchup_mode
+        self._update_catchup_button()
+        self.search_entry.set_text("")
+        logging.info(f"Catch-up bouquet filter {'enabled' if self.catchup_mode else 'disabled'}.")
+        self.populate_bouquets_async(self.all_bouquet_names)
 
     def populate_bouquets(self, bouquet_names):
         logging.warning("Synchronous populate_bouquets called. Please use the async version.")
@@ -217,10 +267,12 @@ class BouquetList(Gtk.Box):
         name2 = getattr(row2, 'bouquet_name', "")
 
         def get_priority(name):
-            if "⭐" in name: 
+            if "⭐" in name:
                 return 1
-            if "🆕" in name: 
+            if "⏯" in name:
                 return 2
+            if "🆕" in name:
+                return 3
             return 99
         prio1 = get_priority(name1)
         prio2 = get_priority(name2)

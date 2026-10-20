@@ -759,8 +759,14 @@ msgstr "Mover lista"
 msgid "Unknown List"
 msgstr "Lista desconocida"
 
-msgid "Play as Picture-in-Picture"
-msgstr "Reproducir como Imagen en Imagen (PiP)"
+msgid "Watch in Multiview"
+msgstr "Ver en Multiview"
+
+msgid "Picture-in-Picture"
+msgstr "Imagen en Imagen"
+
+msgid "Multiview"
+msgstr "Multiview"
 
 msgid "Remove Library"
 msgstr "Eliminar biblioteca"
@@ -961,6 +967,9 @@ msgstr "Canal siguiente"
 
 msgid "Previous Channel"
 msgstr "Canal anterior"
+
+msgid "Last Watched Channel"
+msgstr "Último canal visto"
 
 msgid "General Controls"
 msgstr "Controles generales"
@@ -1973,8 +1982,8 @@ msgstr "No se pudo recuperar el contenido de los subtítulos."
 msgid "Important Warning: Ban Risk!"
 msgstr "Advertencia Importante: ¡Riesgo de Ban!"
 
-msgid "Opening Picture-in-Picture (PiP) mode will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
-msgstr "Abrir el modo Picture-in-Picture (PiP) enviará una segunda solicitud de transmisión simultánea a su proveedor.\n\nSi su suscripción de IPTV solo permite una conexión a la vez, esto podría causar que su cuenta sea bloqueada (baneada) automáticamente por el proveedor.\n\n¿Acepta este riesgo y desea continuar?"
+msgid "Opening Multiview will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
+msgstr "Abrir Multiview enviará una segunda solicitud de transmisión simultánea a su proveedor.\n\nSi su suscripción de IPTV solo permite una conexión a la vez, esto podría causar que su cuenta sea bloqueada (baneada) automáticamente por el proveedor.\n\n¿Acepta este riesgo y desea continuar?"
 
 msgid "Do not show this warning again"
 msgstr "No volver a mostrar esta advertencia"
@@ -2400,38 +2409,342 @@ msgstr "No se pudo iniciar el reproductor externo"
 msgid "Change External Player"
 msgstr "Cambiar reproductor externo"
 
+msgid "Manual EPG Sources"
+msgstr "Fuentes EPG manuales"
+
+msgid "Optional, max 3 — provider EPG always has priority"
+msgstr "Opcional, máx. 3 — la EPG del proveedor siempre tiene prioridad"
+
+msgid "+ Add EPG Source"
+msgstr "+ Añadir fuente EPG"
+
+msgid "External EPG URL (XMLTV)"
+msgstr "URL EPG externa (XMLTV)"
+
+msgid "Downloading EPG source {}/{}..."
+msgstr "Descargando fuente EPG {}/{}..."
+
+msgid "Merging EPG sources into the database..."
+msgstr "Combinando fuentes EPG en la base de datos..."
+
+msgid "External Channel Logos"
+msgstr "Logotipos de canal externos"
+
+msgid "Optional — use a local folder of logo images matched by channel name"
+msgstr "Opcional: usa una carpeta local de imágenes de logotipos que coincidan con el nombre del canal"
+
+msgid "Critical Database Error"
+msgstr "Error crítico de base de datos"
+
+msgid "Could not set profile database: {e}"
+msgstr "No se pudo establecer la base de datos del perfil: {e}"
+
+msgid "An unexpected error occurred while loading profile '{}'.\n\nReason: {}"
+msgstr "Se produjo un error inesperado al cargar el perfil '{}'.\n\nMotivo: {}"
+
+msgid "Unknown Profile"
+msgstr "Perfil desconocido"
+
+msgid "Other"
+msgstr "Otro"
+
+msgid "e.g., http://server.com:8080"
+msgstr "p. ej., http://server.com:8080"
+
+msgid "http://example.com/list.m3u"
+msgstr "http://example.com/list.m3u"
+
+msgid "Provider Test"
+msgstr "Prueba de proveedor"
+
+msgid "Testing provider..."
+msgstr "Probando el proveedor..."
+
+msgid "This may take a few seconds."
+msgstr "Esto puede tardar unos segundos."
+
+msgid "Unsupported profile type for testing."
+msgstr "Tipo de perfil no compatible para la prueba."
+
+msgid "Could not connect to the provider. Check your credentials and connection."
+msgstr "No se pudo conectar con el proveedor. Comprueba tus credenciales y tu conexión."
+
+msgid "Unlimited / Unknown"
+msgstr "Ilimitado / Desconocido"
+
+msgid "Could not access the M3U source."
+msgstr "No se pudo acceder a la fuente M3U."
+
+msgid "Test Failed"
+msgstr "Prueba fallida"
+
+msgid "Unknown error."
+msgstr "Error desconocido."
+
+msgid "Response Time"
+msgstr "Tiempo de respuesta"
+
+msgid "Account Status"
+msgstr "Estado de la cuenta"
+
+msgid "Expiration Date"
+msgstr "Fecha de caducidad"
+
+msgid "Connections"
+msgstr "Conexiones"
+
+msgid "{} categories, {} channels"
+msgstr "{} categorías, {} canales"
+
+msgid "Movies (VOD)"
+msgstr "Películas (VOD)"
+
+msgid "{} categories, {} movies"
+msgstr "{} categorías, {} películas"
+
+msgid "{} categories, {} series"
+msgstr "{} categorías, {} series"
+
+msgid "VOD Files"
+msgstr "Archivos VOD"
+
+msgid "Categories"
+msgstr "Categorías"
+
+msgid "Add Backup Link — {}"
+msgstr "Añadir enlace de respaldo — {}"
+
+msgid "Backup link added: {} – {}"
+msgstr "Enlace de respaldo añadido: {} – {}"
+
+msgid "Could not build a playable URL for this channel."
+msgstr "No se pudo generar una URL reproducible para este canal."
+
+msgid "Could not load channels from this profile."
+msgstr "No se pudieron cargar los canales de este perfil."
+
+msgid "Loading channels..."
+msgstr "Cargando canales..."
+
+msgid "No other profiles found."
+msgstr "No se encontraron otros perfiles."
+
+msgid "Which profile do you want to add this from?"
+msgstr "¿Desde qué perfil quieres añadir esto?"
+
+msgid "Change Backup Link"
+msgstr "Cambiar enlace de respaldo"
+
+msgid "Remove Backup Link"
+msgstr "Eliminar enlace de respaldo"
+
+msgid "Add Backup Link"
+msgstr "Añadir enlace de respaldo"
+
+msgid "Backup link removed."
+msgstr "Enlace de respaldo eliminado."
+
+msgid "Primary stream failed. Trying backup link..."
+msgstr "Fallo en la transmisión principal. Probando el enlace de respaldo..."
+
+msgid "Play Backup Link"
+msgstr "Reproducir enlace de respaldo"
+
+msgid "Switching to backup link..."
+msgstr "Cambiando al enlace de respaldo..."
+
+msgid "Full Backup"
+msgstr "Copia de seguridad completa"
+
+msgid "Back up all profiles and settings to a folder"
+msgstr "Hacer copia de seguridad de todos los perfiles y ajustes en una carpeta"
+
+msgid "Choose Backup Destination Folder"
+msgstr "Elegir carpeta de destino de la copia de seguridad"
+
+msgid "This will close the application and back up all your profiles and settings to:\n\n{}\n\nThe app will close now and reopen automatically once the backup is complete — this can take up to 1-2 minutes, so please be patient."
+msgstr "Esto cerrará la aplicación y hará una copia de seguridad de todos tus perfiles y ajustes en:\n\n{}\n\nLa aplicación se cerrará ahora y se volverá a abrir automáticamente cuando termine la copia de seguridad — esto puede tardar hasta 1-2 minutos, por favor ten paciencia."
+
+msgid "Start Backup"
+msgstr "Iniciar copia de seguridad"
+
+msgid "Could not start backup."
+msgstr "No se pudo iniciar la copia de seguridad."
+
+msgid "Closing to back up your data. The app will reopen automatically..."
+msgstr "Cerrando para hacer copia de seguridad de tus datos. La aplicación se volverá a abrir automáticamente..."
+
+msgid "Full Restore"
+msgstr "Restauración completa"
+
+msgid "Backup completed successfully!"
+msgstr "¡Copia de seguridad completada con éxito!"
+
+msgid "Restore completed successfully! Please select a profile."
+msgstr "¡Restauración completada con éxito! Por favor, selecciona un perfil."
+
+msgid "Backup failed:"
+msgstr "Error en la copia de seguridad:"
+
+msgid "Restore failed:"
+msgstr "Error en la restauración:"
+
+msgid "Select Backup File"
+msgstr "Seleccionar archivo de copia de seguridad"
+
+msgid "EngPlayer Backup Files"
+msgstr "Archivos de copia de seguridad de EngPlayer"
+
+msgid "This will DELETE ALL your current profiles and settings and replace them with the contents of:\n\n{}\n\nAny profiles or changes made after this backup was taken will be LOST.\n\nThis cannot be undone.\n\nThe app will close now and reopen automatically once the restore is complete — this can take up to 1-2 minutes, so please be patient."
+msgstr "Esto ELIMINARÁ TODOS tus perfiles y ajustes actuales y los reemplazará con el contenido de:\n\n{}\n\nCualquier perfil o cambio realizado después de esta copia de seguridad se PERDERÁ.\n\nEsto no se puede deshacer.\n\nLa aplicación se cerrará ahora y se volverá a abrir automáticamente cuando termine la restauración — esto puede tardar hasta 1-2 minutos, por favor ten paciencia."
+
+msgid "Yes, Delete Current Profiles and Restore Backup"
+msgstr "Sí, eliminar perfiles actuales y restaurar la copia de seguridad"
+
+msgid "Could not start restore."
+msgstr "No se pudo iniciar la restauración."
+
+msgid "Closing to restore your data. The app will reopen automatically..."
+msgstr "Cerrando para restaurar tus datos. La aplicación se volverá a abrir automáticamente..."
+
+msgid "Version History"
+msgstr "Historial de versiones"
+
+msgid "Current"
+msgstr "Actual"
+
+msgid "Downloaded"
+msgstr "Descargado"
+
+msgid "Already Downloaded"
+msgstr "Ya descargado"
+
+msgid "This content has already been downloaded and the file is still on your disk. Do you want to download it again?"
+msgstr "Este contenido ya se ha descargado y el archivo sigue en tu disco. ¿Quieres descargarlo de nuevo?"
+
+msgid " ⏯️ Continue Watching"
+msgstr " ⏯️ Seguir viendo"
+
+msgid "Watched"
+msgstr "Visto"
+
+msgid "Dolby Digital Output"
+msgstr "Salida Dolby Digital"
+
+msgid "5.1 sound for AV receivers"
+msgstr "Sonido 5.1 para receptores AV"
+
+msgid "Dolby Digital output enabled."
+msgstr "Salida Dolby Digital activada."
+
+msgid "Dolby Digital output disabled."
+msgstr "Salida Dolby Digital desactivada."
+
+msgid "Dolby Digital output enabled. Takes effect on next playback."
+msgstr "Salida Dolby Digital activada. Se aplicará en la próxima reproducción."
+
+msgid "Dolby Digital output disabled. Takes effect on next playback."
+msgstr "Salida Dolby Digital desactivada. Se aplicará en la próxima reproducción."
+
+msgid "Dolby Digital output is not available on this audio device. Using normal sound."
+msgstr "La salida Dolby Digital no está disponible en este dispositivo de audio. Se usa el sonido normal."
+
+msgid "Catch-up"
+msgstr "Catch-up"
+
+msgid "{} channels, up to {} days"
+msgstr "{} canales, hasta {} días"
+
+msgid "All Bouquets"
+msgstr "Todos los bouquets"
+
+msgid "Action"
+msgstr "Acción"
+
+msgid "Adventure"
+msgstr "Aventura"
+
+msgid "Animation"
+msgstr "Animación"
+
+msgid "Comedy"
+msgstr "Comedia"
+
+msgid "Crime"
+msgstr "Crimen"
+
+msgid "Documentary"
+msgstr "Documental"
+
+msgid "Drama"
+msgstr "Drama"
+
+msgid "Family"
+msgstr "Familia"
+
+msgid "Fantasy"
+msgstr "Fantasía"
+
+msgid "Science Fiction"
+msgstr "Ciencia ficción"
+
+msgid "Horror"
+msgstr "Terror"
+
+msgid "Thriller"
+msgstr "Suspense"
+
+msgid "Mystery"
+msgstr "Misterio"
+
+msgid "Romance"
+msgstr "Romance"
+
+msgid "Historical"
+msgstr "Historia"
+
+msgid "War"
+msgstr "Bélica"
+
+msgid "Western"
+msgstr "Western"
+
+msgid "All"
+msgstr "Todo"
+
+msgid "{} titles"
+msgstr "{} títulos"
+
+msgid " 🎬 All Movies"
+msgstr " 🎬 Todas las películas"
+
+msgid " 📺 All Series"
+msgstr " 📺 Todas las series"
+
+msgid "No titles found."
+msgstr "No se encontraron títulos."
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Este producto utiliza la API de TMDb, pero no está respaldado ni certificado por TMDb."
 
-msgid ""
-"EngPlayer Software License Agreement\n"
-"Copyright © 2025 Engin Eren. All Rights Reserved.\n\n"
-"By downloading, installing, or using this software (\"EngPlayer\"), you agree to the following terms:\n\n"
-"1. LICENSE GRANT\n"
-"This software is distributed as \"FREEWARE\". It may be downloaded, installed, and executed for personal use free of charge.\n\n"
-"2. RESTRICTIONS ON PORTING\n"
-"Without prior written permission from the copyright holder, it is STRICTLY PROHIBITED to port, adapt, or modify this software for use on other operating systems (Windows, macOS, Android, etc.).\n\n"
-"3. COMMERCIAL PROHIBITION\n"
-"This software may NOT be sold, rented, or included in any paid software bundle by any person or entity other than the copyright holder.\n\n"
-"4. NO CONTENT PROVIDED (DISCLAIMER)\n"
-"This software is a media player only. EngPlayer does NOT provide, include, or distribute any playlists, IPTV channels, video streams, or digital content.\n"
-"- Users are solely responsible for providing their own content (M3U files, Xtream codes, local files).\n"
-"- The developer assumes no liability for the content viewed by the user or for any copyright violations resulting from user-added content.\n\n"
-"5. DISCLAIMER OF WARRANTY\n"
-"This software is provided \"AS IS\". The copyright holder cannot be held responsible for any damages arising from the use of this software."
-msgstr ""
-"Acuerdo de Licencia de Software EngPlayer\n"
-"Copyright © 2025 Engin Eren. Todos los derechos reservados.\n\n"
-"Al descargar, instalar o utilizar este software (\"EngPlayer\"), usted acepta los siguientes términos:\n\n"
-"1. CONCESIÓN DE LICENCIA\n"
-"Este software se distribuye como \"FREEWARE\". Puede descargarse, instalarse y ejecutarse gratuitamente para uso personal.\n\n"
-"2. RESTRICCIONES DE PORTABILIDAD\n"
-"Sin el permiso previo por escrito del titular de los derechos de autor, está ESTRICTAMENTE PROHIBIDO portar, adaptar o modificar este software para su uso en otros sistemas operativos (Windows, macOS, Android, etc.).\n\n"
-"3. PROHIBICIÓN COMERCIAL\n"
-"Este software NO puede ser vendido, alquilado ni incluido en ningún paquete de software de pago por ninguna persona o entidad que no sea el titular de los derechos de autor.\n\n"
-"4. NO SE PROPORCIONA CONTENIDO (DESCARGO DE RESPONSABILIDAD)\n"
-"Este software es solo un reproductor multimedia. EngPlayer NO proporciona, incluye ni distribuye listas de reproducción, canales IPTV, transmisiones de vídeo o contenido digital.\n"
-"- Los usuarios son los únicos responsables de proporcionar su propio contenido (archivos M3U, códigos Xtream, archivos locales).\n"
-"- El desarrollador no asume ninguna responsabilidad por el contenido visto por el usuario o por cualquier violación de derechos de autor resultante del contenido añadido por el usuario.\n\n"
-"5. RENUNCIA DE GARANTÍA\n"
-"Este software se proporciona \"TAL CUAL\". El titular de los derechos de autor no se hace responsable de los daños derivados del uso de este software."
+# --- About window (GPL) ---
+msgid "EngPlayer is a media player only. It does not provide, include or distribute any playlists, IPTV channels, video streams or other content. Users are solely responsible for the content they add."
+msgstr "EngPlayer es únicamente un reproductor multimedia. No proporciona, incluye ni distribuye listas de reproducción, canales IPTV, transmisiones de vídeo ni ningún otro contenido. Los usuarios son los únicos responsables del contenido que añaden."
+
+msgid "Name and logo"
+msgstr "Nombre y logotipo"
+
+msgid "The name \"EngPlayer\", the EngPlayer logo and the application icon are not covered by the GNU GPL. Modified versions must use a different name and icon. See ADDITIONAL-TERMS.md for the additional terms under Section 7 of the GPL."
+msgstr "El nombre «EngPlayer», el logotipo de EngPlayer y el icono de la aplicación no están cubiertos por la GNU GPL. Las versiones modificadas deben usar un nombre y un icono diferentes. Consulte ADDITIONAL-TERMS.md para conocer los términos adicionales según la sección 7 de la GPL."
+
+msgid "Other components"
+msgstr "Otros componentes"
+
+msgid "EngPlayer includes other open source components under their own licenses. The full list is in THIRD-PARTY-NOTICES.md: https://github.com/Falldaemon/EngPlayer/blob/main/THIRD-PARTY-NOTICES.md"
+msgstr "EngPlayer incluye otros componentes de código abierto bajo sus propias licencias. La lista completa está en THIRD-PARTY-NOTICES.md: https://github.com/Falldaemon/EngPlayer/blob/main/THIRD-PARTY-NOTICES.md"
+
+msgid "Author attribution"
+msgstr "Atribución de autoría"
+
+msgid "You must preserve the copyright notice \"Copyright (C) 2025-2026 Engin Eren\" and the author attribution shown in the application's About window in all copies and in all modified versions."
+msgstr "Debe conservar el aviso de copyright \"Copyright (C) 2025-2026 Engin Eren\" y la atribución de autoría que se muestra en la ventana Acerca de la aplicación en todas las copias y en todas las versiones modificadas."

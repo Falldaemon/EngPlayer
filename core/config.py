@@ -5,7 +5,10 @@ import base64
 from gi.repository import GLib
 
 APP_ID = "io.github.falldaemon.engplayer"
-VERSION = "0.1.7"
+VERSION = "0.1.8"
+VERSION_LABEL = f"{VERSION} Beta" if os.name == "nt" else VERSION
+PROVIDER_USER_AGENT = "VLC/3.0.24 LibVLC/3.0.24"
+APP_USER_AGENT = f"EngPlayer/{VERSION} (+https://github.com/Falldaemon/EngPlayer)"
 
 current_dir = os.path.dirname(os.path.abspath(__file__))
 base_dir = os.path.dirname(current_dir)

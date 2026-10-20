@@ -1,0 +1,91 @@
+/* Windows-only overrides, loaded after style.css on Windows (cairo renderer). */
+
+.nav-icon-button:hover {
+    box-shadow: 2px 2px 0px @nav_button_hover_box_shadow;
+}
+
+.active-nav-icon {
+    box-shadow: 2px 2px 0px @nav_button_active_box_shadow;
+}
+
+.player-controls {
+    box-shadow: 2px 2px 0px @player_box_shadow;
+}
+
+.epg-panel {
+    box-shadow: 2px 2px 0px @epg_box_shadow;
+}
+
+.placeholder-icon,
+.control-button-box {
+    box-shadow: 2px 2px 0px #000000;
+}
+
+.subtitle-dialog,
+.password-dialog,
+.tmdb-api-dialog,
+.password-prompt-dialog,
+.delete-confirm-dialog,
+.switch-profile-dialog,
+.category-manager-dialog,
+.font-settings-dialog,
+.epg-detail-dialog,
+.set-password-warning-dialog,
+.resume-dialog,
+.shortcuts-window,
+.profile-window,
+.changelog-dialog,
+.catchup-dialog,
+.opensubtitles-api-dialog,
+.subtitle-results-dialog,
+.move-channel-dialog,
+.media-info-dialog,
+.trakt-api-dialog,
+.trakt-auth-dialog,
+.new-list-dialog,
+.move-list-dialog,
+.video-settings-window,
+.about-window,
+.add-podcast-dialog,
+.restart-dialog,
+.profile-editor-dialog,
+.global-search-dialog,
+.provider-test-dialog,
+.backup-link-dialog,
+.subtitle-settings-dialog,
+.delete-profile-dialog,
+.sleep-warning-dialog,
+.pip-warning-dialog,
+.profile-manager-dialog,
+.new-bucket-dialog,
+.editor-save-dialog,
+.download-warning-dialog,
+.download-speed-dialog,
+.download-cancel-dialog,
+.download-again-dialog,
+.external-player-dialog,
+.source-selection-dialog {
+    background-color: alpha(@theme_bg_color, 0.95);
+}
+
+.scheduler-window {
+    background-color: alpha(@theme_bg_color, 0.97);
+}
+
+.scheduler-selection-dialog {
+    background-color: alpha(@theme_bg_color, 0.97);
+}
+
+window.timeshift-settings-dialog,
+.timeshift-settings-dialog {
+    background-color: alpha(@theme_bg_color, 0.97);
+}
+
+window.timeshift-settings-dialog,
+.timeshift-settings-dialog {
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+window.timeshift-settings-dialog .boxed-list {
+    background-color: alpha(@theme_fg_color, 0.10);
+}

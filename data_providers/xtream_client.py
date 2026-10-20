@@ -2,6 +2,7 @@
 
 import requests
 import logging
+from core.config import APP_USER_AGENT
 
 def _get_api_data(profile_info, action):
     host = profile_info.get("host")
@@ -15,7 +16,7 @@ def _get_api_data(profile_info, action):
             url = f"{host}/player_api.php?username={username}&password={password}&action={action}"
         else:
             url = f"{host}/player_api.php?username={username}&password={password}"
-        headers = {"User-Agent": "EngPlayer/1.0"}
+        headers = {"User-Agent": APP_USER_AGENT}
         response = requests.get(url, headers=headers, timeout=20)
         response.raise_for_status()
         json_response = response.json()

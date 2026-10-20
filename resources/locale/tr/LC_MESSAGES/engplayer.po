@@ -760,8 +760,14 @@ msgstr "Listeyi Taşı"
 msgid "Unknown List"
 msgstr "Bilinmeyen Liste"
 
-msgid "Play as Picture-in-Picture"
-msgstr "Resim içinde Resim Olarak Oynat (PiP)"
+msgid "Watch in Multiview"
+msgstr "Multiview'de İzle"
+
+msgid "Picture-in-Picture"
+msgstr "Resim İçinde Resim"
+
+msgid "Multiview"
+msgstr "Multiview"
 
 msgid "Remove Library"
 msgstr "Kütüphaneyi Kaldır"
@@ -962,6 +968,9 @@ msgstr "Sonraki Kanal"
 
 msgid "Previous Channel"
 msgstr "Önceki Kanal"
+
+msgid "Last Watched Channel"
+msgstr "Son İzlenen Kanal"
 
 msgid "General Controls"
 msgstr "Genel Kontroller"
@@ -1974,8 +1983,8 @@ msgstr "Altyazı içeriği alınamadı."
 msgid "Important Warning: Ban Risk!"
 msgstr "Önemli Uyarı: Ban Riski!"
 
-msgid "Opening Picture-in-Picture (PiP) mode will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
-msgstr "Picture-in-Picture (PiP) modunu açmak, sağlayıcınıza aynı anda ikinci bir yayın isteği gönderecektir.\n\nEğer IPTV aboneliğiniz aynı anda sadece tek bir bağlantıya izin veriyorsa, bu durum hesabınızın sağlayıcı tarafından otomatik olarak yasaklanmasına (banlanmasına) neden olabilir.\n\nBu riski kabul edip devam etmek istiyor musunuz?"
+msgid "Opening Multiview will send a second simultaneous stream request to your provider.\n\nIf your IPTV subscription only allows a single connection at a time, doing this may cause your account to be automatically banned by the provider.\n\nDo you accept this risk and wish to continue?"
+msgstr "Multiview'i açmak, sağlayıcınıza aynı anda ikinci bir yayın isteği gönderecektir.\n\nEğer IPTV aboneliğiniz aynı anda sadece tek bir bağlantıya izin veriyorsa, bu durum hesabınızın sağlayıcı tarafından otomatik olarak yasaklanmasına (banlanmasına) neden olabilir.\n\nBu riski kabul edip devam etmek istiyor musunuz?"
 
 msgid "Do not show this warning again"
 msgstr "Bu uyarıyı bir daha gösterme"
@@ -2401,38 +2410,342 @@ msgstr "Harici oynatıcı başlatılamadı"
 msgid "Change External Player"
 msgstr "Harici Oynatıcıyı Değiştir"
 
+msgid "Manual EPG Sources"
+msgstr "Manuel EPG Kaynakları"
+
+msgid "Optional, max 3 — provider EPG always has priority"
+msgstr "İsteğe bağlı, en fazla 3 — sağlayıcı EPG'si her zaman önceliklidir"
+
+msgid "+ Add EPG Source"
+msgstr "+ EPG Kaynağı Ekle"
+
+msgid "External EPG URL (XMLTV)"
+msgstr "Harici EPG URL'si (XMLTV)"
+
+msgid "Downloading EPG source {}/{}..."
+msgstr "EPG kaynağı indiriliyor {}/{}..."
+
+msgid "Merging EPG sources into the database..."
+msgstr "EPG kaynakları veritabanında birleştiriliyor..."
+
+msgid "External Channel Logos"
+msgstr "Harici Kanal Logoları"
+
+msgid "Optional — use a local folder of logo images matched by channel name"
+msgstr "İsteğe bağlı — kanal adına göre eşleşen logo görsellerinin bulunduğu yerel bir klasör kullanın"
+
+msgid "Critical Database Error"
+msgstr "Kritik Veritabanı Hatası"
+
+msgid "Could not set profile database: {e}"
+msgstr "Profil veritabanı ayarlanamadı: {e}"
+
+msgid "An unexpected error occurred while loading profile '{}'.\n\nReason: {}"
+msgstr "'{}' profili yüklenirken beklenmeyen bir hata oluştu.\n\nSebep: {}"
+
+msgid "Unknown Profile"
+msgstr "Bilinmeyen Profil"
+
+msgid "Other"
+msgstr "Diğer"
+
+msgid "e.g., http://server.com:8080"
+msgstr "örn. http://server.com:8080"
+
+msgid "http://example.com/list.m3u"
+msgstr "http://example.com/list.m3u"
+
+msgid "Provider Test"
+msgstr "Sağlayıcı Testi"
+
+msgid "Testing provider..."
+msgstr "Sağlayıcı test ediliyor..."
+
+msgid "This may take a few seconds."
+msgstr "Bu birkaç saniye sürebilir."
+
+msgid "Unsupported profile type for testing."
+msgstr "Bu profil türü test için desteklenmiyor."
+
+msgid "Could not connect to the provider. Check your credentials and connection."
+msgstr "Sağlayıcıya bağlanılamadı. Kullanıcı bilgilerinizi ve bağlantınızı kontrol edin."
+
+msgid "Unlimited / Unknown"
+msgstr "Sınırsız / Bilinmiyor"
+
+msgid "Could not access the M3U source."
+msgstr "M3U kaynağına erişilemedi."
+
+msgid "Test Failed"
+msgstr "Test Başarısız"
+
+msgid "Unknown error."
+msgstr "Bilinmeyen hata."
+
+msgid "Response Time"
+msgstr "Yanıt Süresi"
+
+msgid "Account Status"
+msgstr "Hesap Durumu"
+
+msgid "Expiration Date"
+msgstr "Bitiş Tarihi"
+
+msgid "Connections"
+msgstr "Bağlantılar"
+
+msgid "{} categories, {} channels"
+msgstr "{} kategori, {} kanal"
+
+msgid "Movies (VOD)"
+msgstr "Filmler (VOD)"
+
+msgid "{} categories, {} movies"
+msgstr "{} kategori, {} film"
+
+msgid "{} categories, {} series"
+msgstr "{} kategori, {} dizi"
+
+msgid "VOD Files"
+msgstr "VOD Dosyaları"
+
+msgid "Categories"
+msgstr "Kategoriler"
+
+msgid "Add Backup Link — {}"
+msgstr "Yedek Link Ekle — {}"
+
+msgid "Backup link added: {} – {}"
+msgstr "Yedek link eklendi: {} – {}"
+
+msgid "Could not build a playable URL for this channel."
+msgstr "Bu kanal için oynatılabilir bir URL oluşturulamadı."
+
+msgid "Could not load channels from this profile."
+msgstr "Bu profildeki kanallar yüklenemedi."
+
+msgid "Loading channels..."
+msgstr "Kanallar yükleniyor..."
+
+msgid "No other profiles found."
+msgstr "Başka profil bulunamadı."
+
+msgid "Which profile do you want to add this from?"
+msgstr "Bunu hangi profilden eklemek istersin?"
+
+msgid "Change Backup Link"
+msgstr "Yedek Linki Değiştir"
+
+msgid "Remove Backup Link"
+msgstr "Yedek Linki Kaldır"
+
+msgid "Add Backup Link"
+msgstr "Yedek Link Ekle"
+
+msgid "Backup link removed."
+msgstr "Yedek link kaldırıldı."
+
+msgid "Primary stream failed. Trying backup link..."
+msgstr "Ana yayın başarısız oldu. Yedek bağlantı deneniyor..."
+
+msgid "Play Backup Link"
+msgstr "Yedek Linki Oynat"
+
+msgid "Switching to backup link..."
+msgstr "Yedek linke geçiliyor..."
+
+msgid "Full Backup"
+msgstr "Tam Yedek"
+
+msgid "Back up all profiles and settings to a folder"
+msgstr "Tüm profilleri ve ayarları bir klasöre yedekle"
+
+msgid "Choose Backup Destination Folder"
+msgstr "Yedekleme Hedef Klasörünü Seç"
+
+msgid "This will close the application and back up all your profiles and settings to:\n\n{}\n\nThe app will close now and reopen automatically once the backup is complete — this can take up to 1-2 minutes, so please be patient."
+msgstr "Bu işlem uygulamayı kapatıp tüm profillerinizi ve ayarlarınızı şu klasöre yedekleyecek:\n\n{}\n\nUygulama şimdi kapanacak ve yedekleme tamamlanınca otomatik olarak yeniden açılacaktır — bu işlem 1-2 dakika sürebilir, lütfen sabırlı olun."
+
+msgid "Start Backup"
+msgstr "Yedeklemeyi Başlat"
+
+msgid "Could not start backup."
+msgstr "Yedekleme başlatılamadı."
+
+msgid "Closing to back up your data. The app will reopen automatically..."
+msgstr "Verileriniz yedeklenmek üzere kapatılıyor. Uygulama otomatik olarak yeniden açılacak..."
+
+msgid "Full Restore"
+msgstr "Tam Geri Yükleme"
+
+msgid "Backup completed successfully!"
+msgstr "Yedekleme başarıyla tamamlandı!"
+
+msgid "Restore completed successfully! Please select a profile."
+msgstr "Geri yükleme başarıyla tamamlandı! Lütfen bir profil seçin."
+
+msgid "Backup failed:"
+msgstr "Yedekleme başarısız oldu:"
+
+msgid "Restore failed:"
+msgstr "Geri yükleme başarısız oldu:"
+
+msgid "Select Backup File"
+msgstr "Yedek Dosyası Seç"
+
+msgid "EngPlayer Backup Files"
+msgstr "EngPlayer Yedek Dosyaları"
+
+msgid "This will DELETE ALL your current profiles and settings and replace them with the contents of:\n\n{}\n\nAny profiles or changes made after this backup was taken will be LOST.\n\nThis cannot be undone.\n\nThe app will close now and reopen automatically once the restore is complete — this can take up to 1-2 minutes, so please be patient."
+msgstr "Bu işlem, MEVCUT TÜM profillerinizi ve ayarlarınızı SİLECEK, yerine şunun içeriğini yükleyecek:\n\n{}\n\nBu yedek alındıktan sonra yapılan tüm profil/değişiklikler KAYBOLACAK.\n\nBu işlem geri alınamaz.\n\nUygulama şimdi kapanacak ve geri yükleme tamamlanınca otomatik olarak yeniden açılacaktır — bu işlem 1-2 dakika sürebilir, lütfen sabırlı olun."
+
+msgid "Yes, Delete Current Profiles and Restore Backup"
+msgstr "Evet, Mevcut Profilleri Sil ve Yedeği Yükle"
+
+msgid "Could not start restore."
+msgstr "Geri yükleme başlatılamadı."
+
+msgid "Closing to restore your data. The app will reopen automatically..."
+msgstr "Verileriniz geri yüklenmek üzere kapatılıyor. Uygulama otomatik olarak yeniden açılacak..."
+
+msgid "Version History"
+msgstr "Sürüm Geçmişi"
+
+msgid "Current"
+msgstr "Mevcut"
+
+msgid "Downloaded"
+msgstr "İndirildi"
+
+msgid "Already Downloaded"
+msgstr "Zaten İndirildi"
+
+msgid "This content has already been downloaded and the file is still on your disk. Do you want to download it again?"
+msgstr "Bu içerik zaten indirildi ve dosya hâlâ diskinizde. Tekrar indirmek istiyor musunuz?"
+
+msgid " ⏯️ Continue Watching"
+msgstr " ⏯️ İzlemeye Devam Et"
+
+msgid "Watched"
+msgstr "İzlendi"
+
+msgid "Dolby Digital Output"
+msgstr "Dolby Digital Çıkışı"
+
+msgid "5.1 sound for AV receivers"
+msgstr "AV alıcıları için 5.1 ses"
+
+msgid "Dolby Digital output enabled."
+msgstr "Dolby Digital çıkışı açıldı."
+
+msgid "Dolby Digital output disabled."
+msgstr "Dolby Digital çıkışı kapatıldı."
+
+msgid "Dolby Digital output enabled. Takes effect on next playback."
+msgstr "Dolby Digital çıkışı açıldı. Bir sonraki oynatmada etkin olur."
+
+msgid "Dolby Digital output disabled. Takes effect on next playback."
+msgstr "Dolby Digital çıkışı kapatıldı. Bir sonraki oynatmada etkin olur."
+
+msgid "Dolby Digital output is not available on this audio device. Using normal sound."
+msgstr "Dolby Digital çıkışı bu ses aygıtında kullanılamıyor. Normal ses kullanılıyor."
+
+msgid "Catch-up"
+msgstr "Catch-up"
+
+msgid "{} channels, up to {} days"
+msgstr "{} kanal, en fazla {} gün"
+
+msgid "All Bouquets"
+msgstr "Tüm Buketler"
+
+msgid "Action"
+msgstr "Aksiyon"
+
+msgid "Adventure"
+msgstr "Macera"
+
+msgid "Animation"
+msgstr "Animasyon"
+
+msgid "Comedy"
+msgstr "Komedi"
+
+msgid "Crime"
+msgstr "Suç"
+
+msgid "Documentary"
+msgstr "Belgesel"
+
+msgid "Drama"
+msgstr "Dram"
+
+msgid "Family"
+msgstr "Aile"
+
+msgid "Fantasy"
+msgstr "Fantastik"
+
+msgid "Science Fiction"
+msgstr "Bilim Kurgu"
+
+msgid "Horror"
+msgstr "Korku"
+
+msgid "Thriller"
+msgstr "Gerilim"
+
+msgid "Mystery"
+msgstr "Gizem"
+
+msgid "Romance"
+msgstr "Romantik"
+
+msgid "Historical"
+msgstr "Tarih"
+
+msgid "War"
+msgstr "Savaş"
+
+msgid "Western"
+msgstr "Western"
+
+msgid "All"
+msgstr "Tümü"
+
+msgid "{} titles"
+msgstr "{} içerik"
+
+msgid " 🎬 All Movies"
+msgstr " 🎬 Tüm Filmler"
+
+msgid " 📺 All Series"
+msgstr " 📺 Tüm Diziler"
+
+msgid "No titles found."
+msgstr "Hiç içerik bulunamadı."
+
 msgid "This product uses the TMDb API but is not endorsed or certified by TMDb."
 msgstr "Bu ürün TMDb API'sini kullanır ancak TMDb tarafından onaylanmamış veya sertifikalandırılmamıştır."
 
-msgid ""
-"EngPlayer Software License Agreement\n"
-"Copyright © 2025 Engin Eren. All Rights Reserved.\n\n"
-"By downloading, installing, or using this software (\"EngPlayer\"), you agree to the following terms:\n\n"
-"1. LICENSE GRANT\n"
-"This software is distributed as \"FREEWARE\". It may be downloaded, installed, and executed for personal use free of charge.\n\n"
-"2. RESTRICTIONS ON PORTING\n"
-"Without prior written permission from the copyright holder, it is STRICTLY PROHIBITED to port, adapt, or modify this software for use on other operating systems (Windows, macOS, Android, etc.).\n\n"
-"3. COMMERCIAL PROHIBITION\n"
-"This software may NOT be sold, rented, or included in any paid software bundle by any person or entity other than the copyright holder.\n\n"
-"4. NO CONTENT PROVIDED (DISCLAIMER)\n"
-"This software is a media player only. EngPlayer does NOT provide, include, or distribute any playlists, IPTV channels, video streams, or digital content.\n"
-"- Users are solely responsible for providing their own content (M3U files, Xtream codes, local files).\n"
-"- The developer assumes no liability for the content viewed by the user or for any copyright violations resulting from user-added content.\n\n"
-"5. DISCLAIMER OF WARRANTY\n"
-"This software is provided \"AS IS\". The copyright holder cannot be held responsible for any damages arising from the use of this software."
-msgstr ""
-"EngPlayer Yazılım Lisans Sözleşmesi\n"
-"Telif Hakkı © 2025 Engin Eren. Tüm Hakları Saklıdır.\n\n"
-"Bu yazılımı (\"EngPlayer\") indirerek, kurarak veya kullanarak aşağıdaki şartları kabul etmiş olursunuz:\n\n"
-"1. KULLANIM HAKKI (LİSANS)\n"
-"Bu yazılım \"ÜCRETSİZ\" (Freeware) olarak dağıtılmaktadır. Kişisel kullanım için ücretsiz olarak indirilebilir, kurulabilir ve çalıştırılabilir.\n\n"
-"2. PLATFORM VE PORT ETME KISITLAMASI\n"
-"Telif hakkı sahibinin yazılı izni olmaksızın bu yazılımı başka işletim sistemlerine (Windows, macOS, Android vb.) uyarlamak, port etmek veya değiştirmek KESİNLİKLE YASAKTIR.\n\n"
-"3. TİCARİ KULLANIM YASAĞI\n"
-"Bu yazılım telif hakkı sahibi haricinde hiçbir kişi veya kurum tarafından ücret karşılığında satılamaz, kiralanamaz veya ticari bir paket içine dahil edilemez.\n\n"
-"4. İÇERİK SORUMLULUĞU REDDİ (ÖNEMLİ)\n"
-"Bu yazılım yalnızca bir medya oynatıcı aracıdır. EngPlayer, kullanıcılara herhangi bir oynatma listesi, IPTV kanalı, video akışı veya dijital içerik SAĞLAMAZ.\n"
-"- Kullanıcılar kendi içeriklerini (M3U dosyaları, Xtream kodları, yerel dosyalar) kendileri temin etmek zorundadır.\n"
-"- Geliştirici, kullanıcı tarafından eklenen içeriklerin telif hakları veya yasallığı konusunda hiçbir sorumluluk kabul etmez.\n\n"
-"5. SORUMLULUK REDDİ\n"
-"Bu yazılım \"OLDUĞU GİBİ\" sunulmaktadır. Yazılımın kullanımı sırasında oluşabilecek herhangi bir zarardan telif hakkı sahibi sorumlu tutulamaz."
+# --- About window (GPL) ---
+msgid "EngPlayer is a media player only. It does not provide, include or distribute any playlists, IPTV channels, video streams or other content. Users are solely responsible for the content they add."
+msgstr "EngPlayer yalnızca bir medya oynatıcıdır. Herhangi bir oynatma listesi, IPTV kanalı, video akışı veya başka bir içerik sağlamaz, içermez ve dağıtmaz. Eklenen içerikten yalnızca kullanıcılar sorumludur."
+
+msgid "Name and logo"
+msgstr "Ad ve logo"
+
+msgid "The name \"EngPlayer\", the EngPlayer logo and the application icon are not covered by the GNU GPL. Modified versions must use a different name and icon. See ADDITIONAL-TERMS.md for the additional terms under Section 7 of the GPL."
+msgstr "\"EngPlayer\" adı, EngPlayer logosu ve uygulama simgesi GNU GPL kapsamında değildir. Değiştirilmiş sürümler farklı bir ad ve simge kullanmalıdır. GPL'nin 7. bölümü kapsamındaki ek koşullar için ADDITIONAL-TERMS.md dosyasına bakın."
+
+msgid "Other components"
+msgstr "Diğer bileşenler"
+
+msgid "EngPlayer includes other open source components under their own licenses. The full list is in THIRD-PARTY-NOTICES.md: https://github.com/Falldaemon/EngPlayer/blob/main/THIRD-PARTY-NOTICES.md"
+msgstr "EngPlayer, kendi lisanslarına tabi başka açık kaynak bileşenler de içerir. Tam liste THIRD-PARTY-NOTICES.md dosyasındadır: https://github.com/Falldaemon/EngPlayer/blob/main/THIRD-PARTY-NOTICES.md"
+
+msgid "Author attribution"
+msgstr "Yazar bilgisi"
+
+msgid "You must preserve the copyright notice \"Copyright (C) 2025-2026 Engin Eren\" and the author attribution shown in the application's About window in all copies and in all modified versions."
+msgstr "Tüm kopyalarda ve tüm değiştirilmiş sürümlerde \"Copyright (C) 2025-2026 Engin Eren\" telif bildirimi ve uygulamanın Hakkında penceresinde gösterilen yazar bilgisi korunmalıdır."

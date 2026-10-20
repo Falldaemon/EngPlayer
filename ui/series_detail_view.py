@@ -13,44 +13,8 @@ import json
 import re
 
 import locale
-from deep_translator import GoogleTranslator
-
-def get_system_language():
-    try:
-        langs = GLib.get_language_names()
-        for lang in langs:
-            code = lang[:2].lower()
-            if code and code != 'c':
-                return code               
-        env_lang = os.environ.get('LANG', '')
-        if env_lang:
-            code = env_lang[:2].lower()
-            if code and code != 'c':
-                return code             
-        return 'en'        
-    except Exception as e:
-        logging.error(f"Language detection error: {e}")
-        return 'en'
-
-def translate_text_manually(text, callback, button_to_disable=None):
-    if not text or len(text.strip()) == 0:
-        return
-    if button_to_disable:
-        button_to_disable.set_sensitive(False)
-
-    def run_translation():
-        try:
-            target_lang = get_system_language()
-            translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
-            GLib.idle_add(callback, translated)
-        except Exception as e:
-            logging.error(f"Translation error: {e}")
-            GLib.idle_add(callback, text)
-        finally:
-            if button_to_disable:
-                GLib.idle_add(button_to_disable.set_sensitive, True)
-    threading.Thread(target=run_translation, daemon=True).start()
-
+from utils import title_parser
+from utils.translation_utils import get_system_language, translate_text_manually
 from utils.image_loader import load_image_async
 from data_providers import tmdb_client
 from core.config import get_fallback_tmdb_key
@@ -192,11 +156,16 @@ class SeriesDetailView(Gtk.Box):
         main_box.set_margin_top(12)
         self.append(main_box)
         self.info_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=8)
-        main_box.append(self.info_box)
+        info_scroll = Gtk.ScrolledWindow(propagate_natural_width=True)
+        info_scroll.set_policy(Gtk.PolicyType.NEVER, Gtk.PolicyType.AUTOMATIC)
+        info_scroll.set_child(self.info_box)
+        main_box.append(info_scroll)
         self.poster_image = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
-        self.poster_image.set_size_request(100, 200)
+        self.poster_image.set_size_request(260, 390)
         self.poster_image.set_valign(Gtk.Align.START)
-        self.info_box.append(self.poster_image)
+        poster_box = Gtk.Box(halign=Gtk.Align.CENTER)
+        poster_box.append(self.poster_image)
+        self.info_box.append(poster_box)
         self.title_label = Gtk.Label(xalign=0, wrap=True)
         self.title_label.set_wrap_mode(Pango.WrapMode.WORD_CHAR)
         self.info_box.append(self.title_label)
@@ -289,11 +258,15 @@ class SeriesDetailView(Gtk.Box):
         episodes_box.append(cast_scrolled)
         self.episodes_data = {}
         self.series_id_xtream = None
+        self.series_name_xtream = None
+        self.series_cover_xtream = None
+        self.series_category_id_xtream = None
         self.clean_tmdb_title = None
         self.current_tmdb_season_data = None
         self._episode_download_buttons = {}
         self._is_downloading = False
         self._active_download_episode_id = None
+        self._downloaded_episode_ids = set()
 
     def update_content(self, series_info, series_id=None):
         logging.debug(f"SERIES DETAIL: update_content STARTED.")
@@ -307,6 +280,9 @@ class SeriesDetailView(Gtk.Box):
             info = series_info.get("info", {})
             initial_title = info.get('name', initial_title)
         self.episodes_data = series_info.get("episodes", {}) if series_info else {}
+        self.series_name_xtream = initial_title
+        self.series_cover_xtream = info.get('cover')
+        self.series_category_id_xtream = info.get('category_id')
         self.clean_tmdb_title = initial_title.split(' (')[0].strip()
         self.title_label.set_markup(f"<span weight='bold' size='large'>{GLib.markup_escape_text(initial_title)}</span>")
         self.release_date_label.set_text("")
@@ -323,8 +299,7 @@ class SeriesDetailView(Gtk.Box):
         self.trailer_button.set_sensitive(False)
         poster_url = info.get('cover') or info.get('backdrop_path')
         if poster_url and isinstance(poster_url, str) and poster_url.startswith("http"):
-            load_image_async(poster_url, self.poster_image,
-                             on_success_callback=lambda w, p: w.set_paintable(Gdk.Texture.new_for_pixbuf(p)))
+            load_image_async(poster_url, self.poster_image, on_success_callback=self._set_poster_pixbuf)
         user_key = database.get_config_value("tmdb_api_key")
         api_key = user_key if user_key else get_fallback_tmdb_key()
         use_tmdb = database.get_use_tmdb_status()
@@ -357,6 +332,16 @@ class SeriesDetailView(Gtk.Box):
         if not tmdb_handled:
             logging.debug("SERIES DETAIL: TMDb not handled. CALLING fallback _update_labels_from_xtream_info.")
             self._update_labels_from_xtream_info(series_info)
+            if use_tmdb and api_key:
+                series_name_for_search = info.get('name') or info.get('title')
+                if series_name_for_search:
+                    logging.info(f"SERIES DETAIL: No TMDb ID from provider. Trying title-based search for '{series_name_for_search}'.")
+                    thread = threading.Thread(
+                        target=self._fetch_tmdb_series_data,
+                        args=(series_name_for_search,),
+                        daemon=True
+                    )
+                    thread.start()
         logging.debug("SERIES DETAIL: Populating seasons and episodes...")
         if hasattr(self, "season_combo_handler_id"):
              if self.season_combo.handler_is_connected(self.season_combo_handler_id):
@@ -504,7 +489,7 @@ class SeriesDetailView(Gtk.Box):
         release_date = info.get('releasedate') or info.get('releaseDate')
         self.release_date_label.set_text(_("Release Date:") + f" {release_date}" if release_date else "")
         genre_xtream = info.get('genre')
-        self.genre_label.set_markup(f"<i>{genre_xtream}</i>" if genre_xtream else "")
+        self.genre_label.set_markup(f"<i>{GLib.markup_escape_text(genre_xtream)}</i>" if genre_xtream else "")
         while (child := self.cast_flowbox.get_child_at_index(0)):
             self.cast_flowbox.remove(child)
         cast_text = info.get('cast')
@@ -543,10 +528,41 @@ class SeriesDetailView(Gtk.Box):
          self._update_labels_from_xtream_info(None)
          return GLib.SOURCE_REMOVE
 
+    def _set_poster_pixbuf(self, widget, pixbuf):
+        target_width = 260
+        if pixbuf.get_width() != target_width:
+            scaled_height = max(1, int(pixbuf.get_height() * target_width / pixbuf.get_width()))
+            pixbuf = pixbuf.scale_simple(target_width, scaled_height, GdkPixbuf.InterpType.BILINEAR)
+        widget.set_paintable(Gdk.Texture.new_for_pixbuf(pixbuf))
+
     def _set_overview_text(self, text):
         buffer = self.overview_textview.get_buffer()
         buffer.delete(buffer.get_start_iter(), buffer.get_end_iter())
         buffer.insert(buffer.get_start_iter(), text)
+        
+    def get_final_episode_key(self):
+        if not self.episodes_data:
+            return None
+        try:
+            last_season = max(self.episodes_data.keys(), key=lambda k: int(k))
+        except (ValueError, TypeError):
+            last_season = max(self.episodes_data.keys())
+        episodes = [ep for ep in (self.episodes_data.get(last_season) or []) if ep.get('id')]
+        if not episodes:
+            return None
+        def _ep_num(ep):
+            try:
+                return int(ep.get('episode_num', 0))
+            except (ValueError, TypeError):
+                return 0
+        return str(max(episodes, key=_ep_num).get('id'))
+
+    def has_episode(self, episode_key):
+        for episodes in self.episodes_data.values():
+            for ep in episodes or []:
+                if str(ep.get('id')) == str(episode_key):
+                    return True
+        return False    
 
     def _on_season_changed(self, combo):
         selected_season = combo.get_active_id()
@@ -602,6 +618,9 @@ class SeriesDetailView(Gtk.Box):
             watched_set = database.get_watched_status_batch(episode_ids)
         try: sorted_episodes = sorted(episodes, key=lambda x: int(x.get('episode_num', 0)))
         except: sorted_episodes = episodes
+        self._downloaded_episode_ids = self._load_downloaded_episode_ids(
+            [self._episode_unique_id(ep) for ep in sorted_episodes]
+        )
         for episode in sorted_episodes:
             row = Gtk.ListBoxRow()
             ep_num = str(episode.get('episode_num', '?'))
@@ -640,6 +659,7 @@ class SeriesDetailView(Gtk.Box):
             main_hbox.append(action_box)
             if is_watched:
                 watched_indicator = Gtk.Button(icon_name="object-select-symbolic")
+                watched_indicator.set_tooltip_text(_("Watched"))
                 watched_indicator.add_css_class("watched-button")
                 watched_indicator.add_css_class("watched")
                 watched_indicator.set_can_focus(False)
@@ -649,14 +669,16 @@ class SeriesDetailView(Gtk.Box):
             download_btn.add_css_class("flat")
             download_btn.set_tooltip_text(_("Download Episode"))
             download_btn.connect("clicked", lambda b, ep=episode: self._on_episode_download_clicked(b, ep))
-            ep_unique_id = str(episode.get('id')) or f"{episode.get('season')}_{episode.get('episode_num')}"
+            ep_unique_id = self._episode_unique_id(episode)
             self._episode_download_buttons[ep_unique_id] = download_btn
             if self._is_downloading:
                 if self._active_download_episode_id == ep_unique_id:
                     download_btn.set_icon_name("process-stop-symbolic")
                     download_btn.add_css_class("destructive-action")
                 else:
-                    download_btn.set_sensitive(False)                  
+                    download_btn.set_sensitive(False)
+            else:
+                self._style_idle_download_button(download_btn, ep_unique_id in self._downloaded_episode_ids)                  
             action_box.append(download_btn)
             row.set_child(main_hbox)
             self.episode_listbox.append(row)
@@ -750,18 +772,9 @@ class SeriesDetailView(Gtk.Box):
             tmdb_id = search_result.get('id')
             if tmdb_id:
                 details = tmdb_client.get_media_details(api_key, tmdb_id, 'tv')
-                if details:
-                    database.save_metadata(str(self.series_id), details)
-                    GLib.idle_add(self._update_ui_with_tmdb, details)
-                season_id = self.season_combo.get_active_id()
-                if season_id and season_id.isdigit():
-                    if self.all_seasons_tmdb_data.get(str(season_id)):
-                        logging.info(f"Using cached season data for Season {season_id}")
-                        GLib.idle_add(self._update_episodes_with_tmdb, self.all_seasons_tmdb_data[str(season_id)])
-                    else:
-                        season_data = tmdb_client.get_season_details(api_key, tmdb_id, int(season_id))
-                        if season_data:
-                            GLib.idle_add(self._update_episodes_with_tmdb, season_data)
+                if details and self.series_id_xtream:
+                    database.save_metadata(self.series_id_xtream, details)
+                    GLib.idle_add(self._update_labels_from_tmdb_data, details)
 
     def _update_episodes_with_tmdb(self, season_data):
         self.current_tmdb_season_data = season_data
@@ -797,6 +810,7 @@ class SeriesDetailView(Gtk.Box):
                 if not is_visually_watched and tmdb_ep_id and str(tmdb_ep_id) in trakt_cache:
                     database.save_playback_progress(str(ep_data.get('id')), position=0, is_finished=1)
                     icon = Gtk.Button(icon_name="object-select-symbolic")
+                    icon.set_tooltip_text(_("Watched"))
                     icon.add_css_class("watched-button")
                     icon.add_css_class("watched")
                     icon.set_can_focus(False)
@@ -823,22 +837,76 @@ class SeriesDetailView(Gtk.Box):
                     overview_lbl._original_text = overview_text                    
                     vbox.append(overview_lbl)
                     
+    @staticmethod
+    def _episode_unique_id(episode_data):
+        return str(episode_data.get('id')) or f"{episode_data.get('season')}_{episode_data.get('episode_num')}"
+
+    @staticmethod
+    def _episode_download_key(ep_unique_id):
+        return f"episode:{ep_unique_id}"
+
+    def _load_downloaded_episode_ids(self, ep_unique_ids):
+        keys = {self._episode_download_key(ep_id): ep_id for ep_id in ep_unique_ids if ep_id}
+        downloaded_keys = database.get_downloaded_content_keys(list(keys.keys()))
+        return {keys[key] for key in downloaded_keys}
+
+    def _style_idle_download_button(self, btn, is_downloaded):
+        btn.set_sensitive(True)
+        btn.remove_css_class("destructive-action")
+        if is_downloaded:
+            btn.set_icon_name("object-select-symbolic")
+            btn.remove_css_class("flat")
+            btn.add_css_class("downloaded-button")
+            btn.set_tooltip_text(_("Downloaded"))
+        else:
+            btn.set_icon_name("folder-download-symbolic")
+            btn.remove_css_class("downloaded-button")
+            btn.add_css_class("flat")
+            btn.set_tooltip_text(_("Download Episode"))
+
     def _on_episode_download_clicked(self, button, episode_data):
-        ep_unique_id = str(episode_data.get('id')) or f"{episode_data.get('season')}_{episode_data.get('episode_num')}"       
+        ep_unique_id = self._episode_unique_id(episode_data)
         if self._is_downloading and self._active_download_episode_id == ep_unique_id:
             self.emit("cancel-episode-download-requested")
         elif not self._is_downloading:
             series_title = getattr(self, 'clean_tmdb_title', "Unknown Series")
-            self.emit("episode-download-requested", episode_data, series_title)
+            if ep_unique_id in self._downloaded_episode_ids:
+                self._confirm_download_again(lambda: self.emit("episode-download-requested", episode_data, series_title))
+            else:
+                self.emit("episode-download-requested", episode_data, series_title)
+
+    def _confirm_download_again(self, on_confirm):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            heading=_("Already Downloaded"),
+            body=_("This content has already been downloaded and the file is still on your disk. Do you want to download it again?"),
+            modal=True
+        )
+        dialog.add_css_class("download-again-dialog")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("download", _("Download"))
+        dialog.set_response_appearance("download", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+
+        def _on_response(d, response_id):
+            d.close()
+            if response_id == "download":
+                on_confirm()
+        dialog.connect("response", _on_response)
+        dialog.present()
 
     def set_download_state(self, is_downloading, active_episode_data=None):
-        self._is_downloading = is_downloading      
+        self._is_downloading = is_downloading
         if is_downloading and active_episode_data:
-            self._active_download_episode_id = str(active_episode_data.get('id')) or f"{active_episode_data.get('season')}_{active_episode_data.get('episode_num')}"
+            self._active_download_episode_id = self._episode_unique_id(active_episode_data)
         elif not is_downloading:
             self._active_download_episode_id = None
+            self._downloaded_episode_ids = self._load_downloaded_episode_ids(list(self._episode_download_buttons.keys()))
         for ep_id, btn in self._episode_download_buttons.items():
             if self._is_downloading:
+                btn.remove_css_class("downloaded-button")
+                btn.add_css_class("flat")
                 if ep_id == self._active_download_episode_id:
                     btn.set_icon_name("process-stop-symbolic")
                     btn.add_css_class("destructive-action")
@@ -848,6 +916,4 @@ class SeriesDetailView(Gtk.Box):
                     btn.remove_css_class("destructive-action")
                     btn.set_sensitive(False)
             else:
-                btn.set_icon_name("folder-download-symbolic")
-                btn.remove_css_class("destructive-action")
-                btn.set_sensitive(True)                    
+                self._style_idle_download_button(btn, ep_id in self._downloaded_episode_ids)                

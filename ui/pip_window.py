@@ -5,17 +5,18 @@ gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, Gdk, GObject
 import gettext
 import logging
+from utils import platform_utils
 
 _ = gettext.gettext
 
 class PipWindow(Gtk.Window):
 
-    def __init__(self, **kwargs):
+    def __init__(self, title=None, **kwargs):
         super().__init__(**kwargs)
-        self.set_title(_("Picture-in-Picture"))
+        self.set_title(title or _("Picture-in-Picture"))
         self.set_default_size(360, 202)
-        self.set_decorated(False) 
-        self.set_resizable(True) 
+        self.set_titlebar(Gtk.Box(css_classes=["pip-titlebar"]))
+        self.set_resizable(True)
         self.window_handle = Gtk.WindowHandle()
         self.set_child(self.window_handle)
         self.overlay = Gtk.Overlay()
@@ -49,6 +50,15 @@ class PipWindow(Gtk.Window):
         scroll_controller = Gtk.EventControllerScroll(flags=Gtk.EventControllerScrollFlags.VERTICAL)
         scroll_controller.connect("scroll", self.on_scroll_resize)
         self.add_controller(scroll_controller)
+        key_controller = Gtk.EventControllerKey()
+        key_controller.connect("key-pressed", self.on_key_pressed)
+        self.add_controller(key_controller)
+
+    def on_key_pressed(self, controller, keyval, keycode, state):
+        if keyval in (Gdk.KEY_p, Gdk.KEY_P, Gdk.KEY_Escape):
+            self.close()
+            return True
+        return False
 
     def set_paintable(self, paintable):
         if self.picture_widget:

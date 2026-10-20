@@ -6,6 +6,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, GLib, Pango, Adw
 import logging
 import gettext
+import database
 
 _ = gettext.gettext
 
@@ -84,6 +85,10 @@ class GlobalSearchDialog(Adw.Window):
         search_text = search_text.lower().strip()
         search_words = search_text.split()
         results = []
+        locked_categories, locked_urls = self._locked_content()
+
+        def is_locked_category(name):
+            return name in locked_categories or (name or "").strip() in locked_categories
     
         def get_match_score(name_lower):
             if name_lower == search_text:
@@ -99,8 +104,12 @@ class GlobalSearchDialog(Adw.Window):
         if self.active_category == "live":
             if hasattr(self.main_window, 'bouquets_data') and self.main_window.bouquets_data:
                 for bouquet_name, channels in self.main_window.bouquets_data.items():
+                    if is_locked_category(bouquet_name):
+                        continue
                     for channel in channels:
-                        name = channel.get('name', '')
+                        if channel.get('url') in locked_urls:
+                            continue
+                        name = channel.get('name') or ''
                         name_lower = name.lower()
                         if all(word in name_lower for word in search_words):
                             score = get_match_score(name_lower)
@@ -108,8 +117,10 @@ class GlobalSearchDialog(Adw.Window):
         elif self.active_category == "vod":
             if hasattr(self.main_window, 'vod_data') and self.main_window.vod_data:
                 for cat_name, items in self.main_window.vod_data.items():
+                    if is_locked_category(cat_name):
+                        continue
                     for item in items:
-                        name = item.get('name', '')
+                        name = item.get('name') or ''
                         name_lower = name.lower()
                         if all(word in name_lower for word in search_words):
                             score = get_match_score(name_lower)
@@ -117,8 +128,10 @@ class GlobalSearchDialog(Adw.Window):
         elif self.active_category == "series":
             if hasattr(self.main_window, 'series_data') and self.main_window.series_data:
                  for cat_name, items in self.main_window.series_data.items():
+                    if is_locked_category(cat_name):
+                        continue
                     for item in items:
-                        name = item.get('name', '')
+                        name = item.get('name') or ''
                         name_lower = name.lower()
                         if all(word in name_lower for word in search_words):
                             score = get_match_score(name_lower)
@@ -126,6 +139,17 @@ class GlobalSearchDialog(Adw.Window):
         results.sort(key=lambda x: (x['score'], x['title'].lower()))      
         self._populate_results(results)
         return GLib.SOURCE_REMOVE
+
+    @staticmethod
+    def _locked_content():
+        if database.get_config_value('app_password') is None:
+            return set(), set()
+        try:
+            names = database.get_all_locked_bouquet_names()
+            return names | {name.strip() for name in names if name}, database.get_all_locked_channel_urls()
+        except Exception as e:
+            logging.warning(f"Global Search: could not read locked content, showing all results: {e}")
+            return set(), set()
 
     def _populate_results(self, results):
         if not results:

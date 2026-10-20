@@ -7,6 +7,7 @@ import os
 import hashlib
 from gi.repository import GLib, GdkPixbuf
 import database
+from core.config import APP_USER_AGENT
 from background import image_download_pool
 
 _failed_urls_memory = set()
@@ -41,7 +42,7 @@ def load_image_async(url, widget, on_success_callback=None, on_failure=None):
                     except GLib.Error:
                         try: os.remove(cache_path)
                         except OSError: pass
-            headers = {"User-Agent": "Mozilla/5.0"}
+            headers = {"User-Agent": APP_USER_AGENT}
             req = urllib.request.Request(url, headers=headers)
             with urllib.request.urlopen(req, timeout=6) as resp:
                 data = resp.read()

@@ -5,6 +5,63 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1") 
 from gi.repository import Gtk, Gdk, Adw
 import logging
+import re
+from utils import platform_utils
+
+_WINDOWS_COLOR_OVERRIDES = {
+    "DARK_CSS": {
+        "box_fullscreen_controls_popover_grad_top": "alpha(#121212, 0.85)",
+        "fullscreen_bg_top": "alpha(#121212, 0.85)",
+        "fullscreen_ch_list_grad_top": "alpha(#121212, 0.85)",
+        "splash_content_grad_top": "alpha(#121212, 0.85)",
+        "splash_content_grad_bot": "alpha(#000000, 0.90)",
+    },
+    "NORD_CSS": {
+        "box_fullscreen_controls_popover_grad_top": "alpha(#2E3440, 0.85)",
+        "box_fullscreen_controls_popover_grad_bot": "alpha(#000000, 0.90)",
+        "fullscreen_bg_top": "alpha(#2E3440, 0.85)",
+        "fullscreen_bg_bot": "alpha(#000000, 0.90)",
+        "fullscreen_ch_list_grad_top": "alpha(#2E3440, 0.85)",
+        "fullscreen_ch_list_grad_bot": "alpha(#000000, 0.95)",
+        "splash_content_grad_top": "alpha(#2E3440, 0.80)",
+        "splash_content_grad_bot": "alpha(#000000, 0.90)",
+    },
+    "NEBULA_CSS": {
+        "box_fullscreen_controls_popover_grad_top": "alpha(#39204F, 0.80)",
+        "box_fullscreen_controls_popover_grad_bot": "alpha(#190A26, 0.90)",
+        "fullscreen_bg_top": "alpha(#39204F, 0.80)",
+        "fullscreen_bg_bot": "alpha(#190A26, 0.90)",
+        "fullscreen_ch_list_grad_top": "alpha(#27014A, 0.80)",
+        "fullscreen_ch_list_grad_bot": "alpha(#190A26, 0.90)",
+        "splash_content_grad_top": "alpha(#39204F, 0.85)",
+        "splash_content_grad_bot": "alpha(#190A26, 0.95)",
+    },
+    "MIST_CSS": {
+        "splash_content_grad_top": "alpha(#9aac93, 0.90)",
+        "splash_content_grad_bot": "alpha(#42493F, 0.97)",
+    },
+    "DEEP_ABYSS_CSS": {
+        "box_fullscreen_controls_popover_grad_top": "alpha(#200263, 0.90)",
+        "box_fullscreen_controls_popover_grad_bot": "alpha(#09001F, 0.95)",
+        "fullscreen_bg_top": "alpha(#200263, 0.90)",
+        "fullscreen_bg_bot": "alpha(#09001F, 0.95)",
+        "fullscreen_ch_list_grad_top": "alpha(#200263, 0.90)",
+        "fullscreen_ch_list_grad_bot": "alpha(#09001F, 0.95)",
+        "splash_content_grad_top": "alpha(#200263, 0.90)",
+        "splash_content_grad_bot": "alpha(#09001F, 0.95)",
+    },
+}
+
+
+def _apply_windows_overrides(attr_name, css_data):
+    overrides = _WINDOWS_COLOR_OVERRIDES.get(attr_name)
+    if not platform_utils.IS_WINDOWS or not overrides:
+        return css_data
+    for name, value in overrides.items():
+        css_data = re.sub(r"@define-color\s+" + re.escape(name) + r"\s+[^;]+;",
+                          f"@define-color {name} {value};", css_data)
+    return css_data
+
 
 class ThemeManager:
 
@@ -732,6 +789,10 @@ class ThemeManager:
         else:
             css_data = cls.DEFAULT_CSS
         if css_data:
+            for attr_name in _WINDOWS_COLOR_OVERRIDES:
+                if css_data is getattr(cls, attr_name):
+                    css_data = _apply_windows_overrides(attr_name, css_data)
+                    break
             provider = Gtk.CssProvider()
             try:
                 provider.load_from_data(css_data.encode())

@@ -7,7 +7,7 @@ import gettext
 
 _ = gettext.gettext
 
-class VideoSettingsWindow(Gtk.Window):
+class VideoSettingsWindow(Adw.Window):
     def __init__(self, player):
         super().__init__()
         self.set_title(_("Video Settings"))
@@ -15,13 +15,17 @@ class VideoSettingsWindow(Gtk.Window):
         self.set_resizable(True)
         self.set_decorated(True)        
         self.player = player
+        self.add_css_class("dialog")
         self.add_css_class("video-settings-window")
-        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16)
+        main_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=16, vexpand=True)
         main_box.set_margin_top(20)
         main_box.set_margin_bottom(20)
         main_box.set_margin_start(20)
         main_box.set_margin_end(20)
-        self.set_child(main_box)
+        content = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
+        content.append(Adw.HeaderBar())
+        content.append(main_box)
+        self.set_content(content)
         
         def create_slider_row(label_text, min_val, max_val, default_val, config_key, property_name):
             row_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)         

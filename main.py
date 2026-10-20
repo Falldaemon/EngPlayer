@@ -2,11 +2,18 @@
 
 import sys
 import os
+import time
 import logging
 import threading
 import subprocess
 import gi
 import warnings
+import ctypes
+import ctypes.util
+
+
+from utils.platform_utils import setup_platform_environment
+setup_platform_environment()
 
 warnings.filterwarnings("ignore", category=UserWarning)
 
@@ -22,15 +29,10 @@ from utils.logging_setup import setup_logging
 from utils.i18n_setup import setup_translation
 from database import initialize_database
 from utils.cache_cleaner import clean_all_caches
+from utils import platform_utils
 
 def ensure_daemon_started():
-    try:
-        subprocess.Popen(['/app/bin/engplayer-daemon'],
-                         start_new_session=True,
-                         stdout=subprocess.DEVNULL,
-                         stderr=subprocess.DEVNULL)
-    except Exception as e:
-        logging.warning(f"Failed to start daemon: {e}")
+    platform_utils.start_daemon()
 
 def request_background_permission_via_shell():
     try:
@@ -62,14 +64,65 @@ def install_host_service_if_needed():
     except Exception:
         pass
 
+def _get_libc():
+    return platform_utils.get_glibc()
+
+def _configure_malloc_tuning():
+    libc = _get_libc()
+    if not libc:
+        return
+    try:
+        M_MMAP_THRESHOLD = -3
+        M_TRIM_THRESHOLD = -1
+        MMAP_TRIM_BYTES = 64 * 1024
+        libc.mallopt(M_MMAP_THRESHOLD, MMAP_TRIM_BYTES)
+        libc.mallopt(M_TRIM_THRESHOLD, MMAP_TRIM_BYTES)
+        logging.info(f"glibc malloc tuning applied (mmap/trim threshold={MMAP_TRIM_BYTES} bytes).")
+    except Exception as e:
+        logging.info(f"glibc malloc tuning call failed, continuing without it: {e}")
+
+def _malloc_trim_loop():
+    libc = _get_libc()
+    if not libc:
+        logging.info("malloc_trim not available on this system; periodic trim disabled.")
+        return
+    while True:
+        time.sleep(300)
+        try:
+            libc.malloc_trim(0)
+        except Exception as e:
+            logging.warning(f"malloc_trim failed, stopping periodic trim: {e}")
+            return
+            
+_app_running_lock_handle = None
+
+def _hold_app_running_lock():
+    global _app_running_lock_handle
+    if platform_utils.IS_WINDOWS:
+        platform_utils.acquire_named_mutex(platform_utils.APP_MUTEX_NAME, exclusive=False)
+        return
+    try:
+        import fcntl
+        from core.config import APP_CONFIG_DIR
+        os.makedirs(APP_CONFIG_DIR, exist_ok=True)
+        handle = open(os.path.join(APP_CONFIG_DIR, "app.lock"), "a")
+        fcntl.flock(handle.fileno(), fcntl.LOCK_SH)
+        _app_running_lock_handle = handle
+    except Exception as e:
+        logging.warning(f"Could not acquire app running lock: {e}")            
+
 def main():
     setup_logging()
+    _configure_malloc_tuning()
     setup_translation()
     GLib.set_prgname("io.github.falldaemon.engplayer")
     GLib.set_application_name("EngPlayer")
     initialize_database()
-    if os.path.exists("/.flatpak-info"):
+    _hold_app_running_lock()
+    if platform_utils.IS_FLATPAK:
         threading.Thread(target=request_background_permission_via_shell, daemon=True).start()
+    elif platform_utils.IS_WINDOWS:
+        ensure_daemon_started()
     else:
         threading.Thread(target=install_host_service_if_needed, daemon=True).start()
     threading.Thread(target=clean_all_caches, args=(30,), daemon=True).start()
@@ -86,6 +139,7 @@ def main():
     from core.app import MediaCenterApplication
     arguments = [arg for arg in sys.argv if arg != '--debug']
     app = MediaCenterApplication(application_id=APP_ID)
+    threading.Thread(target=_malloc_trim_loop, daemon=True).start()
     return app.run(arguments)
 
 if __name__ == "__main__":

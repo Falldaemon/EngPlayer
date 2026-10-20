@@ -4,7 +4,7 @@
 
 📺 EngPlayer - Modern IPTV and Media Center
 
-EngPlayer is a modern, fast, and lightweight media player developed with Python and GTK4 (LibAdwaita) for Linux desktop environments.
+EngPlayer is a modern, fast, and lightweight media player developed with Python and GTK4 (LibAdwaita) for Linux and Windows.
 
 It is not just an IPTV player; it is a user-friendly entertainment hub that brings your local media library, VOD content, and live streams under one roof. It combines the power of GStreamer and the flexibility of FFmpeg with a stylish interface.
 
@@ -69,6 +69,8 @@ Interface: GTK4 4.10+ and LibAdwaita
 
 Media Engine: GStreamer (with Base, Good, Bad, Ugly, and LibAV plugins)
 
+GStreamer Python bindings (gst-python): Required for DVB subtitles on GStreamer 1.28 and newer
+
 Recording Engine: FFmpeg (Mandatory for recording features)
 
 Python Libraries
@@ -125,7 +127,8 @@ sudo apt install -y \
     ffmpeg \
     gstreamer1.0-plugins-base gstreamer1.0-plugins-good \
     gstreamer1.0-plugins-bad gstreamer1.0-plugins-ugly \
-    gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-vaapi
+    gstreamer1.0-libav gstreamer1.0-tools gstreamer1.0-vaapi \
+    python3-gst-1.0
 ```
 
 Arch Linux / Manjaro:
@@ -137,7 +140,7 @@ sudo pacman -S --needed \
     ffmpeg \
     gstreamer gst-plugins-base gst-plugins-good \
     gst-plugins-bad gst-plugins-ugly gst-libav \
-    gst-plugin-gtk4 gstreamer-vaapi
+    gst-plugin-gtk4 gstreamer-vaapi gst-python
 ```
 
 Fedora Workstation:
@@ -156,7 +159,8 @@ sudo dnf install -y python3-devel gcc pkg-config \
     ffmpeg \
     gstreamer1-plugins-base gstreamer1-plugins-good \
     gstreamer1-plugins-bad-free gstreamer1-plugins-ugly-free \
-    gstreamer1-libav gstreamer1-vaapi gstreamer1-plugin-gtk4
+    gstreamer1-libav gstreamer1-vaapi gstreamer1-plugin-gtk4 \
+    python3-gstreamer1
 ```
 
 # 3. Fix Hardware Acceleration (Install drivers matching your GPU)
@@ -189,20 +193,40 @@ Warning: This command will also delete your user configuration, databases, and c
 ---
 
 📜 License
-EngPlayer is distributed as Proprietary Freeware.
 
-By downloading or using this software, you agree to the terms in the LICENSE file.
+EngPlayer is free software: you can redistribute it and/or modify it under
+the terms of the **GNU General Public License as published by the Free
+Software Foundation, either version 3 of the License, or (at your option) any
+later version**. See the [LICENSE](LICENSE) file for the full text.
 
-✅ Free for Personal Use: You are welcome to download, install, and use this software for personal entertainment free of charge.
+Copyright (C) 2025-2026 Engin Eren
 
-⚠️ No Commercial Use: Commercial distribution, selling, renting, or including this software in paid bundles is not permitted.
+EngPlayer is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR
+A PARTICULAR PURPOSE. See the GNU General Public License for more details.
 
-⚠️ No Porting: To ensure quality and focus, porting or modifying this software for other operating systems (Windows, macOS, Android, etc.) is not allowed without prior written permission.
+✅ You are free to use, study, share and modify EngPlayer. If you distribute
+a modified version, it must stay under the same license and you must make its
+source code available.
 
-For full terms and conditions, please refer to the LICENSE file included in this repository.
+🏷️ Name and logo: The license covers the code, not the brand. The name
+"EngPlayer", the EngPlayer logo and the application icon may not be used for
+modified versions. Forks must use their own name and icon. See
+[ADDITIONAL-TERMS.md](ADDITIONAL-TERMS.md) (GNU GPL v3, Section 7).
+
+📦 Third-party components: The Windows and Linux builds include third-party
+libraries (GTK, GStreamer, FFmpeg and others) under their own licenses. See
+[THIRD-PARTY-NOTICES.md](THIRD-PARTY-NOTICES.md).
+
+Versions released before 0.1.8 were distributed under the previous
+"EngPlayer Software License Agreement". Starting with 0.1.8, EngPlayer is
+licensed under the GNU GPL v3 or later.
 
 ⚖️ Legal Disclaimer
-EngPlayer is a media player software. It does not provide, include, or distribute any playlists, IPTV channels, video streams, or digital content. Providing content is solely the user's responsibility. The developer assumes no liability for the content viewed by the user.
+EngPlayer is a media player software. It does not provide, include, or
+distribute any playlists, IPTV channels, video streams, or digital content.
+Providing content is solely the user's responsibility. The developer assumes
+no liability for the content viewed by the user.
 
 📢 Acknowledgments
 

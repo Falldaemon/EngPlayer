@@ -3,7 +3,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GLib, Gdk
+from gi.repository import Gtk, Adw, GLib, Gdk, Pango
 
 import threading
 import requests
@@ -14,6 +14,7 @@ import gettext
 import os
 import hashlib
 import database
+from core.config import PROVIDER_USER_AGENT
 import json
 from datetime import datetime
 from utils.profile_manager import load_profiles, save_profiles, update_profile_dates
@@ -21,6 +22,7 @@ from data_providers.m3u_provider import load_from_file, parse_m3u_content
 from core.window import MainWindow
 from data_providers import epg_provider, xtream_client
 from ui.theme_manager import ThemeManager
+
 _ = gettext.gettext
 
 class ProfileWindow(Gtk.ApplicationWindow):
@@ -37,6 +39,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
             self.set_default_size(500, 450)
             header = Adw.HeaderBar()
             self.set_titlebar(header)
+            self.add_css_class("dialog")
             self.add_css_class("profile-window")
         self.toast_overlay = Adw.ToastOverlay()
         self.set_child(self.toast_overlay)
@@ -62,23 +65,35 @@ class ProfileWindow(Gtk.ApplicationWindow):
         self.btn_edit = Gtk.Button(label=_("Edit"))
         self.btn_delete = Gtk.Button(label=_("Delete"))
         self.btn_open = Gtk.Button(label=_("Open Selected Profile"), css_classes=["suggested-action"])       
+        self.btn_full_restore = Gtk.Button(label=_("Full Restore"))
         self.btn_add.connect("clicked", self.on_add_profile_clicked)
         self.btn_edit.connect("clicked", self.on_edit_profile_clicked)
         self.btn_delete.connect("clicked", self.on_delete_profile_clicked)
         self.btn_open.connect("clicked", self.on_open_profile)      
+        self.btn_full_restore.connect("clicked", self.on_full_restore_clicked)
         self.button_box.append(self.btn_add)
         self.button_box.append(self.btn_edit)
         self.button_box.append(self.btn_delete)
+        self.button_box.append(self.btn_full_restore)
         self.button_box.append(Gtk.Box(hexpand=True))
         self.button_box.append(self.btn_open)
         self.status_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER)
         brand_label = Gtk.Label(label="EngPlayer", css_classes=["splash-title"])
-        self.spinner = Gtk.Spinner()
-        self.spinner.set_size_request(48, 48)
+        if hasattr(Adw, "Spinner"):
+            self.spinner = Adw.Spinner(width_request=48, height_request=48)
+            self.spinner.start = self.spinner.stop = lambda: None
+        else:
+            self.spinner = Gtk.Spinner()
+            self.spinner.set_size_request(48, 48)
         self.spinner.set_halign(Gtk.Align.CENTER)
         self.status_label = Gtk.Label(label=_("Starting..."), css_classes=["splash-status"])  
-        self.status_label.set_wrap(True)
-        self.status_label.set_justify(Gtk.Justification.CENTER) 
+        if os.name == 'nt':
+            self.status_label.set_width_chars(30)
+            self.status_label.set_max_width_chars(30)
+            self.status_label.set_ellipsize(Pango.EllipsizeMode.END)
+        else:
+            self.status_label.set_wrap(True)
+        self.status_label.set_justify(Gtk.Justification.CENTER)
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_margin_top(10)
         self.progress_bar.set_margin_bottom(10)
@@ -108,6 +123,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
             ThemeManager.apply_theme(saved_theme)
         else:
             ThemeManager.apply_theme("default")
+        self._check_full_backup_restore_result()
 
     def show_toast(self, message):
         timeout_sec = 3
@@ -122,13 +138,123 @@ class ProfileWindow(Gtk.ApplicationWindow):
         toast.connect("dismissed", lambda t: setattr(self, "current_active_toast", None))
         self.toast_overlay.add_toast(toast)
 
-    def _get_cache_path(self, profile_id, cache_type):
+    def _check_full_backup_restore_result(self):
+        for key, success_msg, error_prefix in [
+            ('last_backup_result', _("Backup completed successfully!"), _("Backup failed:")),
+            ('last_restore_result', _("Restore completed successfully! Please select a profile."), _("Restore failed:")),
+        ]:
+            raw = database.get_config_value(key)
+            if not raw:
+                continue
+            try:
+                result = json.loads(raw)
+            except Exception:
+                result = {}
+            if result.get("success"):
+                self.show_toast(success_msg)
+            else:
+                self.show_toast(f"{error_prefix} {result.get('error', '?')}")
+            database.set_config_value(key, "")
+
+    def on_full_restore_clicked(self, button):
+        chooser = Gtk.FileChooserDialog(
+            title=_("Select Backup File"),
+            transient_for=self,
+            action=Gtk.FileChooserAction.OPEN
+        )
+        chooser.add_buttons(
+            _("Cancel"), Gtk.ResponseType.CANCEL,
+            _("Select"), Gtk.ResponseType.ACCEPT
+        )
+        chooser.set_modal(True)
+        filter_backup = Gtk.FileFilter()
+        filter_backup.set_name(_("EngPlayer Backup Files"))
+        filter_backup.add_pattern("*.tar.gz")
+        chooser.add_filter(filter_backup)
+
+        def on_response(d, response_id):
+            if response_id == Gtk.ResponseType.ACCEPT:
+                gfile = d.get_file()
+                if gfile:
+                    path = gfile.get_path()
+                    self._confirm_full_restore(path)
+            d.hide()
+            
+            def _safe_destroy():
+                d.destroy()
+                return GLib.SOURCE_REMOVE
+            GLib.idle_add(_safe_destroy)
+        chooser.connect("response", on_response)
+        chooser.present()
+
+    def _confirm_full_restore(self, source_path):
+        warning = Adw.MessageDialog(
+            transient_for=self,
+            heading=_("Full Restore"),
+            body=_("This will DELETE ALL your current profiles and settings and replace them with the contents of:\n\n{}\n\nAny profiles or changes made after this backup was taken will be LOST.\n\nThis cannot be undone.\n\nThe app will close now and reopen automatically once the restore is complete — this can take up to 1-2 minutes, so please be patient.").format(source_path),
+            modal=True
+        )
+        warning.add_css_class("restart-dialog")
+        warning.add_response("cancel", _("Cancel"))
+        warning.add_response("restore", _("Yes, Delete Current Profiles and Restore Backup"))
+        warning.set_response_appearance("restore", Adw.ResponseAppearance.DESTRUCTIVE)
+        warning.set_default_response("cancel")
+        warning.set_close_response("cancel")
+        warning.connect("response", self._on_full_restore_confirmed, source_path)
+        warning.present()
+
+    def _on_full_restore_confirmed(self, dialog, response_id, source_path):
+        dialog.close()
+        if response_id != "restore":
+            return
+        try:
+            request = {"source": source_path, "pid": os.getpid()}
+            database.set_config_value('pending_full_restore', json.dumps(request))
+            logging.info(f"[Full Restore] Restore requested. Source: {source_path}")
+        except Exception as e:
+            logging.error(f"[Full Restore] Could not save restore request: {e}")
+            self.show_toast(_("Could not start restore."))
+            return
+        self.show_toast(_("Closing to restore your data. The app will reopen automatically..."))
+        GLib.timeout_add(1500, self._quit_for_full_restore)
+
+    def _quit_for_full_restore(self):
+        self.get_application().quit()
+        return False
+
+    def _get_cache_path(self, profile_id, cache_type, index=None):
         extension = 'm3u' if cache_type == 'm3u_cache' else 'xml'
         safe_id = hashlib.md5(profile_id.encode()).hexdigest()
         base_cache_dir = database.get_cache_path()
         cache_dir = os.path.join(base_cache_dir, cache_type)
         os.makedirs(cache_dir, exist_ok=True)
-        return os.path.join(cache_dir, f"{safe_id}.{extension}")
+        suffix = f"_{index}" if index is not None else ""
+        return os.path.join(cache_dir, f"{safe_id}{suffix}.{extension}")
+
+    def _get_epg_url_list(self, profile):
+        epg_urls = profile.get("epg_urls")
+        if epg_urls is None:
+            legacy_url = profile.get("epg_url")
+            epg_urls = [legacy_url] if legacy_url else []
+            profiles = load_profiles()
+            for p in profiles:
+                if p.get("id") == profile.get("id"):
+                    p["epg_urls"] = epg_urls
+                    p.pop("epg_url", None)
+                    break
+            save_profiles(profiles)
+            profile["epg_urls"] = epg_urls
+            profile.pop("epg_url", None)
+            logging.info(f"[EPG] Migrated legacy 'epg_url' field to 'epg_urls' list for profile '{profile.get('name')}'.")
+        return [u.strip() for u in epg_urls if u and u.strip()][:3]
+        
+    def _get_epg_source_cache_path(self, profile_id, source):
+        safe_id = hashlib.md5(profile_id.encode()).hexdigest()
+        source_hash = hashlib.md5(source.encode('utf-8')).hexdigest()
+        base_cache_dir = database.get_cache_path()
+        cache_dir = os.path.join(base_cache_dir, 'epg_cache')
+        os.makedirs(cache_dir, exist_ok=True)
+        return os.path.join(cache_dir, f"{safe_id}_{source_hash}.xml")        
 
     def _get_xtream_cache_path(self, profile_id, data_type):
         safe_id = hashlib.md5(profile_id.encode()).hexdigest()
@@ -190,7 +316,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
                 cat_id = str(stream.get('category_id'))
                 cat_name = category_map.get(cat_id, _("Other"))
                 stream_data = {
-                    "name": stream.get('name'),
+                    "name": stream.get('name') or "",
                     "url": f"{base_url}/{stream.get('stream_id')}.ts",
                     "logo": stream.get('stream_icon'),
                     "tvg-id": stream.get('epg_channel_id'),
@@ -199,7 +325,8 @@ class ProfileWindow(Gtk.ApplicationWindow):
                     "stream_id": stream.get('stream_id'),
                     "series_id": stream.get('series_id'),
                     "youtube_trailer": stream.get('trailer') or stream.get('youtube_trailer'),
-                    "tmdb_id": stream.get('tmdb_id') or stream.get('tmdb')
+                    "tmdb_id": stream.get('tmdb_id') or stream.get('tmdb'),
+                    "genre": stream.get('genre') if isinstance(stream.get('genre'), str) else None
                 }
                 tv_archive_val = stream.get('tv_archive')
                 tv_archive_duration_val = stream.get('tv_archive_duration')
@@ -217,6 +344,8 @@ class ProfileWindow(Gtk.ApplicationWindow):
             vod = {}
             series = {}
             epg_data = {}
+            logging.info(f"[EPG] Activating profile-specific EPG database for '{profile.get('name')}'...")
+            database.set_active_epg_db(profile['id'])
             if profile_type == "xtream":
                 logging.info("Profile type is Xtream. Checking cache...")
                 channels_cache_path = self._get_xtream_cache_path(profile['id'], 'channels')
@@ -243,39 +372,68 @@ class ProfileWindow(Gtk.ApplicationWindow):
                             series = json.load(f)    
                         with open(vod_cache_path, 'r', encoding='utf-8') as f:
                             vod = json.load(f)
+                        first_vod = next((items[0] for items in vod.values() if items), None) if isinstance(vod, dict) else None
+                        if isinstance(first_vod, dict) and "genre" not in first_vod:
+                            logging.info("Xtream VOD cache predates genre support. Refreshing it once.")
+                            vod = {}
                     except (json.JSONDecodeError, IOError):
                         channels, vod = {}, {}
                 if not channels or not vod:
                     self._update_progress(0.1, _("Fetching live channel categories..."))
-                    live_categories = xtream_client.get_live_categories(profile)
-                    
+                    live_categories = xtream_client.get_live_categories(profile)                    
                     self._update_progress(0.2, _("Fetching live streams..."))
                     live_streams = xtream_client.get_live_streams(profile)
-                    if live_streams is not None and live_categories is not None:
-                         channels = _transform_streams_to_bouquets(live_streams, live_categories, 'live')                  
                     self._update_progress(0.4, _("Fetching VOD categories..."))
                     vod_categories = xtream_client.get_vod_categories(profile)                  
                     self._update_progress(0.5, _("Fetching VOD streams..."))
                     vod_streams = xtream_client.get_vod_streams(profile)
-                    if vod_streams is not None and vod_categories is not None:
-                         vod = _transform_streams_to_bouquets(vod_streams, vod_categories, 'movie')                        
                     self._update_progress(0.6, _("Fetching series and episodes..."))
                     series_categories = xtream_client.get_series_categories(profile)
                     series_streams = xtream_client.get_series_streams(profile, "all")
+                    missing = [kind for kind, streams, cats in (("live", live_streams, live_categories),
+                                                                ("vod", vod_streams, vod_categories),
+                                                                ("series", series_streams, series_categories))
+                               if streams and not cats]
+                    if missing:
+                        logging.warning(f"Xtream returned no categories for {', '.join(missing)} while streams exist. Retrying once in 9 s...")
+                        time.sleep(9)
+                        if "live" in missing:
+                            live_categories = xtream_client.get_live_categories(profile)
+                        if "vod" in missing:
+                            vod_categories = xtream_client.get_vod_categories(profile)
+                        if "series" in missing:
+                            series_categories = xtream_client.get_series_categories(profile)
+                    incomplete = {kind for kind, streams, cats in (("live", live_streams, live_categories),
+                                                                   ("vod", vod_streams, vod_categories),
+                                                                   ("series", series_streams, series_categories))
+                                  if streams and not cats}
+                    if live_streams is not None and live_categories is not None:
+                         channels = _transform_streams_to_bouquets(live_streams, live_categories, 'live')                  
+                    if vod_streams is not None and vod_categories is not None:
+                         vod = _transform_streams_to_bouquets(vod_streams, vod_categories, 'movie')                        
                     if series_streams is not None and series_categories is not None:
                          series = _transform_streams_to_bouquets(series_streams, series_categories, 'series')     
+                    if incomplete:
+                        logging.warning(f"Xtream categories still missing for {', '.join(sorted(incomplete))}. "
+                                        "Data is shown for this session only and will not be cached.")
+                        for kind, path in (("live", channels_cache_path), ("vod", vod_cache_path), ("series", series_cache_path)):
+                            if kind in incomplete and os.path.exists(path):
+                                try:
+                                    os.remove(path)
+                                except OSError:
+                                    pass
                     if channels or vod:
                         try:
-                            if channels:
+                            if channels and "live" not in incomplete:
                                 with open(channels_cache_path, 'w', encoding='utf-8') as f:
                                     json.dump(channels, f, ensure_ascii=False)
-                            if vod:
+                            if vod and "vod" not in incomplete:
                                 with open(vod_cache_path, 'w', encoding='utf-8') as f:
                                     json.dump(vod, f, ensure_ascii=False)
-                            if series:
+                            if series and "series" not in incomplete:
                                 with open(series_cache_path, 'w', encoding='utf-8') as f:
                                     json.dump(series, f, ensure_ascii=False)        
-                            if channels or vod:
+                            if (channels or vod) and not incomplete:
                                  self._update_profile_timestamp(profile['id'], 'last_xtream_update')
                         except IOError as e:
                             logging.error(f"Could not write Xtream cache to disk: {e}")
@@ -293,7 +451,7 @@ class ProfileWindow(Gtk.ApplicationWindow):
                     except IOError:
                          m3u_content = ""
                 else:
-                    headers = {"User-Agent": "Mozilla/5.0"}
+                    headers = {"User-Agent": PROVIDER_USER_AGENT}
                     downloaded_text = ""
                     try:
                         if profile_type == "m3u_file":
@@ -303,57 +461,108 @@ class ProfileWindow(Gtk.ApplicationWindow):
                             response = requests.get(profile["url"], timeout=30, headers=headers)
                             response.raise_for_status()
                             downloaded_text = response.text
-                        if downloaded_text:
+                        if downloaded_text and ("#EXTINF" in downloaded_text or "#extinf" in downloaded_text):
                             with open(m3u_cache_path, 'w', encoding='utf-8') as f:
                                 f.write(downloaded_text)
                             self._update_profile_timestamp(profile['id'], 'last_m3u_update')
                             m3u_content = downloaded_text
+                        elif downloaded_text:
+                            logging.warning("M3U content has no #EXTINF entries; not caching it.")
                     except Exception as e:
                          logging.error(f"M3U load error: {e}")                      
+                    if not m3u_content and os.path.exists(m3u_cache_path):
+                        try:
+                            with open(m3u_cache_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                m3u_content = f.read()
+                            logging.info("M3U download unusable; using the previous cached copy.")
+                        except IOError:
+                            m3u_content = ""
+                    if not m3u_content and downloaded_text:
+                        m3u_content = downloaded_text
                 extracted_epg_url = None
                 if m3u_content:
-                    channels, vod, extracted_epg_url = parse_m3u_content(m3u_content.splitlines())
-            epg_url_or_path = profile.get("epg_url")
-            if not epg_url_or_path:
-                if profile_type == "xtream":
-                    host = profile.get("host")
-                    username = profile.get("username")
-                    password = profile.get("password")
-                    if host and username and password:
-                        epg_url_or_path = f"{host}/xmltv.php?username={username}&password={password}"
-                        logging.info(f"Xtream EPG URL generated automatically: {epg_url_or_path}")
-                elif profile_type in ["m3u_url", "m3u_file"] and extracted_epg_url:
-                    epg_url_or_path = extracted_epg_url
-                    logging.info(f"Auto-detected EPG URL from M3U header: {epg_url_or_path}")
-            if epg_url_or_path:
-                epg_cache_path = self._get_cache_path(profile['id'], 'epg_cache')
-                epg_ttl = 21600
-                last_epg_update = profile.get('last_epg_update', 0)
-                epg_is_stale = (time.time() - last_epg_update) > epg_ttl                
-                epg_content = ""
-                if os.path.exists(epg_cache_path) and not epg_is_stale:
-                    logging.info(f"Fresh EPG cache found: {epg_cache_path}")
-                    try:
-                        with open(epg_cache_path, 'r', encoding='utf-8', errors='ignore') as f:
-                            epg_content = f.read()
-                    except IOError:
-                         epg_content = ""
-                if not epg_content:
-                    self._update_progress(0.7, _("Downloading EPG data... (This might take a while)"))
-                    logging.info("EPG cache missing or stale. Downloading...")
-                    epg_content = epg_provider.load_epg_data(epg_url_or_path)
-                    if epg_content:
-                        self._update_progress(0.85, _("Saving EPG data to cache..."))
+                    channels, vod, extracted_epg_url = parse_m3u_content(m3u_content.splitlines())                  
+            auto_epg_url = None
+            if profile_type == "xtream":
+                host = profile.get("host")
+                username = profile.get("username")
+                password = profile.get("password")
+                if host and username and password:
+                    auto_epg_url = f"{host}/xmltv.php?username={username}&password={password}"
+                    logging.info(f"[EPG] Provider (Xtream) EPG URL generated automatically: {auto_epg_url}")
+            elif profile_type in ["m3u_url", "m3u_file"] and extracted_epg_url:
+                auto_epg_url = extracted_epg_url
+                logging.info(f"[EPG] Provider EPG URL auto-detected from M3U header: {auto_epg_url}")
+            manual_epg_urls = self._get_epg_url_list(profile)
+            epg_sources = ([auto_epg_url] if auto_epg_url else []) + manual_epg_urls
+            if len(epg_sources) > 3:
+                logging.warning(f"[EPG] {len(epg_sources)} EPG sources configured; only the first 3 (by priority) will be used.")
+                epg_sources = epg_sources[:3]
+            if epg_sources and not channels:
+                logging.warning("[EPG] No channels were loaded; skipping EPG for this launch.")
+                epg_sources = []
+            if epg_sources:
+                total_sources = len(epg_sources)
+                logging.info(f"[EPG] {total_sources} EPG source(s) queued for profile '{profile['name']}'.")
+                for idx, src in enumerate(epg_sources, start=1):
+                    logging.info(f"[EPG]   priority {idx}/{total_sources}: {src}")
+                downloaded_contents = []
+                for index, source in enumerate(epg_sources):
+                    source_num = index + 1
+                    epg_cache_path = self._get_epg_source_cache_path(profile['id'], source)
+                    source_hash = hashlib.md5(source.encode('utf-8')).hexdigest()
+                    epg_ttl = 21600
+                    last_epg_update = profile.get(f'last_epg_update_{source_hash}', 0)
+                    if os.path.isfile(source):
                         try:
-                             with open(epg_cache_path, 'w', encoding='utf-8') as f:
-                                 f.write(epg_content)
-                             self._update_profile_timestamp(profile['id'], 'last_epg_update')
+                            file_mtime = os.path.getmtime(source)
+                            epg_is_stale = file_mtime > last_epg_update
+                        except OSError:
+                            epg_is_stale = True
+                    else:
+                        epg_is_stale = (time.time() - last_epg_update) > epg_ttl
+                    epg_content = ""
+                    if os.path.exists(epg_cache_path) and not epg_is_stale:
+                        logging.info(f"[EPG] Source {source_num}/{total_sources}: fresh cache found, reading from disk ({epg_cache_path}).")
+                        try:
+                            with open(epg_cache_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                epg_content = f.read()
                         except IOError:
-                             pass
-                if epg_content:
-                    self._update_progress(0.9, _("Processing EPG database..."))
-                    epg_data = epg_provider.parse_epg_data(epg_content)                   
-            self._update_progress(1.0, _("Loading complete. Preparing player..."))
+                             epg_content = ""
+                    if not epg_content:
+                        progress_fraction = 0.7 + (0.15 * (index / total_sources))
+                        self._update_progress(progress_fraction, _("Downloading EPG source {}/{}...").format(source_num, total_sources))
+                        logging.info(f"[EPG] Source {source_num}/{total_sources}: cache missing or stale, downloading from '{source}'...")
+                        fresh_content = epg_provider.load_epg_data(source)
+                        if fresh_content and "<programme" in fresh_content:
+                            epg_content = fresh_content
+                            logging.info(f"[EPG] Source {source_num}/{total_sources}: download successful ({len(epg_content)} bytes).")
+                            try:
+                                 with open(epg_cache_path, 'w', encoding='utf-8') as f:
+                                     f.write(epg_content)
+                                 self._update_profile_timestamp(profile['id'], f'last_epg_update_{source_hash}')
+                            except IOError:
+                                 pass
+                        else:
+                            if fresh_content:
+                                logging.warning(f"[EPG] Source {source_num}/{total_sources}: content has no programmes; not caching it ('{source}').")
+                            else:
+                                logging.warning(f"[EPG] Source {source_num}/{total_sources}: download failed or returned empty content ('{source}').")
+                            if os.path.exists(epg_cache_path):
+                                try:
+                                    with open(epg_cache_path, 'r', encoding='utf-8', errors='ignore') as f:
+                                        epg_content = f.read()
+                                    logging.info(f"[EPG] Source {source_num}/{total_sources}: using the previous cached copy.")
+                                except IOError:
+                                    epg_content = ""
+                            if not epg_content and fresh_content:
+                                epg_content = fresh_content
+                    downloaded_contents.append(epg_content)
+                self._update_progress(0.9, _("Merging EPG sources into the database..."))
+                epg_data = epg_provider.parse_epg_sources(downloaded_contents, profile['id'])
+            else:
+                logging.info("[EPG] No EPG source configured for this profile (neither provider nor manual).")
+            self._update_progress(1.0, _("Loading complete. Preparing player..."))            
             GLib.idle_add(self._on_loading_complete, profile, channels, vod, series, epg_data, None)
         except Exception as e:
             error_message = _("An unexpected error occurred while loading profile '{}'.\n\nReason: {}").format(profile['name'], e)
@@ -377,8 +586,26 @@ class ProfileWindow(Gtk.ApplicationWindow):
             app = self.get_application()
             player_window = MainWindow(application=app, profile=profile, channels=channels, vod=vod, series=series, epg_data=epg_data)
             player_window.present()
+            self._check_and_show_changelog(player_window)
             self.close()
 
+    def _check_and_show_changelog(self, parent_window):
+        from core.config import VERSION
+        from core.changelog import CHANGELOG
+        from ui.changelog_dialog import ChangelogDialog
+        last_seen = database.get_config_value('last_seen_changelog_version')
+        if last_seen != VERSION and VERSION in CHANGELOG:
+            attempts = [0]
+
+            def _present():
+                attempts[0] += 1
+                if not parent_window.get_mapped() and attempts[0] < 10:
+                    return GLib.SOURCE_CONTINUE
+                ChangelogDialog(parent_window, VERSION, CHANGELOG).present()
+                return GLib.SOURCE_REMOVE
+            GLib.timeout_add(500, _present)
+            database.set_config_value('last_seen_changelog_version', VERSION)
+            
     def _format_timestamp(self, ts):
         if not ts or not str(ts).isdigit() or int(ts) == 0:
             return None
@@ -481,14 +708,22 @@ class ProfileWindow(Gtk.ApplicationWindow):
                 logging.info(f"Profile '{profile_name}' (ID: {profile_id}) deleted from profiles.json.")
                 safe_id = hashlib.md5(profile_id.encode()).hexdigest()
                 profile_db_path = os.path.join(database.APP_CONFIG_DIR, f"profile_{safe_id}.db")
+                epg_db_path = os.path.join(database.get_cache_path(), f"epg_data_{safe_id}.db")
                 logging.info(f"Deleting database and cache files for profile '{profile_name}'...")
                 files_to_delete = [
                     self._get_cache_path(profile_id, 'm3u_cache'),
                     self._get_cache_path(profile_id, 'epg_cache'),
                     self._get_xtream_cache_path(profile_id, 'channels'),
                     self._get_xtream_cache_path(profile_id, 'vod'),
-                    profile_db_path
+                    self._get_xtream_cache_path(profile_id, 'series'),
+                    profile_db_path,
+                    epg_db_path
                 ]
+                epg_cache_dir = os.path.join(database.get_cache_path(), 'epg_cache')
+                if os.path.isdir(epg_cache_dir):
+                    for fname in os.listdir(epg_cache_dir):
+                        if fname.startswith(f"{safe_id}_"):
+                            files_to_delete.append(os.path.join(epg_cache_dir, fname))
                 deleted_count = 0
                 for file_path in files_to_delete:
                     try:
@@ -517,9 +752,9 @@ class ProfileWindow(Gtk.ApplicationWindow):
                 new_profile["host"] = dialog.xtream_host_entry.get_text().strip()
                 new_profile["username"] = dialog.xtream_user_entry.get_text().strip()
                 new_profile["password"] = dialog.xtream_pass_entry.get_text().strip()
-            new_profile["epg_url"] = dialog.epg_url_entry.get_text().strip()
+                new_profile["epg_urls"] = [e.get_text().strip() for e in dialog.epg_url_entries if e.get_text().strip()][:3]
             selected_icon_path = dialog.icon_path_label.get_text()
-            if os.path.isdir(selected_icon_path):
+            if dialog.icon_switch.get_active() and os.path.isdir(selected_icon_path):
                 new_profile["icon_path"] = selected_icon_path
             else:
                 new_profile["icon_path"] = ""
@@ -541,9 +776,24 @@ class ProfileWindow(Gtk.ApplicationWindow):
                         p["host"] = dialog.xtream_host_entry.get_text().strip()
                         p["username"] = dialog.xtream_user_entry.get_text().strip()
                         p["password"] = dialog.xtream_pass_entry.get_text().strip()
-                    p["epg_url"] = dialog.epg_url_entry.get_text().strip()
+                    new_epg_urls = [e.get_text().strip() for e in dialog.epg_url_entries if e.get_text().strip()][:3]
+                    old_epg_urls = p.get("epg_urls")
+                    if old_epg_urls is None:
+                        legacy_epg_url = p.get("epg_url")
+                        old_epg_urls = [legacy_epg_url] if legacy_epg_url else []
+                    removed_epg_urls = [u for u in old_epg_urls if u and u not in new_epg_urls]
+                    for removed_url in removed_epg_urls:
+                        stale_cache_path = self._get_epg_source_cache_path(profile_id, removed_url)
+                        try:
+                            if os.path.exists(stale_cache_path):
+                                os.remove(stale_cache_path)
+                                logging.info(f"[EPG] Removed stale cache file for deleted source: {removed_url}")
+                        except OSError as e:
+                            logging.warning(f"[EPG] Could not remove stale cache file for '{removed_url}': {e}")
+                    p["epg_urls"] = new_epg_urls
+                    p.pop("epg_url", None)
                     selected_icon_path = dialog.icon_path_label.get_text()
-                    if os.path.isdir(selected_icon_path):
+                    if dialog.icon_switch.get_active() and os.path.isdir(selected_icon_path):
                         p["icon_path"] = selected_icon_path
                     else:
                         p["icon_path"] = ""
@@ -629,14 +879,70 @@ class ProfileWindow(Gtk.ApplicationWindow):
             chooser.present()
         file_choose_button.connect("clicked", on_file_choose_clicked)
         content.append(Gtk.Separator(margin_top=10, margin_bottom=10))
-        epg_url_entry = Gtk.Entry(placeholder_text=_("External EPG URL (XMLTV, optional)"))
-        content.append(epg_url_entry)
+        epg_header_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2)
+        epg_title_label = Gtk.Label(label=_("Manual EPG Sources"), halign=Gtk.Align.START)
+        epg_title_label.add_css_class("heading")
+        epg_subtitle_label = Gtk.Label(
+            label=_("Optional, max 3 — provider EPG always has priority"),
+            halign=Gtk.Align.START,
+            wrap=True
+        )
+        epg_subtitle_label.add_css_class("caption")
+        epg_subtitle_label.add_css_class("dim-label")
+        epg_header_box.append(epg_title_label)
+        epg_header_box.append(epg_subtitle_label)
+        content.append(epg_header_box)
+        epg_urls_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
+        epg_url_entries = []
+
+        def _add_epg_url_row(initial_text=""):
+            if len(epg_url_entries) >= 3:
+                return
+            row = Gtk.Box(spacing=6)
+            entry = Gtk.Entry(placeholder_text=_("External EPG URL (XMLTV)"), hexpand=True)
+            entry.set_text(initial_text)
+            remove_btn = Gtk.Button(icon_name="list-remove-symbolic")
+
+            def on_remove_clicked(btn):
+                epg_urls_box.remove(row)
+                epg_url_entries.remove(entry)
+                add_epg_row_button.set_sensitive(len(epg_url_entries) < 3)
+            remove_btn.connect("clicked", on_remove_clicked)
+            row.append(entry)
+            row.append(remove_btn)
+            epg_urls_box.append(row)
+            epg_url_entries.append(entry)
+            add_epg_row_button.set_sensitive(len(epg_url_entries) < 3)
+        add_epg_row_button = Gtk.Button(label=_("+ Add EPG Source"))
+        add_epg_row_button.connect("clicked", lambda btn: _add_epg_url_row())
+        content.append(epg_urls_box)
+        content.append(add_epg_row_button)
+        icon_header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, margin_top=6)
+        icon_title_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=2, hexpand=True)
+        icon_title_label = Gtk.Label(label=_("External Channel Logos"), halign=Gtk.Align.START)
+        icon_title_label.add_css_class("heading")
+        icon_subtitle_label = Gtk.Label(
+            label=_("Optional — use a local folder of logo images matched by channel name"),
+            halign=Gtk.Align.START,
+            wrap=True
+        )
+        icon_subtitle_label.add_css_class("caption")
+        icon_subtitle_label.add_css_class("dim-label")
+        icon_title_box.append(icon_title_label)
+        icon_title_box.append(icon_subtitle_label)
+        icon_switch = Gtk.Switch(valign=Gtk.Align.CENTER)
+        icon_header_box.append(icon_title_box)
+        icon_header_box.append(icon_switch)
+        content.append(icon_header_box)
+        icon_revealer = Gtk.Revealer(transition_type=Gtk.RevealerTransitionType.SLIDE_DOWN)
         icon_folder_box = Gtk.Box(spacing=6)
         icon_path_label = Gtk.Label(label=_("No icon folder selected..."), halign=Gtk.Align.START, hexpand=True)
         icon_choose_button = Gtk.Button(label=_("Choose Folder..."))
         icon_folder_box.append(icon_path_label)
         icon_folder_box.append(icon_choose_button)
-        content.append(icon_folder_box)
+        icon_revealer.set_child(icon_folder_box)
+        content.append(icon_revealer)
+        icon_switch.connect("notify::active", lambda sw, p: icon_revealer.set_reveal_child(sw.get_active()))
 
         def on_icon_folder_choose_clicked(btn):
             chooser = Gtk.FileChooserDialog(
@@ -676,8 +982,22 @@ class ProfileWindow(Gtk.ApplicationWindow):
                 xtream_host_entry.set_text(profile_data.get("host", ""))
                 xtream_user_entry.set_text(profile_data.get("username", ""))
                 xtream_pass_entry.set_text(profile_data.get("password", ""))
-            epg_url_entry.set_text(profile_data.get("epg_url", ""))
+            existing_epg_urls = profile_data.get("epg_urls")
+            if existing_epg_urls is None:
+                legacy_epg_url = profile_data.get("epg_url", "")
+                existing_epg_urls = [legacy_epg_url] if legacy_epg_url else []
+            existing_epg_urls = [u for u in existing_epg_urls if u][:3]
+            if existing_epg_urls:
+                for url in existing_epg_urls:
+                    _add_epg_url_row(url)
+            else:
+                _add_epg_url_row()
             icon_path_label.set_text(profile_data.get("icon_path", _("No icon folder selected...")))
+            existing_icon_path = profile_data.get("icon_path", "")
+            icon_switch.set_active(bool(existing_icon_path))
+            icon_revealer.set_reveal_child(bool(existing_icon_path))
+        else:
+            _add_epg_url_row()
         dialog.add_response("cancel", _("Cancel"))
         dialog.add_response("save", _("Save"))
         dialog.name_entry = name_entry
@@ -687,8 +1007,9 @@ class ProfileWindow(Gtk.ApplicationWindow):
         dialog.xtream_host_entry = xtream_host_entry
         dialog.xtream_user_entry = xtream_user_entry
         dialog.xtream_pass_entry = xtream_pass_entry
-        dialog.epg_url_entry = epg_url_entry
+        dialog.epg_url_entries = epg_url_entries
         dialog.icon_path_label = icon_path_label
+        dialog.icon_switch = icon_switch
         return dialog
 
     def apply_accent_color(self, color_str):

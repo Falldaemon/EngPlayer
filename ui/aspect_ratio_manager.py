@@ -42,6 +42,13 @@ class AspectRatioManager:
 
     def _apply_mode(self, mode_str):
         self.current_mode = mode_str
+        logging.info(f"Aspect ratio requested: {mode_str}")
+        player = getattr(self.main_window, "player", None)
+        if player is not None and hasattr(player, "set_aspect_mode"):
+            try:
+                player.set_aspect_mode(mode_str)  
+            except Exception:
+                logging.exception("Aspect ratio: native sink update failed")
         picture_widget = self._find_picture_widget(self.main_window.video_view)
         if not picture_widget:
             logging.error("Gtk.Picture widget not found in VideoView!")

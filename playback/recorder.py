@@ -6,6 +6,8 @@ import signal
 import os
 import threading
 from gi.repository import GLib
+from utils import platform_utils
+from core.config import PROVIDER_USER_AGENT
 
 class Recorder:
     def __init__(self, stream_url, output_filepath, duration_sec=None):
@@ -34,7 +36,7 @@ class Recorder:
         command = [
             'ffmpeg', '-y',
             '-nostats',
-            '-user_agent', 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0',
+            '-user_agent', PROVIDER_USER_AGENT,
             '-rw_timeout', '15000000',
             '-reconnect_on_network_error', '1',
             '-reconnect_on_http_error', '4xx,5xx',
@@ -56,7 +58,8 @@ class Recorder:
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.PIPE,
                 text=True,
-                errors='ignore'
+                errors='ignore',
+                **platform_utils.ffmpeg_popen_kwargs()
             )
             self.log_thread = threading.Thread(target=self._log_reader_thread)
             self.log_thread.daemon = True
@@ -96,8 +99,8 @@ class Recorder:
         logging.info(f"Recorder.stop: Terminating FFmpeg process (PID: {pid}) (SIGINT)...")
         try:
             if self.process.poll() is None:
-                self.process.send_signal(signal.SIGINT)
-                logging.debug(f"Recorder.stop: SIGINT signal sent to PID {pid}.")
+                platform_utils.stop_ffmpeg_gracefully(self.process)
+                logging.debug(f"Recorder.stop: Stop request sent to PID {pid}.")
             else:
                 logging.warning(f"Recorder.stop: Process (PID: {pid}) had already finished before signal was sent.")
             wait_timeout = 30

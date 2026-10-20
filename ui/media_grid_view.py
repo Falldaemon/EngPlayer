@@ -13,6 +13,7 @@ from datetime import datetime
 from utils.image_loader import load_image_async
 from data_providers import tmdb_client
 from background import image_download_pool
+from ui.genre_filter_bar import genre_keys_for
 
 import gettext
 _ = gettext.gettext
@@ -70,19 +71,50 @@ class MediaGridView(Gtk.ScrolledWindow):
         factory.connect("bind", self._on_factory_bind)
         factory.connect("unbind", self._on_factory_unbind)
         self.grid_view = Gtk.GridView.new(None, factory)
-        self.grid_view.set_max_columns(6); self.grid_view.set_min_columns(2)
+        self.grid_view.set_max_columns(7); self.grid_view.set_min_columns(2)
         self.grid_view.set_vexpand(True)
         self.grid_view.set_margin_start(12); self.grid_view.set_margin_end(12)
         self.grid_view.set_margin_top(12); self.grid_view.set_margin_bottom(12)
         self.set_child(self.grid_view)
         selection_model = Gtk.SingleSelection.new(self.filter_model)
         self.grid_view.set_model(selection_model)
+        self._last_media_list = None
+        self._last_is_vod = False
+        self._last_media_type = None
+        self.genre_key = ""
+        self.genre_bar = None
 
-    def populate_async(self, media_list, is_vod=False, media_type=None):
+    def attach_genre_bar(self, genre_bar):
+        self.genre_bar = genre_bar
+        genre_bar.connect("genre-changed", lambda bar, key: self.set_genre_filter(key))
+
+    def set_genre_filter(self, key):
+        if self.genre_key != key:
+            self.genre_key = key
+            if self.custom_filter:
+                self.custom_filter.changed(Gtk.FilterChange.DIFFERENT)
+
+    def refresh_watched_status(self):
+        if self._last_media_list is not None:
+            self.populate_async(self._last_media_list, self._last_is_vod, self._last_media_type, keep_genre=True)
+
+    def populate_async(self, media_list, is_vod=False, media_type=None, keep_genre=False):
+        self._last_media_list = media_list
+        self._last_is_vod = is_vod
+        self._last_media_type = media_type
         self.current_media_type = media_type
         self.set_search_text("")
         self.model.remove_all()
         if is_vod: media_type = "vod"
+        if self.genre_bar is not None:
+            try:
+                self.genre_bar.update(media_list, media_type, keep_selection=keep_genre)
+                self.genre_key = self.genre_bar.get_selected_key()
+            except Exception as e:
+                logging.error(f"MediaGridView: Genre bar update failed: {e}")
+                self.genre_key = ""
+        else:
+            self.genre_key = ""
         logging.debug(f"MediaGridView: Querying batch watched status (type: {media_type})...")
         paths_to_check = []
         try:
@@ -139,10 +171,16 @@ class MediaGridView(Gtk.ScrolledWindow):
                     item = MediaItem(path_or_url=str(item_data['album_id']), title=title, poster_path=item_data['album_art_path'])
                 elif media_type == "series":
                     db_key_for_check = str(item_data.get('series_id'))
+                    try:
+                        provider_rating = float(item_data.get('rating') or 0.0)
+                    except (TypeError, ValueError):
+                        provider_rating = 0.0
                     item = MediaItem(
                         path_or_url=str(item_data.get('series_id')),
                         title=item_data.get('name'),
-                        poster_path=item_data.get('cover')
+                        poster_path=item_data.get('cover'),
+                        provider_rating=provider_rating,
+                        provider_genre=item_data.get('genre') if isinstance(item_data.get('genre'), str) else None
                     )
                 elif media_type == "vod":
                     path_or_url = str(item_data.get('stream_id'))
@@ -151,10 +189,16 @@ class MediaGridView(Gtk.ScrolledWindow):
                     if not path_or_url: path_or_url = item_data.get('url')
                     if not poster_path: poster_path = item_data.get('logo')
                     db_key_for_check = path_or_url
+                    try:
+                        provider_rating = float(item_data.get('rating') or 0.0)
+                    except (TypeError, ValueError):
+                        provider_rating = 0.0
                     item = MediaItem(
                         path_or_url=path_or_url,
                         title=item_data.get('name'),
-                        poster_path=poster_path
+                        poster_path=poster_path,
+                        provider_rating=provider_rating,
+                        provider_genre=item_data.get('genre') if isinstance(item_data.get('genre'), str) else None
                     )
                     provider_tmdb_id = str(item_data.get('tmdb_id', ''))
                     if provider_tmdb_id and provider_tmdb_id in trakt_movies_cache:
@@ -182,7 +226,11 @@ class MediaGridView(Gtk.ScrolledWindow):
             logging.exception(f"Error in _populate_chunk: {e} | Data: {item_data_str}")
             return True
 
-    def clear(self): self.model.remove_all()
+    def clear(self):
+        self.model.remove_all()
+        self.genre_key = ""
+        if self.genre_bar is not None:
+            self.genre_bar.clear()
 
     def _on_item_pressed(self, gesture, n_press, x, y, list_item):
         item = list_item.get_item()
@@ -201,7 +249,7 @@ class MediaGridView(Gtk.ScrolledWindow):
         overlay = Gtk.Overlay()
         list_item.set_child(overlay)
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=6)
-        box.set_size_request(160, 240)
+        box.set_size_request(160, 280)
         box.add_css_class("media-grid-item")
         overlay.set_child(box)
         gesture = Gtk.GestureClick.new()
@@ -214,32 +262,47 @@ class MediaGridView(Gtk.ScrolledWindow):
         image = Gtk.Picture(content_fit=Gtk.ContentFit.COVER)
         image.set_vexpand(True)
         image.set_hexpand(False)
-        image.set_halign(Gtk.Align.CENTER)
+        image.set_halign(Gtk.Align.FILL)
         image.set_valign(Gtk.Align.FILL)
+        poster_overlay = Gtk.Overlay(halign=Gtk.Align.CENTER, vexpand=True)
+        poster_overlay.set_size_request(100, -1)
+        poster_overlay.set_child(image)
         label = Gtk.Label(wrap=False, ellipsize=Pango.EllipsizeMode.END, use_markup=True, justify=Gtk.Justification.CENTER, vexpand=False, xalign=0.5)
         label.set_lines(1)
-        box.append(image)
+        rating_label = Gtk.Label(css_classes=["rating-badge"])
+        rating_label.set_halign(Gtk.Align.END)
+        rating_label.set_valign(Gtk.Align.END)
+        rating_label.set_margin_end(4)
+        rating_label.set_margin_bottom(4)
+        rating_label.set_can_target(False)
+        poster_overlay.add_overlay(rating_label)
+        box.append(poster_overlay)
         box.append(label)
+        list_item.picture_widget = image
+        list_item.title_label = label
+        list_item.rating_label = rating_label
         watched_button = Gtk.Button()
         watched_button.set_icon_name("object-select-symbolic")
         watched_button.add_css_class("watched-button")
+        watched_button.add_css_class("grid-watched-button")
         watched_button.set_valign(Gtk.Align.START)
         watched_button.set_halign(Gtk.Align.START)
-        watched_button.set_margin_start(8)
-        watched_button.set_margin_top(8)
-        watched_button.set_size_request(32, 32)
+        watched_button.set_margin_start(2)
+        watched_button.set_margin_top(2)
+        watched_button.set_size_request(28, 28)
         watched_button.connect("clicked", self._on_watched_button_clicked, list_item)
         overlay.add_overlay(watched_button)
         list_item.watched_button = watched_button
         favorite_button = Gtk.Button()
-        favorite_button.add_css_class("flat") 
+        favorite_button.add_css_class("flat")
+        favorite_button.add_css_class("grid-favorite-button")
         favorite_button.set_valign(Gtk.Align.START)
         favorite_button.set_halign(Gtk.Align.END) 
-        favorite_button.set_margin_end(8)
-        favorite_button.set_margin_top(8)
-        favorite_button.set_size_request(36, 36) 
+        favorite_button.set_margin_end(2)
+        favorite_button.set_margin_top(2)
+        favorite_button.set_size_request(28, 28)
         fav_icon = Gtk.Image()
-        fav_icon.set_pixel_size(28) 
+        fav_icon.set_pixel_size(22)
         favorite_button.set_child(fav_icon)      
         favorite_button.connect("clicked", self._on_favorite_button_clicked, list_item)
         overlay.add_overlay(favorite_button)
@@ -251,8 +314,8 @@ class MediaGridView(Gtk.ScrolledWindow):
         box = overlay.get_child()
         item = list_item.get_item()
         watched_button = getattr(list_item, "watched_button", None)
-        picture_widget = box.get_first_child()
-        label = box.get_last_child()
+        picture_widget = list_item.picture_widget
+        label = list_item.title_label
         title = item.props.title
         if self.current_media_type == "music":
             label.set_markup(title if title else "")
@@ -288,6 +351,14 @@ class MediaGridView(Gtk.ScrolledWindow):
                 favorite_button.set_visible(True)
             else:
                 favorite_button.set_visible(False)   
+        rating_label = getattr(list_item, "rating_label", None)
+        if rating_label:
+            provider_rating = item.props.provider_rating
+            if self.current_media_type in ["vod", "series"] and provider_rating and provider_rating > 0:
+                rating_label.set_text(f"★ {provider_rating:.1f}")
+                rating_label.set_visible(True)
+            else:
+                rating_label.set_visible(False)  
 
         def _replace_image_widget(widget, pixbuf):
             if widget and pixbuf:
@@ -311,13 +382,13 @@ class MediaGridView(Gtk.ScrolledWindow):
             path = media_item.props.path_or_url
             poster = media_item.props.poster_path
             if self.current_media_type == "picture":
-                box.set_size_request(160, 240)
+                box.set_size_request(160, 230)
                 def _load_picture_in_thread(p, widget):
                     base_cache_dir = database.get_cache_path()
                     cache_dir = os.path.join(base_cache_dir, "grid_thumbnails")
                     os.makedirs(cache_dir, exist_ok=True)
                     hash_name = hashlib.md5(p.encode()).hexdigest()
-                    thumbnail_path = os.path.join(cache_dir, f"{hash_name}.jpg")
+                    thumbnail_path = os.path.join(cache_dir, f"{hash_name}_sq.jpg")
                     final_pixbuf = None
                     if os.path.exists(thumbnail_path):
                         try:
@@ -325,37 +396,39 @@ class MediaGridView(Gtk.ScrolledWindow):
                         except GLib.Error: pass
                     if not final_pixbuf:
                         try:
-                            original_pixbuf = GdkPixbuf.Pixbuf.new_from_file_at_scale(p, 160, 240, True)
-                            background_pixbuf = GdkPixbuf.Pixbuf.new(GdkPixbuf.Colorspace.RGB, False, 8, 176, 256)
-                            dest_x = (160 - original_pixbuf.get_width()) // 2
-                            dest_y = (240 - original_pixbuf.get_height()) // 2
-                            original_pixbuf.composite(
-                                background_pixbuf, dest_x, dest_y,
-                                original_pixbuf.get_width(), original_pixbuf.get_height(),
-                                dest_x, dest_y, 1, 1, GdkPixbuf.InterpType.BILINEAR, 255
+                            thumb_size = 256
+                            _, src_w, src_h = GdkPixbuf.Pixbuf.get_file_info(p)
+                            scale = thumb_size / max(1, min(src_w, src_h))
+                            scaled = GdkPixbuf.Pixbuf.new_from_file_at_scale(
+                                p, max(thumb_size, round(src_w * scale)), max(thumb_size, round(src_h * scale)), False
                             )
-                            background_pixbuf.savev(thumbnail_path, "jpeg", ["quality"], ["90"])
-                            final_pixbuf = background_pixbuf
-                        except GLib.Error as e:
+                            scaled = scaled.apply_embedded_orientation() or scaled
+                            side = min(scaled.get_width(), scaled.get_height())
+                            crop_x = (scaled.get_width() - side) // 2
+                            crop_y = (scaled.get_height() - side) // 2
+                            square = scaled.new_subpixbuf(crop_x, crop_y, side, side).copy()
+                            square.savev(thumbnail_path, "jpeg", ["quality"], ["90"])
+                            final_pixbuf = square
+                        except (GLib.Error, TypeError) as e:
                             logging.warning(f"Thumbnail creation failed: {e}")
                     if final_pixbuf:
                         GLib.idle_add(_replace_image_widget, widget, final_pixbuf)
                 image_download_pool.submit(_load_picture_in_thread, path, picture_widget)
                 return
             if poster:
-                box.set_size_request(160, 240)
-                if os.path.isabs(poster):
-                    try:
-                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(poster)
-                        _replace_image_widget(picture_widget, pixbuf)
-                    except GLib.Error:
-                        self._on_poster_load_failed(media_item)
-                elif poster.startswith("http"):
+                box.set_size_request(160, 280)
+                if poster.startswith("http"):
                     load_image_async(
                         poster, picture_widget,
                         on_success_callback=_replace_image_widget,
                         on_failure=lambda: self._on_poster_load_failed(media_item)
                     )
+                elif os.path.exists(poster) or (os.path.isabs(poster) and os.path.dirname(poster) not in ("/", "\\")):
+                    try:
+                        pixbuf = GdkPixbuf.Pixbuf.new_from_file(poster)
+                        _replace_image_widget(picture_widget, pixbuf)
+                    except GLib.Error:
+                        self._on_poster_load_failed(media_item)
                 else:
                     full_poster_url = tmdb_client.get_poster_url(poster)
                     if full_poster_url:
@@ -367,8 +440,6 @@ class MediaGridView(Gtk.ScrolledWindow):
         load_poster_or_thumbnail(item)
         handler_id = item.connect("notify::poster-path", load_poster_or_thumbnail)
         list_item.notify_handler_id = handler_id
-        if not item.props.poster_path or not item.props.poster_path.startswith("http"):
-            load_poster_or_thumbnail(item)
 
     def _on_factory_unbind(self, factory, list_item):
         handler_id = getattr(list_item, "notify_handler_id", None)
@@ -379,6 +450,8 @@ class MediaGridView(Gtk.ScrolledWindow):
             delattr(list_item, "notify_handler_id")
 
     def _on_filter_item(self, item):
+        if self.genre_key and self.genre_key not in genre_keys_for(item.props.provider_genre):
+            return False
         if not self.search_text:
             return True
         title = item.props.title

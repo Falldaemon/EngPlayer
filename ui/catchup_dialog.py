@@ -7,7 +7,9 @@ from gi.repository import Gtk, Adw, GObject, GLib
 import gettext
 from datetime import datetime, timedelta, timezone
 import logging
+
 _ = gettext.gettext
+
 class CatchupDialog(Adw.PreferencesWindow):
     __gsignals__ = {
         'program-selected': (GObject.SignalFlags.RUN_FIRST, None, (object,))

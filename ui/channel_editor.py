@@ -1,8 +1,13 @@
 import logging
-from gi.repository import Gtk, Adw, GLib
+import os
+import threading
+import urllib.request
+from gi.repository import Gtk, Adw, GLib, GdkPixbuf, Gdk
 import database
+from core.config import APP_USER_AGENT
 
 import gettext
+
 _ = gettext.gettext
 
 logger = logging.getLogger(__name__)
@@ -14,7 +19,9 @@ class ChannelEditor(Gtk.Box):
         self.on_save_cb = on_save_cb
         self.on_delete_cb = on_delete_cb       
         self.current_channel_data = None
-        self.current_bucket = None      
+        self.current_bucket = None
+        self._logo_preview_timer = None
+        self._logo_request_id = 0
         self._build_ui()
 
     def _build_ui(self):
@@ -41,6 +48,7 @@ class ChannelEditor(Gtk.Box):
         logo_input_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=5)
         self.logo_entry = Gtk.Entry(placeholder_text="http://... or /home/...")
         self.logo_entry.set_hexpand(True)
+        self.logo_entry.connect("changed", self._on_logo_text_changed)
         logo_input_box.append(self.logo_entry)
         self.logo_btn = Gtk.Button(icon_name="folder-open-symbolic")
         self.logo_btn.set_tooltip_text(_("Select Image from Device"))
@@ -98,7 +106,11 @@ class ChannelEditor(Gtk.Box):
         self.name_entry.set_text(str(name_val))
         self.url_entry.set_text(str(url_val))
         self.logo_entry.set_text(str(logo_val))
-        self.epg_entry.set_text(str(epg_val))       
+        if self._logo_preview_timer:
+            GLib.source_remove(self._logo_preview_timer)
+            self._logo_preview_timer = None
+        self._update_logo_preview()
+        self.epg_entry.set_text(str(epg_val))      
         is_locked = database.get_channel_lock_status(str(url_val))
         is_hidden = database.get_channel_hidden_status(str(url_val))
         self.lock_switch.set_active(is_locked)
@@ -132,6 +144,61 @@ class ChannelEditor(Gtk.Box):
             file = dialog.get_file()
             self.logo_entry.set_text(file.get_path())
         dialog.destroy()
+        
+    def _reset_logo_preview(self):
+        self.logo_image.set_from_icon_name("tv-symbolic")
+        self.logo_image.add_css_class("dim-label")
+
+    def _on_logo_text_changed(self, entry):
+        if self._logo_preview_timer:
+            GLib.source_remove(self._logo_preview_timer)
+        self._logo_preview_timer = GLib.timeout_add(500, self._update_logo_preview)
+
+    def _update_logo_preview(self):
+        self._logo_preview_timer = None
+        self._logo_request_id += 1
+        request_id = self._logo_request_id
+        source = self.logo_entry.get_text().strip()
+        if not source:
+            self._reset_logo_preview()
+            return False
+        threading.Thread(target=self._load_logo_thread, args=(source, request_id), daemon=True).start()
+        return False
+
+    def _load_logo_thread(self, source, request_id):
+        pixbuf = None
+        try:
+            if source.startswith(("http://", "https://")):
+                request = urllib.request.Request(source, headers={"User-Agent": APP_USER_AGENT})
+                with urllib.request.urlopen(request, timeout=6) as response:
+                    data = response.read(5 * 1024 * 1024)
+                loader = GdkPixbuf.PixbufLoader.new()
+                loader.write(data)
+                loader.close()
+                pixbuf = loader.get_pixbuf()
+            else:
+                path = GLib.filename_from_uri(source)[0] if source.startswith("file://") else source
+                if os.path.isfile(path):
+                    pixbuf = GdkPixbuf.Pixbuf.new_from_file(path)
+            if pixbuf and (pixbuf.get_width() > 256 or pixbuf.get_height() > 256):
+                scale = 256 / max(pixbuf.get_width(), pixbuf.get_height())
+                pixbuf = pixbuf.scale_simple(max(1, int(pixbuf.get_width() * scale)),
+                                             max(1, int(pixbuf.get_height() * scale)),
+                                             GdkPixbuf.InterpType.BILINEAR)
+        except Exception as e:
+            logger.debug(f"Logo preview could not be loaded from '{source}': {e}")
+            pixbuf = None
+        GLib.idle_add(self._apply_logo_preview, pixbuf, request_id)
+
+    def _apply_logo_preview(self, pixbuf, request_id):
+        if request_id != self._logo_request_id:
+            return False
+        if pixbuf is None:
+            self._reset_logo_preview()
+            return False
+        self.logo_image.remove_css_class("dim-label")
+        self.logo_image.set_from_paintable(Gdk.Texture.new_for_pixbuf(pixbuf))
+        return False    
 
     def _on_back_clicked(self, btn):
         if self.on_back_cb:

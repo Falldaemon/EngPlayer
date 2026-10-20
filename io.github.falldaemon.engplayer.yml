@@ -1,6 +1,6 @@
 app-id: io.github.falldaemon.engplayer
 runtime: org.gnome.Platform
-runtime-version: '50'
+runtime-version: '51'
 sdk: org.gnome.Sdk
 command: engplayer
 finish-args:
@@ -27,16 +27,25 @@ cleanup:
 modules:
   - python3-requirements.yaml
 
+  - name: gst-python
+    buildsystem: meson
+    config-opts:
+      - -Dtests=disabled
+      - -Dplugin=disabled
+    sources:
+      - type: archive
+        url: https://gstreamer.freedesktop.org/src/gst-python/gst-python-1.28.6.tar.xz
+        sha256: 34d58440c53b5495a123d0a4b7b7abbc6e9792a5b21954db86a0791b16f6e012
+        x-checker-data:
+          type: html
+          url: https://gstreamer.freedesktop.org/src/gst-python/
+          version-pattern: gst-python-(1\.28\.\d+)\.tar\.xz
+          url-template: https://gstreamer.freedesktop.org/src/gst-python/gst-python-$version.tar.xz
+
   - name: engplayer
     buildsystem: simple
     build-commands:
       - make install prefix=/app
     sources:
-      - type: git
-        url: https://github.com/Falldaemon/EngPlayer.git
-        tag: v0.1.7
-        commit: ef900acce8b4df707331f947ef9ab6dec51d8f21
-        x-checker-data:
-          type: git
-          tag-pattern: ^v([\d.]+)$
-          is-main-source: true
+      - type: dir
+        path: .

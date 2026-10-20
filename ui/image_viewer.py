@@ -7,6 +7,7 @@ gi.require_version("Gst", "1.0")
 from gi.repository import Gtk, GObject, GLib, Gio, Gst, GdkPixbuf
 Gst.init(None)
 import gettext
+from utils.sleep_inhibitor import SleepInhibitor
 _ = gettext.gettext
 
 class ImageViewer(Gtk.Overlay):
@@ -23,6 +24,7 @@ class ImageViewer(Gtk.Overlay):
         self.current_index = 0
         self.slideshow_timer_id = None
         self.is_playing = False
+        self.sleep_inhibitor = None
         self.audio_player = Gst.ElementFactory.make("playbin", None)
         bus = self.audio_player.get_bus()
         bus.add_signal_watch()
@@ -33,13 +35,16 @@ class ImageViewer(Gtk.Overlay):
         self.set_child(frame)
         self.controls_box = Gtk.Box(spacing=6, halign=Gtk.Align.CENTER, valign=Gtk.Align.END, margin_bottom=12)
         self.controls_box.add_css_class("player-controls")
+        self.controls_box.add_css_class("image-viewer-controls")
         self.add_overlay(self.controls_box)
         self.btn_left_arrow = Gtk.Button.new_from_icon_name("go-previous-symbolic")
         self.btn_left_arrow.set_halign(Gtk.Align.START); self.btn_left_arrow.set_valign(Gtk.Align.CENTER)
-        self.btn_left_arrow.add_css_class("flat-button"); self.add_overlay(self.btn_left_arrow)
+        self.btn_left_arrow.add_css_class("flat-button"); self.btn_left_arrow.add_css_class("image-nav-arrow")
+        self.add_overlay(self.btn_left_arrow)
         self.btn_right_arrow = Gtk.Button.new_from_icon_name("go-next-symbolic")
         self.btn_right_arrow.set_halign(Gtk.Align.END); self.btn_right_arrow.set_valign(Gtk.Align.CENTER)
-        self.btn_right_arrow.add_css_class("flat-button"); self.add_overlay(self.btn_right_arrow)
+        self.btn_right_arrow.add_css_class("flat-button"); self.btn_right_arrow.add_css_class("image-nav-arrow")
+        self.add_overlay(self.btn_right_arrow)
         btn_back = Gtk.Button(label=_("Back"), icon_name="go-up-symbolic")
         btn_back.add_css_class("transparent-button")
         btn_back.connect("clicked", lambda w: self.emit("back-requested"))
@@ -85,6 +90,7 @@ class ImageViewer(Gtk.Overlay):
         def _load_image_in_background():
             try:
                 pixbuf = GdkPixbuf.Pixbuf.new_from_file(image_path)
+                pixbuf = pixbuf.apply_embedded_orientation() or pixbuf
                 GLib.idle_add(_update_picture_on_main_thread, pixbuf)
             except GLib.Error:
                 GLib.idle_add(_update_picture_on_main_thread, None)
@@ -115,6 +121,7 @@ class ImageViewer(Gtk.Overlay):
         self.slideshow_timer_id = GLib.timeout_add(interval, self._on_slideshow_tick)
         self._on_slideshow_tick()
         self.audio_player.set_state(Gst.State.PLAYING)
+        self._set_sleep_inhibited(True)
 
     def _pause_playback(self):
         if not self.is_playing: return
@@ -124,6 +131,19 @@ class ImageViewer(Gtk.Overlay):
             GLib.source_remove(self.slideshow_timer_id)
             self.slideshow_timer_id = None
         self.audio_player.set_state(Gst.State.PAUSED)
+        self._set_sleep_inhibited(False)
+
+    def _set_sleep_inhibited(self, inhibited):
+        if self.sleep_inhibitor is None:
+            root = self.get_root()
+            app = root.get_application() if root is not None else None
+            if app is None:
+                return
+            self.sleep_inhibitor = SleepInhibitor(app)
+        if inhibited:
+            self.sleep_inhibitor.inhibit()
+        else:
+            self.sleep_inhibitor.uninhibit()
 
     def _on_slideshow_tick(self):
         self._on_next_clicked(None)
@@ -154,9 +174,8 @@ class ImageViewer(Gtk.Overlay):
             if response_id == Gtk.ResponseType.ACCEPT:
                 gfile = d.get_file()
                 if gfile:
-                    path = gfile.get_path()
                     self.audio_player.set_state(Gst.State.NULL)
-                    self.audio_player.set_property("uri", f"file://{path}")
+                    self.audio_player.set_property("uri", gfile.get_uri())
                     if self.is_playing:
                         self.audio_player.set_state(Gst.State.PLAYING)
             d.hide()

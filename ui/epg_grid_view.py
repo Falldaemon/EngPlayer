@@ -5,9 +5,11 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, GObject, Pango, GLib, Gio, Adw
 from datetime import datetime, timedelta
+from utils import platform_utils
 import database
 import logging
 import gettext
+
 
 _ = gettext.gettext
 
@@ -675,7 +677,7 @@ class EpgGridView(Gtk.Box):
             heading=_("Schedule Recording")
         )
         body_text = _("Check the details below and adjust recording offsets if necessary.")
-        body_text += "\n\n<b>⚠️ " + _("IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned.") + "</b>"        
+        body_text += platform_utils.display_text("\n\n<b>⚠️ ") + _("IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned.") + "</b>"        
         dialog.set_body(body_text)      
         dialog.set_body_use_markup(True)
         dialog.add_css_class("scheduler-selection-dialog")

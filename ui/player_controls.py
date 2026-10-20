@@ -9,6 +9,7 @@ import urllib.request
 from gi.repository import Gtk, GLib, GdkPixbuf, Gdk, GObject, Gio
 from .placeholder_icon import PlaceholderIcon
 import database
+from core.config import APP_USER_AGENT
 from ui.theme_manager import ThemeManager
 gi.require_version("Gtk", "4.0")
 _ = gettext.gettext
@@ -22,7 +23,8 @@ class PlayerControls(Gtk.Box):
         "stop-trailer-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "go-live-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
         "epg-button-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
-        "series-episodes-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "series-episodes-clicked": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "backup-link-clicked": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
 
     def __init__(self, **kwargs):
@@ -69,7 +71,8 @@ class PlayerControls(Gtk.Box):
             "seek-forward": "media-seek-forward.svg",
             "record": "media-record.svg",
             "catch-up": "folder-recent.svg",
-            "go-live": "live-return-symbolic.svg"
+            "go-live": "live-return-symbolic.svg",
+            "backup-link": "backup-link.svg"
         }
         tooltips = {
             "seek-backward": _("Seek Backward (or Previous Track)"),
@@ -78,7 +81,8 @@ class PlayerControls(Gtk.Box):
             "record": _("Record"),
             "catch-up": _("Past Broadcasts (Archive)"),
             "stop_trailer": _("Stop Trailer and Go Back"),
-            "go-live": _("Back to Live Stream")
+            "go-live": _("Back to Live Stream"),
+            "backup-link": _("Play Backup Link")
             
         }
         for key, icon_name in media_icons.items():
@@ -92,7 +96,9 @@ class PlayerControls(Gtk.Box):
         self.buttons["catch-up"].connect("clicked", lambda b: self.emit("catch-up-button-clicked"))
         self.buttons["catch-up"].set_visible(False)
         self.buttons["go-live"].connect("clicked", lambda b: self.emit("go-live-clicked"))
-        self.buttons["go-live"].set_visible(False) 
+        self.buttons["go-live"].set_visible(False)
+        self.buttons["backup-link"].connect("clicked", lambda b: self.emit("backup-link-clicked"))
+        self.buttons["backup-link"].set_visible(False)
         right_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL, spacing=0)
         right_box.set_valign(Gtk.Align.CENTER)
         controls_center_box.set_end_widget(right_box)
@@ -148,6 +154,9 @@ class PlayerControls(Gtk.Box):
     def set_catchup_button_visibility(self, visible):
         self.set_button_visibility("catch-up", visible)
 
+    def set_backup_link_button_visibility(self, visible):
+        self.set_button_visibility("backup-link", visible)
+
     def update_info_labels(self, video_text, audio_text):
         self.video_info_label.set_text(video_text)
         self.audio_info_label.set_text(audio_text)
@@ -181,7 +190,7 @@ class PlayerControls(Gtk.Box):
             def thread_func():
                 try:
                     if logo_path_or_url.lower().startswith("http"):
-                        headers = {"User-Agent": "Mozilla/5.0"}; req = urllib.request.Request(logo_path_or_url, headers=headers)
+                        headers = {"User-Agent": APP_USER_AGENT}; req = urllib.request.Request(logo_path_or_url, headers=headers)
                         with urllib.request.urlopen(req, timeout=5) as resp: data = resp.read()
                     else:
                         with open(logo_path_or_url, "rb") as f: data = f.read()
@@ -246,7 +255,7 @@ class PlayerControls(Gtk.Box):
         action_group = Gio.SimpleActionGroup()
         for track in tracks:
             action_name = f"set_audio_{track['index']}"
-            menu_model.append(track['name'], f"track.{action_name}")
+            menu_model.append(track.get('label', track['name']), f"track.{action_name}")
             action = Gio.SimpleAction.new(action_name, None)
             action.connect("activate", lambda a, v, index=track['index']: self.emit("audio-track-selected", index))
             action_group.add_action(action)

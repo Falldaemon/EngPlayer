@@ -5,6 +5,7 @@ import threading
 import logging
 import requests
 import database
+from core.config import PROVIDER_USER_AGENT
 import gettext
 import time
 import gi
@@ -15,13 +16,18 @@ from gi.repository import Gtk, GLib, GObject, Adw
 
 _ = gettext.gettext
 
+RETRY_DELAYS = (5, 10, 20)
+RETRYABLE_HTTP_STATUSES = {408, 429, 500, 502, 503, 504}
+
 class DownloadManagerWidget(Gtk.Box):    
     __gsignals__ = {
         "download-finished": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
         "download-failed": (GObject.SignalFlags.RUN_FIRST, None, (str,)),
-        "download-cancelled": (GObject.SignalFlags.RUN_FIRST, None, ())
+        "download-cancelled": (GObject.SignalFlags.RUN_FIRST, None, ()),
+        "download-reconnecting": (GObject.SignalFlags.RUN_FIRST, None, (int, int)),
+        "download-resumed": (GObject.SignalFlags.RUN_FIRST, None, ())
     }
-
+    
     def __init__(self, **kwargs):
         super().__init__(orientation=Gtk.Orientation.HORIZONTAL, spacing=6, **kwargs)
         self.set_visible(False)
@@ -58,6 +64,8 @@ class DownloadManagerWidget(Gtk.Box):
         self.active_url = url
         self.output_path = output_path
         self.speed_limit = speed_limit 
+        self.is_user_cancelled = False
+        self._resume_notify_pending = False
         self._stop_event.clear()
         self.set_visible(True)
         self.progress_bar.set_fraction(0.0)
@@ -120,39 +128,36 @@ class DownloadManagerWidget(Gtk.Box):
             done_mb = downloaded_bytes / (1024 * 1024)
             self.progress_bar.set_text(f"{done_mb:.1f} MB")
 
-    def _download_worker(self):
-        headers = {'User-Agent': 'Mozilla/5.0 (X11; Linux x86_64; rv:109.0) Gecko/20100101 Firefox/115.0'}
+    def _download_attempt(self):
+        headers = {'User-Agent': PROVIDER_USER_AGENT}
         downloaded_bytes = 0
         total_bytes = 0
         if os.path.exists(self.output_path):
             downloaded_bytes = os.path.getsize(self.output_path)
             logging.info(f"DownloadManager: Found existing file, {downloaded_bytes} bytes downloaded so far.")
-        try:
-            head_req = requests.head(self.active_url, headers=headers, timeout=10, allow_redirects=True)
-            if head_req.status_code in [200, 206]:
-                total_bytes = int(head_req.headers.get('Content-Length', 0))
-                if head_req.status_code == 200 and downloaded_bytes > 0:
-                    total_bytes += downloaded_bytes
-        except Exception as e:
-            logging.warning(f"DownloadManager: Could not fetch Content-Length via HEAD: {e}")
-        if total_bytes > 0 and downloaded_bytes >= total_bytes:
-            logging.info("DownloadManager: File is already fully downloaded.")
-            GLib.idle_add(self.set_visible, False)
-            GLib.idle_add(self.emit, "download-finished", self.output_path)
-            database.remove_active_download(self.active_url)
-            return
         if downloaded_bytes > 0:
             headers['Range'] = f'bytes={downloaded_bytes}-'
             logging.info(f"DownloadManager: Resuming from byte {downloaded_bytes}")
+        start_bytes = downloaded_bytes
         try:
             with requests.get(self.active_url, headers=headers, stream=True, timeout=15) as r:
-                r.raise_for_status()               
-                if total_bytes == 0:
-                    cl = r.headers.get('Content-Length')
-                    if cl:
-                        total_bytes = int(cl)
-                        if downloaded_bytes > 0 and r.status_code == 206:
-                            total_bytes += downloaded_bytes
+                if r.status_code == 416:
+                    logging.info("DownloadManager: Server confirmed the file is already fully downloaded (416).")
+                    GLib.idle_add(self.set_visible, False)
+                    GLib.idle_add(self.emit, "download-finished", self.output_path)
+                    database.remove_active_download(self.active_url)
+                    return True
+                if downloaded_bytes > 0 and r.status_code == 200:
+                    logging.warning("DownloadManager: Server did not honor the Range request (returned 200 instead of 206). Restarting this download from scratch, as the existing partial file cannot be trusted.")
+                    downloaded_bytes = 0
+                    start_bytes = 0
+                else:
+                    r.raise_for_status()
+                cl = r.headers.get('Content-Length')
+                if cl:
+                    total_bytes = int(cl)
+                    if downloaded_bytes > 0 and r.status_code == 206:
+                        total_bytes += downloaded_bytes
                 mode = 'ab' if downloaded_bytes > 0 else 'wb'
                 last_calc_time = time.time()
                 last_calc_bytes = downloaded_bytes
@@ -165,6 +170,9 @@ class DownloadManagerWidget(Gtk.Box):
                             break
                         if chunk:
                             f.write(chunk)
+                            if self._resume_notify_pending:
+                                self._resume_notify_pending = False
+                                GLib.idle_add(self.emit, "download-resumed")
                             chunk_len = len(chunk)
                             downloaded_bytes += chunk_len
                             throttle_bytes += chunk_len
@@ -177,35 +185,89 @@ class DownloadManagerWidget(Gtk.Box):
                                     throttle_start_time = time.time()
                                     throttle_bytes = 0
                             current_time = time.time()
-                            time_diff = current_time - last_calc_time                           
+                            time_diff = current_time - last_calc_time
                             if time_diff >= 0.5:
-                                f.flush()                                
+                                f.flush()
                                 bytes_diff = downloaded_bytes - last_calc_bytes
                                 speed_kb = (bytes_diff / time_diff) / 1024
                                 if speed_kb > 1024:
                                     current_speed_text = f"{speed_kb / 1024:.1f} MB/s"
                                 else:
-                                    current_speed_text = f"{speed_kb:.0f} KB/s"                             
+                                    current_speed_text = f"{speed_kb:.0f} KB/s"
                                 last_calc_time = current_time
                                 last_calc_bytes = downloaded_bytes
                                 GLib.idle_add(self._update_ui_progress, downloaded_bytes, total_bytes, current_speed_text)
                     if not self._stop_event.is_set():
                         f.flush()
-                        os.fsync(f.fileno()) 
+                        os.fsync(f.fileno())
                         GLib.idle_add(self._update_ui_progress, downloaded_bytes, total_bytes, current_speed_text)
-            if getattr(self, 'is_user_cancelled', False):
-                if self.output_path and os.path.exists(self.output_path):
-                    try:
-                        os.remove(self.output_path)
-                        logging.info(f"DownloadManager: Incomplete file safely deleted: {self.output_path}")
-                    except Exception as e:
-                        logging.error(f"DownloadManager: Failed to delete incomplete file: {e}")
-            elif not self._stop_event.is_set():
-                logging.info(f"DownloadManager: Download completed successfully: {self.output_path}")
-                GLib.idle_add(self.set_visible, False)
-                GLib.idle_add(self.emit, "download-finished", self.output_path)
-                database.remove_active_download(self.active_url)              
-        except Exception as e:
-            logging.error(f"DownloadManager: Download failed: {e}")
+        finally:
+            self._last_attempt_made_progress = downloaded_bytes > start_bytes
+        if self._stop_event.is_set():
+            return False
+        if total_bytes > 0 and downloaded_bytes < total_bytes:
+            raise requests.exceptions.ChunkedEncodingError(
+                f"Connection closed early ({downloaded_bytes} of {total_bytes} bytes received)"
+            )
+        logging.info(f"DownloadManager: Download completed successfully: {self.output_path}")
+        GLib.idle_add(self.set_visible, False)
+        GLib.idle_add(self.emit, "download-finished", self.output_path)
+        database.remove_active_download(self.active_url)
+        return True
+
+    def _is_retryable_error(self, error):
+        if isinstance(error, requests.exceptions.HTTPError):
+            status = error.response.status_code if error.response is not None else None
+            return status in RETRYABLE_HTTP_STATUSES
+        return isinstance(error, (
+            requests.exceptions.ConnectionError,
+            requests.exceptions.Timeout,
+            requests.exceptions.ChunkedEncodingError,
+        ))
+
+    def _delete_partial_file(self):
+        if self.output_path and os.path.exists(self.output_path):
+            try:
+                os.remove(self.output_path)
+                logging.info(f"DownloadManager: Incomplete file safely deleted: {self.output_path}")
+            except Exception as e:
+                logging.error(f"DownloadManager: Failed to delete incomplete file: {e}")
+
+    def _show_reconnecting(self, attempt, max_attempts):
+        self.progress_bar.set_text(_("Connecting..."))
+        self.speed_label.set_text("")
+        self.emit("download-reconnecting", attempt, max_attempts)
+        return False
+
+    def _download_worker(self):
+        retry_index = 0
+        while True:
+            self._last_attempt_made_progress = False
+            try:
+                self._download_attempt()
+                error = None
+            except Exception as e:
+                error = e
+            if self._stop_event.is_set():
+                if getattr(self, 'is_user_cancelled', False):
+                    self._delete_partial_file()
+                return
+            if error is None:
+                return
+            if self._last_attempt_made_progress:
+                retry_index = 0
+            if retry_index < len(RETRY_DELAYS) and self._is_retryable_error(error):
+                delay = RETRY_DELAYS[retry_index]
+                retry_index += 1
+                self._resume_notify_pending = True
+                logging.warning(f"DownloadManager: Connection problem ({error}). Retry attempt {retry_index}/{len(RETRY_DELAYS)} in {delay} seconds...")
+                GLib.idle_add(self._show_reconnecting, retry_index, len(RETRY_DELAYS))
+                if self._stop_event.wait(delay):
+                    if getattr(self, 'is_user_cancelled', False):
+                        self._delete_partial_file()
+                    return
+                continue
+            logging.error(f"DownloadManager: Download failed: {error}")
             GLib.idle_add(self.set_visible, False)
-            GLib.idle_add(self.emit, "download-failed", str(e))
+            GLib.idle_add(self.emit, "download-failed", str(error))
+            return

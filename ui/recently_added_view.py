@@ -29,7 +29,11 @@ class RecentlyAddedView(Gtk.Box):
         self.status_page.set_description(_("Select a time period to view the latest additions."))
         self.status_page.set_icon_name("document-open-recent-symbolic")
         self.append(self.status_page)
-        self.spinner = Gtk.Spinner()
+        if hasattr(Adw, "Spinner"):
+            self.spinner = Adw.Spinner()
+            self.spinner.start = self.spinner.stop = lambda: None
+        else:
+            self.spinner = Gtk.Spinner()
         self.append(self.spinner)
         self.listbox = Gtk.ListBox()
         self.listbox.add_css_class("boxed-list")

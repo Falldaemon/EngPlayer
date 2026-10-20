@@ -1,11 +1,16 @@
 import json
 import os
 import hashlib
+from utils import platform_utils
 
 class FavoritesManager:
     def __init__(self, cache_dir=None):
         if cache_dir is None:
-            self.cache_dir = os.path.expanduser("~/.cache/EngPlayer/favorites_cache")
+            if platform_utils.IS_WINDOWS:
+                from gi.repository import GLib
+                self.cache_dir = os.path.join(GLib.get_user_cache_dir(), "EngPlayer", "favorites_cache")
+            else:
+                self.cache_dir = os.path.expanduser("~/.cache/EngPlayer/favorites_cache")
         else:
             self.cache_dir = cache_dir
         if not os.path.exists(self.cache_dir):

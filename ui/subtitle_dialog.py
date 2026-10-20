@@ -3,7 +3,7 @@
 import gi
 gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
-from gi.repository import Gtk, Adw, GObject
+from gi.repository import Gtk, Adw, GObject, Pango
 import gettext
 from .subtitle_settings_dialog import SubtitleSettingsDialog
 _ = gettext.gettext
@@ -37,8 +37,11 @@ class SubtitleDialog(Adw.MessageDialog):
         list_box.append(toggle_row)        
         if embedded_tracks:
             self.track_combo = Gtk.ComboBoxText()
+            for cell in self.track_combo.get_cells():
+                cell.set_property("ellipsize", Pango.EllipsizeMode.END)
+                cell.set_property("max-width-chars", 28)
             for track in embedded_tracks:
-                self.track_combo.append(str(track['index']), track['name'])
+                self.track_combo.append(str(track['index']), track.get('label', track['name']))
             if current_track_index != -1:
                 self.track_combo.set_active_id(str(current_track_index))          
             self.track_combo.connect("changed", self.on_track_changed)

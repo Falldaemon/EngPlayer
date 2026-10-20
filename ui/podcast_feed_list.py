@@ -10,6 +10,7 @@ gi.require_version("GdkPixbuf", "2.0")
 from gi.repository import Gtk, GObject, Pango, GLib, GdkPixbuf, Gdk
 import gettext
 import database
+from core.config import APP_USER_AGENT
 
 _ = gettext.gettext
 
@@ -101,7 +102,7 @@ class PodcastFeedList(Gtk.Box):
             filename = hashlib.md5(url.encode()).hexdigest() + ".jpg"
             local_path = os.path.join(self.cache_dir, filename)           
             if not os.path.exists(local_path):
-                req = urllib.request.Request(url, headers={'User-Agent': 'Mozilla/5.0'})
+                req = urllib.request.Request(url, headers={'User-Agent': APP_USER_AGENT})
                 with urllib.request.urlopen(req, timeout=10) as response:
                     data = response.read()
                     with open(local_path, 'wb') as f:

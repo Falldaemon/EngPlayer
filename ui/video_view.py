@@ -11,6 +11,7 @@ import os
 import database
 from ui.theme_manager import ThemeManager
 from datetime import datetime
+from utils import platform_utils
 
 _ = gettext.gettext
 
@@ -27,6 +28,12 @@ class VideoView(Gtk.Box):
         self.set_vexpand(True)
         self.overlay_container = Gtk.Overlay(vexpand=True, hexpand=True)
         self.append(self.overlay_container)
+        self.native_host = None
+        self._osd = self.overlay_container
+        if platform_utils.IS_WINDOWS:
+            from .native_video_host import NativeVideoHost
+            self.native_host = NativeVideoHost(self.overlay_container)
+            self._osd = self.native_host.osd_overlay
         black_background = Gtk.Box(css_classes=["black"])
         black_background.set_hexpand(True)
         black_background.set_vexpand(True)
@@ -41,7 +48,7 @@ class VideoView(Gtk.Box):
         self.subtitle_label.set_valign(Gtk.Align.END)
         self.subtitle_label.set_margin_bottom(20)
         self.subtitle_label.hide()
-        self.overlay_container.add_overlay(self.subtitle_label)
+        self._osd.add_overlay(self.subtitle_label)
         self.fullscreen_channel_list = ChannelList()
         self.fullscreen_channel_list.add_css_class("fullscreen-channel-list")
         self.fullscreen_channel_list.set_halign(Gtk.Align.START)
@@ -49,12 +56,28 @@ class VideoView(Gtk.Box):
         self.fullscreen_channel_list.set_size_request(350, -1)
         self.fullscreen_channel_list.enable_fullscreen_mode()
         self.fullscreen_channel_list.set_visible(False)     
-        self.overlay_container.add_overlay(self.fullscreen_channel_list)
+        self._osd.add_overlay(self.fullscreen_channel_list)
         self.controls = PlayerControls()
         self.append(self.controls)        
         click_gesture = Gtk.GestureClick.new()
         click_gesture.connect("pressed", self._on_video_frame_pressed)
         self.video_frame.add_controller(click_gesture) 
+        if self.native_host:
+            osd_click = Gtk.GestureClick.new()
+            osd_click.connect("pressed", self._on_video_frame_pressed)
+            self._osd.add_controller(osd_click)
+        self.loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=12, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, css_classes=["video-loading-overlay"])
+        from gi.repository import Adw
+        if hasattr(Adw, "Spinner"):
+            self.loading_spinner = Adw.Spinner(width_request=48, height_request=48)
+        else:
+            self.loading_spinner = Gtk.Spinner(width_request=48, height_request=48)
+        self.loading_box.append(self.loading_spinner)
+        self.loading_label = Gtk.Label()
+        self.loading_box.append(self.loading_label)
+        self.loading_box.set_visible(False)
+        self._osd.add_overlay(self.loading_box)
+        self._frame_visible_before_loading = True
         self.back_button_box = Gtk.Box(css_classes=["floating-back-button"])
         self.back_button_box.set_halign(Gtk.Align.START)
         self.back_button_box.set_valign(Gtk.Align.START)
@@ -72,12 +95,13 @@ class VideoView(Gtk.Box):
         back_btn.set_child(back_btn_content)
         back_btn.connect("clicked", lambda b: self.emit("back-clicked"))        
         self.back_button_box.append(back_btn)
-        self.overlay_container.add_overlay(self.back_button_box)
+        self._osd.add_overlay(self.back_button_box)
         self.back_button_box.set_visible(False)
+        self.hide_back_button = False
         self.current_media_type = None   
         motion_ctrl = Gtk.EventControllerMotion.new()
         motion_ctrl.connect("motion", self._on_overlay_motion)
-        self.overlay_container.add_controller(motion_ctrl)
+        self._osd.add_controller(motion_ctrl)
         self._overlay_hide_timer_id = None  
         self.epg_listbox = Gtk.ListBox()
         self.epg_listbox.connect("row-activated", self.on_epg_row_activated)
@@ -92,18 +116,18 @@ class VideoView(Gtk.Box):
             valign=Gtk.Align.END,
             margin_bottom=80,
             margin_end=20,
-            css_classes=["osd", "box"]
+            css_classes=["next-episode-prompt"]
         )
-        self.next_episode_box.set_opacity(0.9)
-        self.next_episode_box.set_visible(False)      
-        self.next_episode_label = Gtk.Label(xalign=1)
+        self.next_episode_box.set_visible(False)     
+        self.next_episode_label = Gtk.Label(xalign=1, ellipsize=Pango.EllipsizeMode.END, max_width_chars=40)
         self.next_episode_box.append(self.next_episode_label)       
         self.next_episode_skip_button = Gtk.Button(label=_("Skip Now"))
         self.next_episode_skip_button.add_css_class("suggested-action")
         self.next_episode_box.append(self.next_episode_skip_button)      
         self.next_episode_cancel_button = Gtk.Button(label=_("Cancel"))
         self.next_episode_box.append(self.next_episode_cancel_button)
-        self.overlay_container.add_overlay(self.next_episode_box)      
+        self._osd.add_overlay(self.next_episode_box)      
+        self.next_episode_box.connect("notify::visible", self._layout_next_episode_prompt)
         self.append(self.epg_scroll)
         self.clock_box = Gtk.Box(css_classes=["floating-clock"])
         self.clock_box.set_halign(Gtk.Align.END)
@@ -112,7 +136,7 @@ class VideoView(Gtk.Box):
         self.clock_box.set_margin_end(50)
         self.clock_label = Gtk.Label()
         self.clock_box.append(self.clock_label)
-        self.overlay_container.add_overlay(self.clock_box)
+        self._osd.add_overlay(self.clock_box)
         self.clock_box.set_visible(False)      
         GLib.timeout_add_seconds(1, self._update_clock_text)
         self.controls.connect("notify::visible", self._sync_overlay_elements_visibility)
@@ -138,7 +162,7 @@ class VideoView(Gtk.Box):
             return          
         self._last_x = x
         self._last_y = y
-        if self.current_media_type in ["vod", "series", "media"]:
+        if self.current_media_type in ["vod", "series", "media"] and not self.hide_back_button:
             self.back_button_box.set_visible(True)
             if getattr(self, '_overlay_hide_timer_id', None):
                 GLib.source_remove(self._overlay_hide_timer_id)
@@ -185,6 +209,44 @@ class VideoView(Gtk.Box):
                 hbox.append(info_icon)
                 row.set_child(hbox)
                 self.epg_listbox.append(row)
+                
+    def show_loading_delayed(self, text=None, delay_ms=2000):
+        self._cancel_pending_loading()
+        self._pending_loading_id = GLib.timeout_add(delay_ms, self._on_pending_loading, text)
+
+    def _on_pending_loading(self, text):
+        self._pending_loading_id = None
+        self.show_loading(text)
+        return GLib.SOURCE_REMOVE
+
+    def _cancel_pending_loading(self):
+        if getattr(self, "_pending_loading_id", None):
+            GLib.source_remove(self._pending_loading_id)
+            self._pending_loading_id = None
+
+    def show_loading(self, text=None):
+        self._cancel_pending_loading()
+        if not self.loading_box.get_visible():
+            self._frame_visible_before_loading = self.video_frame.get_visible()
+        self.video_frame.set_visible(False)
+        if self.native_host:
+            self.native_host.set_video_visible(False)
+        self.loading_label.set_text(text or "")
+        self.loading_label.set_visible(bool(text))
+        self.loading_box.set_visible(True)
+        if isinstance(self.loading_spinner, Gtk.Spinner):
+            self.loading_spinner.start()
+
+    def hide_loading(self):
+        self._cancel_pending_loading()
+        if not self.loading_box.get_visible():
+            return
+        if isinstance(self.loading_spinner, Gtk.Spinner):
+            self.loading_spinner.stop()
+        self.loading_box.set_visible(False)
+        self.video_frame.set_visible(self._frame_visible_before_loading)
+        if self.native_host:
+            self.native_host.set_video_visible(self._frame_visible_before_loading)         
 
     def set_paintable(self, paintable):
         self.picture_widget.set_paintable(paintable)
@@ -195,6 +257,33 @@ class VideoView(Gtk.Box):
     def set_mode(self, mode):
         is_video_mode = (mode == 'video')
         self.video_frame.set_visible(is_video_mode)
+        if self.native_host:
+            self.native_host.set_video_visible(is_video_mode)
+
+    def get_native_window_handle(self):
+        return self.native_host.get_window_handle() if self.native_host else None
+
+    def set_native_video_visible(self, visible):
+        if self.native_host:
+            self.native_host.set_video_visible(visible)
+
+    def set_native_override_anchor(self, widget):
+        if self.native_host:
+            self.native_host.set_override_anchor(widget)
+
+    def add_native_alt_anchor(self, widget):
+        if self.native_host:
+            self.native_host.add_alt_anchor(widget)
+
+    def set_native_video_active(self, active):
+        if self.native_host:
+            self.native_host.set_video_active(active)
+
+    def set_native_callbacks(self, key=None, motion=None, resized=None):
+        if self.native_host:
+            self.native_host.key_forward = key
+            self.native_host.motion_forward = motion
+            self.native_host.resized_callback = resized
 
     def _on_video_frame_pressed(self, gesture, n_press, x, y):
         if n_press == 2:
@@ -210,11 +299,12 @@ class VideoView(Gtk.Box):
         self.controls.set_margin_start(30)
         self.controls.set_margin_end(30)
         self.controls.set_visible(True)
-        self.overlay_container.add_overlay(self.controls)
+        self._osd.add_overlay(self.controls)
         self._sync_overlay_elements_visibility()
+        self._layout_next_episode_prompt()
 
     def disable_fullscreen_overlay_mode(self):
-        self.overlay_container.remove_overlay(self.controls)
+        self._osd.remove_overlay(self.controls)
         self.controls.remove_css_class("fullscreen-controls")
         self.controls.add_css_class("player-controls")     
         self.controls.set_margin_bottom(0)
@@ -222,3 +312,17 @@ class VideoView(Gtk.Box):
         self.controls.set_margin_end(0)
         self.insert_child_after(self.controls, self.overlay_container)
         self._sync_overlay_elements_visibility()
+        self._layout_next_episode_prompt()
+
+    def _layout_next_episode_prompt(self, *args):
+        is_fullscreen = self.controls.has_css_class("fullscreen-controls")
+        if is_fullscreen and self.next_episode_box.get_visible():
+            prompt_width = self.next_episode_box.measure(Gtk.Orientation.HORIZONTAL, -1)[1]
+            self.next_episode_box.set_margin_bottom(65)
+            self.next_episode_box.set_margin_end(30)
+            self.controls.set_margin_end(30 + prompt_width + 12)
+        else:
+            self.next_episode_box.set_margin_bottom(80)
+            self.next_episode_box.set_margin_end(20)
+            if is_fullscreen:
+                self.controls.set_margin_end(30)

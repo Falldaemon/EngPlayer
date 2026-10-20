@@ -2,14 +2,14 @@ import urllib.request
 import xml.etree.ElementTree as ET
 import logging
 import ssl
-from core.config import VERSION 
+from core.config import APP_USER_AGENT
 
 def parse_podcast_feed(rss_url):
     try:
         ctx = ssl.create_default_context()
         ctx.check_hostname = False
         ctx.verify_mode = ssl.CERT_NONE
-        req = urllib.request.Request(rss_url, headers={'User-Agent': f'EngPlayer/{VERSION}'})       
+        req = urllib.request.Request(rss_url, headers={'User-Agent': APP_USER_AGENT})
         with urllib.request.urlopen(req, context=ctx, timeout=10) as response:
             xml_data = response.read()
         root = ET.fromstring(xml_data)

@@ -5,51 +5,15 @@ import os
 gi.require_version("Gtk", "4.0")
 from gi.repository import Gtk, GObject, Pango, GLib, GdkPixbuf, Gdk, Adw
 import gettext
+
 _ = gettext.gettext
+
 import logging
 import threading
 import json
 import re
-
 import locale
-from deep_translator import GoogleTranslator
-
-def get_system_language():
-    try:
-        langs = GLib.get_language_names()
-        for lang in langs:
-            code = lang[:2].lower()
-            if code and code != 'c':
-                return code             
-        env_lang = os.environ.get('LANG', '')
-        if env_lang:
-            code = env_lang[:2].lower()
-            if code and code != 'c':
-                return code              
-        return 'en'       
-    except Exception as e:
-        logging.error(f"Language detection error: {e}")
-        return 'en'
-
-def translate_text_manually(text, callback, button_to_disable=None):
-    if not text or len(text.strip()) == 0:
-        return
-    if button_to_disable:
-        button_to_disable.set_sensitive(False)
-
-    def run_translation():
-        try:
-            target_lang = get_system_language()
-            translated = GoogleTranslator(source='auto', target=target_lang).translate(text)
-            GLib.idle_add(callback, translated)
-        except Exception as e:
-            logging.error(f"Translation error: {e}")
-            GLib.idle_add(callback, text)
-        finally:
-            if button_to_disable:
-                GLib.idle_add(button_to_disable.set_sensitive, True)
-    threading.Thread(target=run_translation, daemon=True).start()
-
+from utils.translation_utils import get_system_language, translate_text_manually
 from utils.theme_utils import get_icon_theme_folder
 from utils.image_loader import load_image_async
 from utils import title_parser
@@ -172,7 +136,8 @@ class DetailView(Gtk.Box):
         self.set_margin_bottom(12)
         self.media_url = None
         self.media_type = None
-        self.current_trailer_key = None       
+        self.current_item = None
+        self.current_trailer_key = None      
         header_box = Gtk.Box(orientation=Gtk.Orientation.HORIZONTAL)
         self.append(header_box)
         back_button = Gtk.Button()
@@ -285,14 +250,18 @@ class DetailView(Gtk.Box):
         self.download_btn.connect("clicked", self._on_download_clicked)
         button_box.append(self.download_btn)      
         self._is_downloading = False
+        self._is_downloaded = False
 
     def update_content(self, item, media_type):
         logging.info(f"DETAILVIEW: update_content STARTED - Item: {item.props.title}, Type: {media_type}, URL/ID: {item.props.path_or_url}")
         self.media_url = item.props.path_or_url
         self.media_type = media_type
+        self.current_item = item
         self.current_trailer_key = None
         self.trailer_button.set_sensitive(False)
         self.download_btn.set_visible(media_type == 'vod')
+        if not self._is_downloading:
+            self.set_download_state(False)
         logging.debug("DETAILVIEW: Clearing UI and setting initial info...")
         self.poster_image.set_paintable(None)
         initial_title = item.props.title or ""
@@ -420,6 +389,7 @@ class DetailView(Gtk.Box):
                 if cached_dict.get('overview') or cached_dict.get('title'):
                     logging.info(f"Valid metadata found in DB for stream {stream_id}. Skipping API fetch.")
                     GLib.idle_add(self._update_labels_from_tmdb_data, cached_dict)
+                    GLib.idle_add(self._check_late_trakt_watched_status, str(tmdb_id_from_xtream), str(stream_id))
                     return
             user_key = database.get_config_value("tmdb_api_key")
             api_key = user_key if user_key else get_fallback_tmdb_key()
@@ -430,6 +400,7 @@ class DetailView(Gtk.Box):
                     database.save_metadata(stream_id, tmdb_details)
                     logging.info(f"DETAILVIEW (Xtream-TMDb): Scheduling _update_labels_from_tmdb_data via idle_add")
                     GLib.idle_add(self._update_labels_from_tmdb_data, tmdb_details)
+                    GLib.idle_add(self._check_late_trakt_watched_status, str(tmdb_id_from_xtream), str(stream_id))
                     return
                 else:
                     logging.warning(f"Could not get details for TMDb ID ({tmdb_id_from_xtream}).")
@@ -459,6 +430,7 @@ class DetailView(Gtk.Box):
                         if tmdb_data:
                              database.save_metadata(self.media_url, tmdb_data)
                              logging.debug(f"TMDb data (title search) saved to database (key: {self.media_url})")
+                             GLib.idle_add(self._check_late_trakt_watched_status, str(media_id), str(self.media_url))
                     else:
                          logging.warning(f"No match found in TMDb title search for '{clean_title}' ({search_year_final}). Status: {status}")
                 else:
@@ -478,6 +450,21 @@ class DetailView(Gtk.Box):
             logging.debug("TMDb data (title search) not found, running fallback (basic info).")
             self._set_overview_text(_("Detailed information not found (TMDb search failed)."))
         return GLib.SOURCE_REMOVE
+
+    def _check_late_trakt_watched_status(self, tmdb_id_str, media_path):
+        main_window = self.get_ancestor(Gtk.Window)
+        if not main_window or not tmdb_id_str or tmdb_id_str == "None":
+            logging.debug(f"[Trakt Catch-up] Skipped for '{media_path}' (no main_window or empty TMDb ID).")
+            return False
+        trakt_watched_movies = getattr(main_window, 'trakt_watched_movies', set())
+        trakt_watched_episodes = getattr(main_window, 'trakt_watched_episodes', set())
+        logging.debug(f"[Trakt Catch-up] Checking '{media_path}' (TMDb ID: {tmdb_id_str}) against {len(trakt_watched_movies)} watched movies / {len(trakt_watched_episodes)} watched episodes in memory.")
+        if tmdb_id_str in trakt_watched_movies or tmdb_id_str in trakt_watched_episodes:
+            logging.info(f"[Trakt Catch-up] MATCH! '{media_path}' (TMDb ID: {tmdb_id_str}) matches Trakt's watched history. Marking as watched now.")
+            database.set_batch_watched_status_by_path([media_path])
+        else:
+            logging.debug(f"[Trakt Catch-up] No match found for TMDb ID {tmdb_id_str} in Trakt's watched history.")
+        return False
 
     def _update_labels_from_tmdb_data(self, tmdb_api_or_db_data):
         logging.info("===== _update_labels_from_tmdb_data CALLED =====")
@@ -507,7 +494,7 @@ class DetailView(Gtk.Box):
                 self.country_label.set_text("")
             genres = tmdb_api_or_db_data.get('genres', '')
             logging.debug(f"Updating genres: '{genres}'")
-            self.genre_label.set_markup(f"<i>{genres}</i>" if genres else "")
+            self.genre_label.set_markup(f"<i>{GLib.markup_escape_text(genres)}</i>" if genres else "")
             cast_with_pics_json = tmdb_api_or_db_data.get('cast_members')
             cast_list = []
             logging.debug(f"Searching for cast data... DB JSON: {cast_with_pics_json is not None}, API List: {'cast_with_pics' in tmdb_api_or_db_data}")
@@ -662,7 +649,7 @@ class DetailView(Gtk.Box):
             except (ValueError, TypeError):
                 self.rating_label.set_text("")
         genre_xtream = info.get('genre')
-        self.genre_label.set_markup(f"<i>{genre_xtream}</i>" if genre_xtream else "")
+        self.genre_label.set_markup(f"<i>{GLib.markup_escape_text(genre_xtream)}</i>" if genre_xtream else "")
         while (child := self.cast_flowbox.get_child_at_index(0)):
             self.cast_flowbox.remove(child)
         cast_text = info.get('cast')
@@ -711,24 +698,64 @@ class DetailView(Gtk.Box):
     def _create_actor_placeholder(self):
         box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=4)
         box.set_size_request(100, 150)
-        spinner = Gtk.Spinner(spinning=True, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True, vexpand=True)
+        if hasattr(Adw, "Spinner"):
+            spinner = Adw.Spinner(halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True, vexpand=True)
+        else:
+            spinner = Gtk.Spinner(spinning=True, halign=Gtk.Align.CENTER, valign=Gtk.Align.CENTER, hexpand=True, vexpand=True)
         box.append(spinner)
         return box
         
+    def _download_key(self):
+        if self.media_type == 'vod' and self.media_url:
+            return f"vod:{self.media_url}"
+        return None
+
     def _on_download_clicked(self, button):
         if self._is_downloading:
             self.emit("cancel-download-requested")
         elif self.media_url and self.media_type:
             title = getattr(self, 'current_title', self.title_label.get_text())
-            self.emit("download-requested", self.media_url, self.media_type, title)
+            media_url, media_type = self.media_url, self.media_type
+            if self._is_downloaded:
+                self._confirm_download_again(lambda: self.emit("download-requested", media_url, media_type, title))
+            else:
+                self.emit("download-requested", media_url, media_type, title)
+
+    def _confirm_download_again(self, on_confirm):
+        dialog = Adw.MessageDialog(
+            transient_for=self.get_root(),
+            heading=_("Already Downloaded"),
+            body=_("This content has already been downloaded and the file is still on your disk. Do you want to download it again?"),
+            modal=True
+        )
+        dialog.add_css_class("download-again-dialog")
+        dialog.add_response("cancel", _("Cancel"))
+        dialog.add_response("download", _("Download"))
+        dialog.set_response_appearance("download", Adw.ResponseAppearance.SUGGESTED)
+        dialog.set_default_response("cancel")
+        dialog.set_close_response("cancel")
+
+        def _on_response(d, response_id):
+            d.close()
+            if response_id == "download":
+                on_confirm()
+        dialog.connect("response", _on_response)
+        dialog.present()
 
     def set_download_state(self, is_downloading):
         self._is_downloading = is_downloading
         if is_downloading:
             self.download_label.set_text(_("Cancel"))
             self.download_icon.set_from_icon_name("process-stop-symbolic")
-            self.download_btn.add_css_class("destructive-action") 
+            self.download_btn.add_css_class("destructive-action")
+            return
+        key = self._download_key()
+        self._is_downloaded = bool(key) and key in database.get_downloaded_content_keys([key])
+        if self._is_downloaded:
+            self.download_label.set_text(_("Downloaded"))
+            self.download_icon.set_from_icon_name("object-select-symbolic")
+            self.download_btn.add_css_class("destructive-action")
         else:
             self.download_label.set_text(_("Download"))
             self.download_icon.set_from_icon_name("folder-download-symbolic")
-            self.download_btn.remove_css_class("destructive-action")     
+            self.download_btn.remove_css_class("destructive-action")    

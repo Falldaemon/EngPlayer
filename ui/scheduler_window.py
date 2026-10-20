@@ -6,6 +6,7 @@ gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GObject, GLib, Pango
 import gettext
 from datetime import datetime, time, timedelta
+from utils import platform_utils
 import database
 import logging
 
@@ -32,7 +33,7 @@ class SchedulerWindow(Adw.PreferencesWindow):
         self.add(main_page)
         add_group = Adw.PreferencesGroup(title=_("Add New Scheduled Recording"))
         main_page.add(add_group)
-        warning_text = "<b>⚠️ " + _("IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned.") + "</b>"        
+        warning_text = platform_utils.display_text("<b>⚠️ ") + _("IMPORTANT: If a recording starts while the application is open and a stream is being watched, a second connection request will be sent to your provider. If you have a single-device subscription, this may result in your account being banned.") + "</b>"       
         self.risk_check = Gtk.CheckButton()
         self.risk_row = Adw.ActionRow(
             title=_("I understand the risk of account suspension"),

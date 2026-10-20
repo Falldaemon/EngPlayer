@@ -49,7 +49,12 @@ def get_profile_db_connection():
             conn.execute("SELECT custom_epg_id FROM custom_channel_edits LIMIT 1")
         except sqlite3.OperationalError:
             logging.info("Migrating 'custom_channel_edits': adding 'custom_epg_id' column.")
-            conn.execute("ALTER TABLE custom_channel_edits ADD COLUMN custom_epg_id TEXT")          
+            conn.execute("ALTER TABLE custom_channel_edits ADD COLUMN custom_epg_id TEXT")
+        try:
+            conn.execute("SELECT backup_url FROM custom_channel_edits LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'custom_channel_edits': adding 'backup_url' column.")
+            conn.execute("ALTER TABLE custom_channel_edits ADD COLUMN backup_url TEXT")          
         conn.commit()
     except Exception as e:
         logging.error(f"SQLite Migration Error (custom_channel_edits): {e}")       
@@ -300,6 +305,42 @@ def _initialize_profile_db():
         except sqlite3.OperationalError:
             logging.info("Migrating 'active_downloads': adding 'speed_limit' column.")
             cursor.execute("ALTER TABLE active_downloads ADD COLUMN speed_limit INTEGER")
+        try:
+            cursor.execute("SELECT content_key FROM active_downloads LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'active_downloads': adding 'content_key' column.")
+            cursor.execute("ALTER TABLE active_downloads ADD COLUMN content_key TEXT")
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS completed_downloads (
+                content_key TEXT PRIMARY KEY,
+                file_path TEXT NOT NULL,
+                downloaded_at INTEGER NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS vod_watch_history (
+                stream_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                poster_path TEXT,
+                last_watched INTEGER NOT NULL
+            )
+        """)
+        cursor.execute("""
+            CREATE TABLE IF NOT EXISTS series_watch_history (
+                series_id TEXT PRIMARY KEY,
+                name TEXT NOT NULL,
+                poster_path TEXT,
+                last_episode_key TEXT NOT NULL,
+                final_episode_key TEXT,
+                last_watched INTEGER NOT NULL,
+                has_progress INTEGER DEFAULT 0 NOT NULL
+            )
+        """)
+        try:
+            cursor.execute("SELECT has_progress FROM series_watch_history LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'series_watch_history': adding 'has_progress' column.")
+            cursor.execute("ALTER TABLE series_watch_history ADD COLUMN has_progress INTEGER DEFAULT 0 NOT NULL")
         conn.commit()
         conn.close()
         logging.info(f"Profile database ('{CURRENT_PROFILE_DB_FILE}') initialized successfully.")
@@ -309,7 +350,6 @@ def _initialize_profile_db():
 def initialize_database():
     _initialize_config_db()
     _initialize_library_db()
-    init_epg_db()
 
 def set_active_profile_db(profile_id):
     global CURRENT_PROFILE_DB_FILE
@@ -890,6 +930,14 @@ def get_all_locked_channel_urls():
     conn.close()
     return urls
 
+def get_all_locked_bouquet_names():
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    cursor.execute("SELECT bouquet_name FROM bouquet_properties WHERE is_locked = 1")
+    names = {row['bouquet_name'] for row in cursor.fetchall()}
+    conn.close()
+    return names
+
 def save_playback_progress(media_path, position, is_finished=0):
     conn = get_profile_db_connection()
     try:
@@ -1302,10 +1350,22 @@ def clear_channel_history():
 EPG_DB_FILE = None
 _cached_epg_channel_ids = None  
 
+def set_active_epg_db(profile_id):
+    global EPG_DB_FILE, _cached_epg_channel_ids
+    safe_id = hashlib.md5(profile_id.encode()).hexdigest()
+    new_epg_db_path = os.path.join(get_cache_path(), f"epg_data_{safe_id}.db")
+    if EPG_DB_FILE == new_epg_db_path:
+        return
+    EPG_DB_FILE = new_epg_db_path
+    _cached_epg_channel_ids = None
+    logging.info(f"[EPG] Active EPG database switched to profile-specific file: {EPG_DB_FILE}")
+    init_epg_db()
+
 def get_epg_db_connection():
     global EPG_DB_FILE
     if not EPG_DB_FILE:
         EPG_DB_FILE = os.path.join(get_cache_path(), "epg_data.db")
+        logging.warning("[EPG] set_active_epg_db() has not been called yet. Falling back to the legacy shared EPG database.")
     conn = sqlite3.connect(EPG_DB_FILE, timeout=15)
     conn.row_factory = sqlite3.Row
     return conn
@@ -1327,6 +1387,11 @@ def init_epg_db():
             )
         """)
         cursor.execute("CREATE INDEX IF NOT EXISTS idx_channel_time ON epg_programs (channel_id, start_time, stop_time)")
+        try:
+            cursor.execute("SELECT poster_url FROM epg_programs LIMIT 1")
+        except sqlite3.OperationalError:
+            logging.info("Migrating 'epg_programs': adding 'poster_url' column.")
+            cursor.execute("ALTER TABLE epg_programs ADD COLUMN poster_url TEXT")
         cursor.execute("""
             CREATE TABLE IF NOT EXISTS epg_key_mappings (
                 raw_key TEXT PRIMARY KEY,
@@ -1357,8 +1422,8 @@ def insert_epg_batch(programs_batch):
         conn = get_epg_db_connection()
         with conn:
             conn.executemany("""
-                INSERT INTO epg_programs (channel_id, title, desc, start_time, stop_time)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO epg_programs (channel_id, title, desc, start_time, stop_time, poster_url)
+                VALUES (?, ?, ?, ?, ?, ?)
             """, programs_batch)
         conn.close()
         _cached_epg_channel_ids = None
@@ -1368,7 +1433,7 @@ def insert_epg_batch(programs_batch):
 def get_epg_programs(channel_id, start_ts=None, end_ts=None):
     conn = get_epg_db_connection()
     cursor = conn.cursor()
-    query = "SELECT title, desc, start_time, stop_time FROM epg_programs WHERE channel_id = ?"
+    query = "SELECT title, desc, start_time, stop_time, poster_url FROM epg_programs WHERE channel_id = ?"
     params = [channel_id]
     if start_ts and end_ts:
         query += " AND stop_time > ? AND start_time < ?"
@@ -1388,7 +1453,8 @@ def get_epg_programs(channel_id, start_ts=None, end_ts=None):
             "title": r["title"],
             "desc": r["desc"],
             "start": datetime.fromtimestamp(r["start_time"], timezone.utc).astimezone(),
-            "stop": datetime.fromtimestamp(r["stop_time"], timezone.utc).astimezone()
+            "stop": datetime.fromtimestamp(r["stop_time"], timezone.utc).astimezone(),
+            "poster_url": r["poster_url"]
         })
     return programs
 
@@ -1469,7 +1535,143 @@ def is_vod_favorite(stream_id):
     cursor.execute("SELECT 1 FROM vod_favorites WHERE stream_id = ? LIMIT 1", (str(stream_id),))
     result = cursor.fetchone()
     conn.close()
-    return result is not None     
+    return result is not None    
+    
+def add_vod_to_watch_history(stream_id, name, poster_path, limit=30):
+    if not stream_id:
+        return
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("""
+                INSERT INTO vod_watch_history (stream_id, name, poster_path, last_watched)
+                VALUES (?, ?, ?, ?)
+                ON CONFLICT(stream_id) DO UPDATE SET
+                    name=excluded.name,
+                    poster_path=excluded.poster_path,
+                    last_watched=excluded.last_watched
+            """, (str(stream_id), name or "", poster_path, int(time.time())))
+            conn.execute("""
+                DELETE FROM vod_watch_history
+                WHERE stream_id IN (
+                    SELECT media_path FROM playback_progress WHERE is_finished = 1
+                )
+            """)
+            conn.execute("""
+                DELETE FROM vod_watch_history
+                WHERE stream_id NOT IN (
+                    SELECT stream_id FROM vod_watch_history
+                    ORDER BY last_watched DESC
+                    LIMIT ?
+                )
+            """, (int(limit),))
+    except sqlite3.Error as e:
+        logging.error(f"Failed to add VOD to watch history: {e}")
+    finally:
+        conn.close()
+
+def get_vod_watch_history():
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT w.stream_id, w.name, w.poster_path
+            FROM vod_watch_history w
+            JOIN playback_progress p ON p.media_path = w.stream_id
+            WHERE p.is_finished = 0 AND p.last_position > 10
+            ORDER BY p.last_watched DESC
+        """)
+        return [dict(row) for row in cursor.fetchall()]
+    except sqlite3.Error as e:
+        logging.error(f"Failed to read VOD watch history: {e}")
+        return []
+    finally:
+        conn.close()
+
+def remove_vod_from_watch_history(stream_id):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM vod_watch_history WHERE stream_id = ?", (str(stream_id),))
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to remove VOD from watch history: {e}")
+        return False
+    finally:
+        conn.close()  
+        
+def add_series_to_watch_history(series_id, name, poster_path, last_episode_key, final_episode_key, limit=30):
+    if not series_id or not last_episode_key:
+        return
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("""
+                INSERT INTO series_watch_history (series_id, name, poster_path, last_episode_key, final_episode_key, last_watched, has_progress)
+                VALUES (?, ?, ?, ?, ?, ?, 0)
+                ON CONFLICT(series_id) DO UPDATE SET
+                    name=excluded.name,
+                    poster_path=excluded.poster_path,
+                    has_progress=MAX(series_watch_history.has_progress, EXISTS(
+                        SELECT 1 FROM playback_progress
+                        WHERE media_path = series_watch_history.last_episode_key
+                          AND (is_finished = 1 OR last_position > 10)
+                    )),
+                    last_episode_key=excluded.last_episode_key,
+                    final_episode_key=excluded.final_episode_key,
+                    last_watched=excluded.last_watched
+            """, (str(series_id), name or "", poster_path, str(last_episode_key),
+                  str(final_episode_key) if final_episode_key else None, int(time.time())))
+            conn.execute("""
+                DELETE FROM series_watch_history
+                WHERE last_episode_key = final_episode_key
+                  AND last_episode_key IN (
+                      SELECT media_path FROM playback_progress WHERE is_finished = 1
+                  )
+            """)
+            conn.execute("""
+                DELETE FROM series_watch_history
+                WHERE series_id NOT IN (
+                    SELECT series_id FROM series_watch_history
+                    ORDER BY last_watched DESC
+                    LIMIT ?
+                )
+            """, (int(limit),))
+    except sqlite3.Error as e:
+        logging.error(f"Failed to add series to watch history: {e}")
+    finally:
+        conn.close()
+
+def get_series_watch_history():
+    conn = get_profile_db_connection()
+    try:
+        cursor = conn.cursor()
+        cursor.execute("""
+            SELECT w.series_id, w.name, w.poster_path
+            FROM series_watch_history w
+            LEFT JOIN playback_progress p ON p.media_path = w.last_episode_key
+            WHERE (w.has_progress = 1 OR p.is_finished = 1 OR p.last_position > 10)
+              AND NOT (COALESCE(p.is_finished, 0) = 1 AND w.last_episode_key = w.final_episode_key)
+            ORDER BY MAX(COALESCE(p.last_watched, 0), w.last_watched) DESC
+        """)
+        return [dict(row) for row in cursor.fetchall()]
+    except sqlite3.Error as e:
+        logging.error(f"Failed to read series watch history: {e}")
+        return []
+    finally:
+        conn.close()
+
+def remove_series_from_watch_history(series_id):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("DELETE FROM series_watch_history WHERE series_id = ?", (str(series_id),))
+        return True
+    except sqlite3.Error as e:
+        logging.error(f"Failed to remove series from watch history: {e}")
+        return False
+    finally:
+        conn.close()           
     
 def add_series_favorite(series_id, name, poster_path):
     conn = get_profile_db_connection()
@@ -1540,7 +1742,7 @@ def update_recent_media_cache(media_type, raw_data):
                     data_json = json.dumps(item)
                     data_tuples.append((media_type, stream_id, ts, data_json))
             conn.executemany("""
-                INSERT INTO cache_recent_media (media_type, stream_id, added_ts, data_json)
+                INSERT OR REPLACE INTO cache_recent_media (media_type, stream_id, added_ts, data_json)
                 VALUES (?, ?, ?, ?)
             """, data_tuples)
         logging.info(f"SQLite Cache: {len(data_tuples)} {media_type} records saved safely to database.")
@@ -1574,6 +1776,43 @@ def get_recent_media_count_from_cache(media_type, days):
     conn.close()
     return row['cnt'] if row else 0         
     
+def get_channel_backup_url(url):
+    conn = get_profile_db_connection()
+    cursor = conn.cursor()
+    try:
+        cursor.execute("SELECT backup_url FROM custom_channel_edits WHERE url = ?", (url,))
+        row = cursor.fetchone()
+        return row['backup_url'] if row and row['backup_url'] else None
+    except Exception as e:
+        logging.error(f"SQLite Error fetching backup_url: {e}")
+        return None
+    finally:
+        conn.close()
+
+def save_channel_backup_url(url, backup_url):
+    conn = get_profile_db_connection()
+    try:
+        conn.execute("""
+            INSERT INTO custom_channel_edits (url, backup_url)
+            VALUES (?, ?)
+            ON CONFLICT(url) DO UPDATE SET backup_url = excluded.backup_url
+        """, (url, backup_url))
+        conn.commit()
+    except Exception as e:
+        logging.error(f"SQLite Error saving backup_url: {e}")
+    finally:
+        conn.close()
+
+def remove_channel_backup_url(url):
+    conn = get_profile_db_connection()
+    try:
+        conn.execute("UPDATE custom_channel_edits SET backup_url = NULL WHERE url = ?", (url,))
+        conn.commit()
+    except Exception as e:
+        logging.error(f"SQLite Error removing backup_url: {e}")
+    finally:
+        conn.close()
+
 def save_custom_channel_edit(url, custom_name, custom_group, custom_logo, custom_epg_id):
     conn = get_profile_db_connection()
     try:
@@ -1706,10 +1945,55 @@ def get_active_downloads():
     try:
         conn = get_profile_db_connection()
         cursor = conn.cursor()
-        cursor.execute("SELECT url, output_path, speed_limit FROM active_downloads")
+        cursor.execute("SELECT url, output_path, speed_limit, content_key FROM active_downloads")
         rows = cursor.fetchall()
         conn.close()
         return [dict(row) for row in rows]
     except Exception as e:
         logging.error(f"Failed to get active downloads: {e}")
-        return []           
+        return []      
+        
+
+def set_active_download_content_key(url, content_key):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("UPDATE active_downloads SET content_key = ? WHERE url = ?", (content_key, url))
+    except sqlite3.Error as e:
+        logging.error(f"Failed to save download content key: {e}")
+    finally:
+        conn.close()
+
+def save_completed_download(content_key, file_path):
+    conn = get_profile_db_connection()
+    try:
+        with conn:
+            conn.execute("""
+                INSERT INTO completed_downloads (content_key, file_path, downloaded_at)
+                VALUES (?, ?, ?)
+                ON CONFLICT(content_key) DO UPDATE SET
+                    file_path=excluded.file_path,
+                    downloaded_at=excluded.downloaded_at
+            """, (content_key, file_path, int(time.time())))
+    except sqlite3.Error as e:
+        logging.error(f"Failed to save completed download: {e}")
+    finally:
+        conn.close()
+
+def get_downloaded_content_keys(content_keys):
+    content_keys = [key for key in content_keys if key]
+    if not content_keys:
+        return set()
+    conn = get_profile_db_connection()
+    try:
+        placeholders = ','.join('?' for _ in content_keys)
+        rows = conn.execute(
+            f"SELECT content_key, file_path FROM completed_downloads WHERE content_key IN ({placeholders})",
+            content_keys
+        ).fetchall()
+        return {row['content_key'] for row in rows if row['file_path'] and os.path.isfile(row['file_path'])}
+    except sqlite3.Error as e:
+        logging.error(f"Failed to read completed downloads: {e}")
+        return set()
+    finally:
+        conn.close()             

@@ -52,6 +52,10 @@ def parse_m3u_content(lines):
                     if duration_match:
                          item_data["tv_archive_duration"] = duration_match.group(1)
                     if is_vod:
+                        if "enre=" in channel_info or "ENRE=" in channel_info:
+                            genre_match = re.search(r'(?<![\w-])(?:tvg-genre|genre)="([^"]+)"', channel_info, re.IGNORECASE)
+                            if genre_match:
+                                item_data["genre"] = genre_match.group(1)
                         vods[group_title].append(item_data)
                     else:
                         bouquets[group_title].append(item_data)

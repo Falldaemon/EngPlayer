@@ -7,6 +7,7 @@ from gi.repository import Gtk, Adw, GLib
 import database
 import gettext
 import os
+from utils import platform_utils
 
 _ = gettext.gettext
 
@@ -36,7 +37,7 @@ class TimeshiftSettingsDialog(Adw.MessageDialog):
             "The temporary buffer is safely cleared when you change channels or return to live TV."
         )       
         self.description_label = Gtk.Label()
-        self.description_label.set_markup(description_text)
+        self.description_label.set_markup(platform_utils.display_text(description_text))
         self.description_label.set_wrap(True)
         self.description_label.set_xalign(0)
         self.description_label.add_css_class("caption")

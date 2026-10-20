@@ -6,7 +6,7 @@ import locale
 import json
 import re
 import os
-from core.config import VERSION
+from core.config import APP_USER_AGENT
 
 import gettext
 _ = gettext.gettext
@@ -30,7 +30,7 @@ except ImportError:
 
 API_BASE_URL = "https://api.themoviedb.org/3"
 IMAGE_BASE_URL = "https://image.tmdb.org/t/p/w500"
-HEADERS = {"User-Agent": f"EngPlayer/{VERSION}", "Accept": "application/json"}
+HEADERS = {"User-Agent": APP_USER_AGENT, "Accept": "application/json"}
 
 def get_system_language():
     env_lang = os.environ.get("LANG", "") or os.environ.get("LANGUAGE", "")

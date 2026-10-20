@@ -2,7 +2,7 @@
 
 import gi
 gi.require_version("Gtk", "4.0")
-from gi.repository import Gtk, GObject, Pango
+from gi.repository import Gtk, GObject, Pango, Adw
 import gettext
 import database 
 
@@ -36,7 +36,11 @@ class PodcastEpisodeList(Gtk.Box):
         self.listbox.add_css_class("navigation-sidebar")
         self.listbox.connect("row-activated", self._on_row_activated)
         scrolled.set_child(self.listbox)
-        self.spinner = Gtk.Spinner()
+        if hasattr(Adw, "Spinner"):
+            self.spinner = Adw.Spinner()
+            self.spinner.start = self.spinner.stop = lambda: None
+        else:
+            self.spinner = Gtk.Spinner()
         self.spinner.set_size_request(32, 32)
         self.spinner.set_halign(Gtk.Align.CENTER)
         self.spinner.set_valign(Gtk.Align.CENTER)

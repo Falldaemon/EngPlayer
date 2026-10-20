@@ -52,7 +52,11 @@ class EditorView(Gtk.Box):
         self.loading_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL, spacing=15)
         self.loading_box.set_valign(Gtk.Align.CENTER)
         self.loading_box.set_halign(Gtk.Align.CENTER)        
-        self.spinner = Gtk.Spinner()
+        if hasattr(Adw, "Spinner"):
+            self.spinner = Adw.Spinner()
+            self.spinner.start = self.spinner.stop = lambda: None
+        else:
+            self.spinner = Gtk.Spinner()
         self.spinner.set_size_request(40, 40)
         self.progress_bar = Gtk.ProgressBar()
         self.progress_bar.set_size_request(200, -1)
@@ -109,7 +113,7 @@ class EditorView(Gtk.Box):
         self.sort_popover.set_child(sort_vbox)
         self.bouquet_list_box = Gtk.ListBox()
         self.bouquet_list_box.add_css_class("boxed-list")
-        self.bouquet_list_box.set_margin_end(15)
+        self.bouquet_list_box.set_margin_end(20)
         self.bouquet_list_box.connect("row-activated", self._on_bouquet_row_activated)     
         self.bouquet_scroll = Gtk.ScrolledWindow(child=self.bouquet_list_box, vexpand=True)
         self.bouquet_view.append(self.bouquet_scroll)
@@ -135,7 +139,7 @@ class EditorView(Gtk.Box):
         self.channel_view.append(self.channel_search_entry)      
         self.channel_list_box = Gtk.ListBox()
         self.channel_list_box.add_css_class("boxed-list")
-        self.channel_list_box.set_margin_end(15)      
+        self.channel_list_box.set_margin_end(20)      
         self.channel_scroll = Gtk.ScrolledWindow(child=self.channel_list_box, vexpand=True)
         self.channel_view.append(self.channel_scroll)
         self.left_stack.add_named(self.channel_view, "channels")

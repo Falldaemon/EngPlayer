@@ -7,6 +7,7 @@ from gi.repository import Gtk, GObject, Adw, Pango, GLib, GdkPixbuf
 import gettext
 import logging
 import database
+from core.config import APP_USER_AGENT
 import urllib.request
 import os
 import re
@@ -147,7 +148,7 @@ class HistoryView(Gtk.Box):
         row = self.history_listbox.get_first_child()
         while row:
             if hasattr(row, 'channel_data'):
-                name = row.channel_data.get("name", "").lower()
+                name = (row.channel_data.get("name") or "").lower()
                 row.set_visible(search_text in name)
             row = row.get_next_sibling()
 
@@ -273,7 +274,7 @@ class HistoryView(Gtk.Box):
             pixbuf = None
             try:
                 if url.lower().startswith("http"):
-                    headers = {"User-Agent": "Mozilla/5.0"}
+                    headers = {"User-Agent": APP_USER_AGENT}
                     req = urllib.request.Request(url, headers=headers)
                     with urllib.request.urlopen(req, timeout=3) as resp:
                         data = resp.read()

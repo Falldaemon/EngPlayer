@@ -5,6 +5,7 @@ gi.require_version("Gtk", "4.0")
 gi.require_version("Adw", "1")
 from gi.repository import Gtk, Adw, GLib
 import database
+from utils import platform_utils
 import gettext
 
 _ = gettext.gettext
@@ -20,7 +21,11 @@ class CategoryManagerDialog(Adw.Window):
         self.set_content(self.overlay)       
         content_box = Gtk.Box(orientation=Gtk.Orientation.VERTICAL)
         self.overlay.set_child(content_box)       
-        self.center_spinner = Gtk.Spinner()
+        if hasattr(Adw, "Spinner"):
+            self.center_spinner = Adw.Spinner()
+            self.center_spinner.start = self.center_spinner.stop = lambda: None
+        else:
+            self.center_spinner = Gtk.Spinner()
         self.center_spinner.set_halign(Gtk.Align.CENTER)
         self.center_spinner.set_valign(Gtk.Align.CENTER)
         self.center_spinner.set_size_request(64, 64)
@@ -69,7 +74,7 @@ class CategoryManagerDialog(Adw.Window):
         listbox.set_selection_mode(Gtk.SelectionMode.NONE)
         sorted_cats = sorted(categories)            
         for cat_name in sorted_cats:
-            safe_title = GLib.markup_escape_text(cat_name)
+            safe_title = platform_utils.display_text(GLib.markup_escape_text(cat_name))
             row = Adw.ActionRow(title=safe_title)                     
             toggle = Gtk.Switch()
             toggle.set_valign(Gtk.Align.CENTER)

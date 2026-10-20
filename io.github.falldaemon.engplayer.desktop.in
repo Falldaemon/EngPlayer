@@ -10,3 +10,4 @@ Terminal=false
 StartupNotify=true
 StartupWMClass=io.github.falldaemon.engplayer
 Keywords=IPTV;M3U;Xtream;Player;
+MimeType=video/mp4;video/x-matroska;video/x-msvideo;video/quicktime;video/webm;video/mpeg;video/mp2t;video/x-ms-wmv;video/x-flv;video/3gpp;video/ogg;audio/mpeg;audio/mp4;audio/flac;audio/ogg;audio/x-wav;audio/x-ms-wma;audio/aac;audio/webm;

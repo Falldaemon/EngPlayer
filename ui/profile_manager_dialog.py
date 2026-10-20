@@ -164,8 +164,10 @@ class ProfileManagerDialog(Adw.MessageDialog):
                                 url = f"{host}/live/{user}/{pwd}/{ch_id}.ts"
                         else:
                             url = item.get("url", "")                     
-                        if not url: continue                    
-                        f.write(f'#EXTINF:-1 tvg-id="{ch_id}" tvg-logo="{logo}" group-title="{group}",{name}\n')
+                        if not url: continue
+                        genre = item.get("genre") if item.get("type") == "vod" else None
+                        genre_attr = f' tvg-genre="{genre.replace(chr(34), chr(39))}"' if isinstance(genre, str) and genre.strip() else ""
+                        f.write(f'#EXTINF:-1 tvg-id="{ch_id}" tvg-logo="{logo}" group-title="{group}"{genre_attr},{name}\n')
                         f.write(f"{url}\n")                 
                     logging.debug("Finished writing all items to M3U file.")                     
             logging.info(f"File successfully written to disk: {file_path}")

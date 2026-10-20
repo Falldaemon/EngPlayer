@@ -95,6 +95,16 @@
     font-size: 0.8rem;
 }
 
+.rating-badge {
+    background-color: alpha(#f5c518, 0.9);
+    color: #000000;
+    font-size: 0.95rem;
+    font-weight: 900;
+    border-radius: 6px;
+    padding: 2px 8px;
+    box-shadow: 0 1px 3px alpha(black, 0.6);
+}
+
 .black {
     background-color: black;
 }
@@ -151,6 +161,8 @@
 .set-password-warning-dialog,
 .resume-dialog,
 .shortcuts-window,
+.profile-window,
+.changelog-dialog,
 .catchup-dialog,
 .opensubtitles-api-dialog,
 .subtitle-results-dialog,
@@ -166,6 +178,8 @@
 .restart-dialog,
 .profile-editor-dialog,
 .global-search-dialog,
+.provider-test-dialog,
+.backup-link-dialog,
 .subtitle-settings-dialog,
 .delete-profile-dialog,
 .sleep-warning-dialog,
@@ -176,6 +190,7 @@
 .download-warning-dialog,
 .download-speed-dialog,
 .download-cancel-dialog,
+.download-again-dialog,
 .external-player-dialog,
 .source-selection-dialog {
     background-color: alpha(@theme_bg_color, 0.90); 
@@ -292,6 +307,26 @@
    transform: scale(1.10); 
 }
 
+.flat-button.image-nav-arrow {
+    background-color: alpha(black, 0.45);
+    border-radius: 50%;
+    min-width: 44px;
+    min-height: 44px;
+    margin: 12px;
+}
+
+.flat-button.image-nav-arrow:hover {
+    background-color: alpha(black, 0.7);
+}
+
+.player-controls.image-viewer-controls {
+    background-color: alpha(black, 0.55);
+}
+
+.image-viewer-controls .transparent-button {
+    background-color: alpha(@theme_bg_color, 0.6);
+}
+
 .equalizer-window {
     background-color: alpha(@window_bg_color, 0.90);
     border-radius: 12px;
@@ -310,6 +345,12 @@
             drop-shadow(0 0 1px rgba(255, 255, 255, 0.95));
 }
 
+.grid-watched-button {
+    min-width: 22px;
+    min-height: 22px;
+    padding: 2px;
+}
+
 .watched-button {
     background-color: alpha(black, 0.4);
     color: transparent;
@@ -323,10 +364,54 @@
     transform: scale(1.1);
 }
 
+.grid-favorite-button {
+    min-width: 0;
+    min-height: 0;
+    padding: 2px;
+}
+
+.genre-filter-bar {
+    margin-top: 8px;
+    margin-bottom: 4px;
+}
+
+.genre-chip {
+    border-radius: 999px;
+    padding: 2px 14px;
+    min-height: 26px;
+    background-color: alpha(currentColor, 0.10);
+    border: 2px solid alpha(currentColor, 0.30);
+    font-size: 0.9rem;
+    font-weight: 600;
+}
+
+.genre-chip:hover {
+    background-color: alpha(currentColor, 0.15);
+    border-color: alpha(currentColor, 0.50);
+}
+
+.genre-chip:checked {
+    background-color: @accent_bg_color;
+    color: @accent_fg_color;
+}
+
 .watched-button.watched {
     background-color: #2ecc71;
     color: white;
     border-color: #27ae60;
+}
+
+.downloaded-button {
+    background-color: #e74c3c;
+    color: white;
+    border-radius: 50%;
+    border: 1px solid #c0392b;
+    transition: all 0.2s ease-in-out;
+}
+
+.downloaded-button:hover {
+    background-color: #c0392b;
+    transform: scale(1.1);
 }
 
 .epg-progress-bar progress,
@@ -409,6 +494,39 @@ box.fullscreen-controls scale slider {
 box.fullscreen-controls scale trough {
     background-color: @fullscreen_slider_fill; 
 
+}
+
+box.next-episode-prompt {
+    background-color: transparent;
+    background-image: linear-gradient(
+        to bottom,
+        @fullscreen_bg_top,
+        @fullscreen_bg_bot
+    );
+    background-clip: padding-box;
+    border: 2px solid @fullscreen_border_color;
+    border-radius: 24px;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.5);
+    padding: 15px 20px;
+}
+
+box.next-episode-prompt label {
+    color: @fullscreen_fg_color;
+}
+
+box.next-episode-prompt button {
+    border-radius: 10px;
+}
+
+box.next-episode-prompt button:not(.suggested-action) {
+    background-image: linear-gradient(
+        to bottom,
+        @fullscreen_btn_grad_top,
+        @fullscreen_btn_grad_bot
+    );
+    color: @fullscreen_fg_color;
+    border: none;
+    box-shadow: none;
 }
 
 .fullscreen-channel-list {
@@ -593,7 +711,9 @@ box.fullscreen-controls popover.menu modelbutton:hover arrow,
 .password-dialog > contents,
 .switch-profile-dialog > contents,
 .category-manager-dialog > contents,
-.about-window > contents {
+.about-window > contents,
+.provider-test-dialog > contents,
+.backup-link-dialog > contents {
     background-color: transparent;
 }
 
@@ -681,6 +801,11 @@ box.fullscreen-controls popover.menu modelbutton:hover arrow,
     border: none;
 }
 
+.settings-popover list,
+.sidebar-scroll-list {
+    margin-right: 10px;
+}
+
 filechooser .view,
 filechooser .sidebar {
     background-color: @window_bg_color; 
@@ -718,6 +843,40 @@ filechooser entry {
     text-shadow: 2px 2px 8px rgba(0, 0, 0, 0.9), 
                  0px 0px 4px rgba(0, 0, 0, 0.7);   
     transition: opacity 0.3s ease-in-out;
+}
+
+.floating-back-button button {
+    background-color: alpha(black, 0.55);
+    background-image: none;
+    border-radius: 10px;
+    padding: 6px 14px;
+    color: #ffffff;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.5);
+    transition: background-color 0.2s ease-in-out,
+                border-color 0.2s ease-in-out;
+}
+
+.floating-back-button button:hover {
+    background-color: alpha(black, 0.80);
+
+}
+
+.floating-back-button button:active {
+    background-color: alpha(black, 0.90);
+}
+
+.floating-back-button button label,
+.floating-back-button button image {
+    color: #ffffff;
+}
+
+.floating-back-button button label {
+    text-shadow: 1px 1px 4px rgba(0, 0, 0, 0.9);
+}
+
+.video-loading-overlay label {
+    color: #ffffff;
+    font-weight: 600;
 }
 
 window.global-search-dialog box,
@@ -789,9 +948,39 @@ window.media-info-dialog .boxed-list row {
     background-color: transparent;
 } 
    
+window.shortcuts-window box,
+window.shortcuts-window headerbar {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+.shortcuts-window .keycap {
+    min-width: 20px;
+    padding: 2px 8px;
+    border-radius: 6px;
+    border: 1px solid alpha(@theme_fg_color, 0.3);
+    box-shadow: inset 0 -2px alpha(@theme_fg_color, 0.2);
+    font-size: smaller;
+}
+
 window.media-info-dialog .boxed-list {
     background-color: alpha(@theme_fg_color, 0.05);
     box-shadow: none;       
+}
+
+window.shortcuts-window box,
+window.shortcuts-window headerbar {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+window.video-settings-window box,
+window.video-settings-window headerbar {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
 }
 
 .custom-timer-dialog {
@@ -925,4 +1114,86 @@ window.timeshift-settings-dialog .boxed-list row {
 }
 .view-bg .current-prog-card label.dim-label {
     color: @view_fg_color;
+}
+
+.backup-link-dialog listbox,
+.backup-link-dialog .boxed-list {
+    background-color: alpha(white, 0.10);
+    border: 1px solid alpha(white, 0.1);
+    border-radius: 8px;
+}
+.backup-link-dialog listbox row,
+.backup-link-dialog .boxed-list row {
+    background-color: transparent;
+}
+.backup-link-dialog listbox row:hover,
+.backup-link-dialog .boxed-list row:hover {
+    background-color: alpha(white, 0.15);
+}
+.provider-test-dialog .boxed-list,
+.provider-test-dialog preferencesgroup list,
+.shortcuts-window .boxed-list {
+    background-color: alpha(white, 0.10);
+    border: 1px solid alpha(white, 0.1);
+    border-radius: 8px;
+}
+
+window.changelog-dialog toolbarview,
+window.changelog-dialog headerbar,
+window.changelog-dialog scrolledwindow,
+window.changelog-dialog viewport,
+window.changelog-dialog stack,
+window.changelog-dialog .navigation-sidebar {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+window.about-window toolbarview,
+window.about-window headerbar,
+window.about-window navigationview,
+window.about-window scrolledwindow,
+window.about-window viewport,
+window.about-window stack {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+window.about-window .boxed-list {
+    background-color: alpha(white, 0.10);
+    border: 1px solid alpha(white, 0.1);
+    border-radius: 8px;
+    box-shadow: none;
+}
+
+window.profile-window headerbar,
+window.profile-window scrolledwindow,
+window.profile-window viewport {
+    background-color: transparent;
+    background-image: none;
+    box-shadow: none;
+}
+
+window.profile-window list {
+    background-color: alpha(white, 0.10);
+    border: 1px solid alpha(white, 0.1);
+    border-radius: 8px;
+}
+
+window.profile-window list > row {
+    background-color: transparent;
+}
+
+window.profile-window list > row:selected {
+    background-color: alpha(@theme_fg_color, 0.12);
+}
+
+.pip-titlebar {
+    min-height: 0;
+    padding: 0;
+    margin: 0;
+    border: none;
+    background: none;
+    box-shadow: none;
 }

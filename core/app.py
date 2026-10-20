@@ -16,6 +16,13 @@ class MediaCenterApplication(Adw.Application):
         self.connect('activate', self.on_activate)
 
     def do_open(self, files, n_files, hint):
+        if files:
+            file_uri = files[0].get_uri()
+            if file_uri:
+                from ui.standalone_player_window import StandalonePlayerWindow
+                window = StandalonePlayerWindow(application=self, file_path=file_uri)
+                window.present()
+                return
         self.activate()
 
     def do_startup(self):
@@ -42,6 +49,18 @@ class MediaCenterApplication(Adw.Application):
             )
         except Exception as e:
             print(f"ERROR LOADING CSS: {e}")
+        if os.name == 'nt':
+            windows_css = Gtk.CssProvider()
+            windows_css_path = os.path.join(os.path.dirname(__file__), '..', 'resources', 'css', 'style-windows.css')
+            try:
+                windows_css.load_from_path(windows_css_path)
+                Gtk.StyleContext.add_provider_for_display(
+                    Gdk.Display.get_default(),
+                    windows_css,
+                    Gtk.STYLE_PROVIDER_PRIORITY_APPLICATION + 1
+                )
+            except Exception as e:
+                print(f"ERROR LOADING WINDOWS CSS: {e}")
 
     def on_activate(self, app):
         if hasattr(self, 'win') and self.win:
